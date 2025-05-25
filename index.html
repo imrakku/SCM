@@ -10,8 +10,7 @@
     <script src="https://d3js.org/d3-delaunay.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.js"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -223,14 +222,14 @@
             margin-right: 0.5rem; /* mr-2 */
             accent-color: #2563eb; /* blue-600 */
         }
-        .simulation-stats-container, .optimization-results-container {
+        .simulation-stats-container, .optimization-results-container, #optimizationComparisonContainer {
             background-color: #e0f2fe; /* sky-100 */
             border: 1px solid #7dd3fc; /* sky-300 */
             border-radius: 0.75rem; /* rounded-xl */
             padding: 1.5rem; /* p-6 */
             margin-top: 2rem; /* mt-8 */
         }
-        .simulation-stats-container h4, .optimization-results-container h4 {
+        .simulation-stats-container h4, .optimization-results-container h4, #optimizationComparisonContainer h4 {
             color: #0c4a6e; /* sky-800 */
             margin-bottom: 1rem; /* mb-4 */
             border-bottom: 2px solid #38bdf8; /* sky-400 */
@@ -288,6 +287,39 @@
         .sector-select-container label {
             display: block;
             margin-bottom: 0.25rem;
+        }
+        /* Table styling for optimization comparison */
+        .comparison-table-container {
+            overflow-x: auto; /* Allow horizontal scrolling for table on small screens */
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #cbd5e1; /* slate-300 */
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #e2e8f0; /* slate-200 */
+            color: #334155; /* slate-700 */
+            font-weight: 600;
+        }
+        .comparison-table tbody tr:nth-child(even) {
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .comparison-table tbody tr:hover {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .chart-container {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
     </style>
@@ -641,6 +673,41 @@
                     <div id="optimizationMapViz" class="w-full"></div>
                 </div>
 
+                <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
+                    <h4 class="text-2xl font-semibold text-center">Iteration Comparison Table</h4>
+                    <div class="comparison-table-container">
+                        <table id="optimizationComparisonTable" class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Agents</th>
+                                    <th>Generated Orders</th>
+                                    <th>Delivered Orders</th>
+                                    <th>Avg. Delivery Time (min)</th>
+                                    <th>Min Delivery Time (min)</th>
+                                    <th>Max Delivery Time (min)</th>
+                                    <th>Std. Dev. Delivery Time (min)</th>
+                                    <th>Avg. Agent Utilization (%)</th>
+                                    <th>Avg. Order Wait Time (min)</th>
+                                    <th>Undelivered Orders</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                 <div id="optimizationChartsContainer" class="hidden mt-8 grid md:grid-cols-2 gap-8">
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4>
+                        <canvas id="deliveryTimeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Utilization</h4>
+                        <canvas id="utilizationChart"></canvas>
+                    </div>
+                </div>
+
 
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Optimization Results (Best Scenario)</h4>
@@ -692,71 +759,42 @@
         let currentEditingZoneId = null; // To track which zone's lat/lng is being set by map click
         let currentRoutePoints = []; // For route-based profile zone definition
         let currentRoutePolylineLayer = null; // Leaflet layer for the route being drawn
+        let deliveryTimeChartInstance = null;
+        let utilizationChartInstance = null;
 
 
         // --- Chandigarh Sector Data (Approximate Centers) ---
         const chandigarhSectors = [
-            { name: "Sector 1 (Capitol Complex)", lat: 30.742, lng: 76.784 },
-            { name: "Sector 2", lat: 30.749, lng: 76.790 },
-            { name: "Sector 3", lat: 30.745, lng: 76.794 },
-            { name: "Sector 4", lat: 30.750, lng: 76.799 },
-            { name: "Sector 5", lat: 30.755, lng: 76.804 },
-            { name: "Sector 6", lat: 30.762, lng: 76.809 },
-            { name: "Sector 7", lat: 30.738, lng: 76.799 },
-            { name: "Sector 8", lat: 30.742, lng: 76.804 },
-            { name: "Sector 9", lat: 30.736, lng: 76.788 },
-            { name: "Sector 10", lat: 30.739, lng: 76.784 },
-            { name: "Sector 11", lat: 30.744, lng: 76.778 },
-            { name: "Sector 12 (PGIMER)", lat: 30.758, lng: 76.767 },
-            { name: "Sector 14 (Panjab University)", lat: 30.755, lng: 76.760 },
-            { name: "Sector 15", lat: 30.749, lng: 76.772 },
-            { name: "Sector 16", lat: 30.738, lng: 76.778 },
-            { name: "Sector 17 (City Center)", lat: 30.733, lng: 76.781 },
-            { name: "Sector 18", lat: 30.730, lng: 76.790 },
-            { name: "Sector 19", lat: 30.725, lng: 76.795 },
-            { name: "Sector 20", lat: 30.720, lng: 76.800 },
-            { name: "Sector 21", lat: 30.716, lng: 76.793 },
-            { name: "Sector 22", lat: 30.730, lng: 76.774 },
-            { name: "Sector 23", lat: 30.740, lng: 76.765 },
-            { name: "Sector 24", lat: 30.749, lng: 76.758 },
-            { name: "Sector 25", lat: 30.755, lng: 76.750 },
-            { name: "Sector 26 (Grain Market)", lat: 30.735, lng: 76.805 },
-            { name: "Sector 27", lat: 30.720, lng: 76.787 },
-            { name: "Sector 28", lat: 30.715, lng: 76.782 },
-            { name: "Sector 29", lat: 30.708, lng: 76.788 },
-            { name: "Sector 30", lat: 30.704, lng: 76.781 },
-            { name: "Sector 31", lat: 30.698, lng: 76.795 },
-            { name: "Sector 32", lat: 30.710, lng: 76.775 },
-            { name: "Sector 33", lat: 30.718, lng: 76.770 },
-            { name: "Sector 34", lat: 30.725, lng: 76.765 },
-            { name: "Sector 35", lat: 30.730, lng: 76.760 },
-            { name: "Sector 36", lat: 30.738, lng: 76.755 },
-            { name: "Sector 37", lat: 30.745, lng: 76.750 },
-            { name: "Sector 38", lat: 30.750, lng: 76.743 },
-            { name: "Sector 38 West", lat: 30.748, lng: 76.735 },
-            { name: "Sector 39", lat: 30.760, lng: 76.738 },
-            { name: "Sector 40", lat: 30.755, lng: 76.730 },
-            { name: "Sector 41", lat: 30.748, lng: 76.725 },
-            { name: "Sector 42", lat: 30.735, lng: 76.748 },
-            { name: "Sector 43 (ISBT)", lat: 30.728, lng: 76.755 },
-            { name: "Sector 44", lat: 30.720, lng: 76.760 },
-            { name: "Sector 45", lat: 30.715, lng: 76.765 },
-            { name: "Sector 46", lat: 30.708, lng: 76.770 },
-            { name: "Sector 47", lat: 30.700, lng: 76.775 },
-            { name: "Sector 48", lat: 30.690, lng: 76.765 },
-            { name: "Sector 49", lat: 30.695, lng: 76.755 },
-            { name: "Sector 50", lat: 30.705, lng: 76.750 },
-            { name: "Sector 51", lat: 30.715, lng: 76.745 },
-            { name: "Sector 52", lat: 30.725, lng: 76.740 },
-            { name: "Sector 53", lat: 30.700, lng: 76.730 },
-            { name: "Sector 54 (Mohali)", lat: 30.690, lng: 76.720 }, // Technically Mohali, but often referenced
-            { name: "Sector 55", lat: 30.730, lng: 76.725 },
-            { name: "Sector 56", lat: 30.740, lng: 76.720 },
-            { name: "Industrial Area Phase 1", lat: 30.710, lng: 76.790 },
-            { name: "Industrial Area Phase 2", lat: 30.695, lng: 76.780 },
-            { name: "Manimajra", lat: 30.725, lng: 76.835 },
-            { name: "Dhanas", lat: 30.760, lng: 76.720 },
-            // Add more sectors as needed
+            { name: "Sector 1 (Capitol Complex)", lat: 30.742, lng: 76.784 }, { name: "Sector 2", lat: 30.749, lng: 76.790 },
+            { name: "Sector 3", lat: 30.745, lng: 76.794 }, { name: "Sector 4", lat: 30.750, lng: 76.799 },
+            { name: "Sector 5", lat: 30.755, lng: 76.804 }, { name: "Sector 6", lat: 30.762, lng: 76.809 },
+            { name: "Sector 7", lat: 30.738, lng: 76.799 }, { name: "Sector 8", lat: 30.742, lng: 76.804 },
+            { name: "Sector 9", lat: 30.736, lng: 76.788 }, { name: "Sector 10", lat: 30.739, lng: 76.784 },
+            { name: "Sector 11", lat: 30.744, lng: 76.778 }, { name: "Sector 12 (PGIMER)", lat: 30.758, lng: 76.767 },
+            { name: "Sector 14 (Panjab University)", lat: 30.755, lng: 76.760 }, { name: "Sector 15", lat: 30.749, lng: 76.772 },
+            { name: "Sector 16", lat: 30.738, lng: 76.778 }, { name: "Sector 17 (City Center)", lat: 30.733, lng: 76.781 },
+            { name: "Sector 18", lat: 30.730, lng: 76.790 }, { name: "Sector 19", lat: 30.725, lng: 76.795 },
+            { name: "Sector 20", lat: 30.720, lng: 76.800 }, { name: "Sector 21", lat: 30.716, lng: 76.793 },
+            { name: "Sector 22", lat: 30.730, lng: 76.774 }, { name: "Sector 23", lat: 30.740, lng: 76.765 },
+            { name: "Sector 24", lat: 30.749, lng: 76.758 }, { name: "Sector 25", lat: 30.755, lng: 76.750 },
+            { name: "Sector 26 (Grain Market)", lat: 30.735, lng: 76.805 }, { name: "Sector 27", lat: 30.720, lng: 76.787 },
+            { name: "Sector 28", lat: 30.715, lng: 76.782 }, { name: "Sector 29", lat: 30.708, lng: 76.788 },
+            { name: "Sector 30", lat: 30.704, lng: 76.781 }, { name: "Sector 31", lat: 30.698, lng: 76.795 },
+            { name: "Sector 32", lat: 30.710, lng: 76.775 }, { name: "Sector 33", lat: 30.718, lng: 76.770 },
+            { name: "Sector 34", lat: 30.725, lng: 76.765 }, { name: "Sector 35", lat: 30.730, lng: 76.760 },
+            { name: "Sector 36", lat: 30.738, lng: 76.755 }, { name: "Sector 37", lat: 30.745, lng: 76.750 },
+            { name: "Sector 38", lat: 30.750, lng: 76.743 }, { name: "Sector 38 West", lat: 30.748, lng: 76.735 },
+            { name: "Sector 39", lat: 30.760, lng: 76.738 }, { name: "Sector 40", lat: 30.755, lng: 76.730 },
+            { name: "Sector 41", lat: 30.748, lng: 76.725 }, { name: "Sector 42", lat: 30.735, lng: 76.748 },
+            { name: "Sector 43 (ISBT)", lat: 30.728, lng: 76.755 }, { name: "Sector 44", lat: 30.720, lng: 76.760 },
+            { name: "Sector 45", lat: 30.715, lng: 76.765 }, { name: "Sector 46", lat: 30.708, lng: 76.770 },
+            { name: "Sector 47", lat: 30.700, lng: 76.775 }, { name: "Sector 48", lat: 30.690, lng: 76.765 },
+            { name: "Sector 49", lat: 30.695, lng: 76.755 }, { name: "Sector 50", lat: 30.705, lng: 76.750 },
+            { name: "Sector 51", lat: 30.715, lng: 76.745 }, { name: "Sector 52", lat: 30.725, lng: 76.740 },
+            { name: "Sector 53", lat: 30.700, lng: 76.730 }, { name: "Sector 54 (Mohali)", lat: 30.690, lng: 76.720 }, 
+            { name: "Sector 55", lat: 30.730, lng: 76.725 }, { name: "Sector 56", lat: 30.740, lng: 76.720 },
+            { name: "Industrial Area Phase 1", lat: 30.710, lng: 76.790 }, { name: "Industrial Area Phase 2", lat: 30.695, lng: 76.780 },
+            { name: "Manimajra", lat: 30.725, lng: 76.835 }, { name: "Dhanas", lat: 30.760, lng: 76.720 },
         ];
 
 
@@ -1547,34 +1585,30 @@
                 const profileName = selectedProfileId.substring('custom_'.length);
                 const customProfile = customDemandProfiles.find(p => p.name === profileName);
                 if (customProfile && customProfile.zones && customProfile.zones.length > 0) {
-                    // Check if any zone is active at current simulationTime
                     const activeZones = customProfile.zones.filter(zone => {
-                        const startTime = zone.startTime !== undefined ? zone.startTime : 0; // Default to start if not defined
-                        const endTime = zone.endTime !== undefined ? zone.endTime : Infinity; // Default to end if not defined
+                        const startTime = zone.startTime !== undefined ? zone.startTime : 0; 
+                        const endTime = zone.endTime !== undefined ? zone.endTime : Infinity; 
                         return simulationTime >= startTime && simulationTime <= endTime;
                     });
 
                     if (activeZones.length > 0) {
-                        // Randomly pick an active zone based on numOrders (as a weight)
-                        let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (Math.floor(Math.random() * (zone.maxOrders - zone.minOrders + 1)) + zone.minOrders), 0); // Use randomized order count for weighting if needed, or just numOrders
-                         if (totalOrderWeight === 0 && activeZones.length > 0) totalOrderWeight = activeZones.length;
+                        let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (zone.maxOrders > 0 ? (zone.minOrders + zone.maxOrders) / 2 : 1), 0); // Use avg as weight
+                        if (totalOrderWeight === 0) totalOrderWeight = activeZones.length;
 
 
                         let randomPick = Math.random() * totalOrderWeight;
                         let selectedZone = null;
                         for (const zone of activeZones) {
-                            const weight = (zone.minOrders + zone.maxOrders)/2 > 0 ? (zone.minOrders + zone.maxOrders)/2 : (totalOrderWeight === activeZones.length ? 1 : 0); // Average as weight
+                            const weight = (zone.minOrders + zone.maxOrders)/2 > 0 ? (zone.minOrders + zone.maxOrders)/2 : (totalOrderWeight === activeZones.length ? 1 : 0); 
                             if (randomPick < weight) {
                                 selectedZone = zone;
                                 break;
                             }
                             randomPick -= weight;
                         }
-                        if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)]; // Fallback to random active zone
+                        if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)]; 
 
                         if (selectedZone) {
-                            // Check if this zone has reached its max orders for this activation (needs more state if orders are per activation)
-                            // For now, assume numOrders in zone config is a target for the whole simulation if zone is active
                             if (selectedZone.type === 'uniform') {
                                 const uniformPoints = generateUniformPointInPolygon(1, chandigarhGeoJsonPolygon);
                                 newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...darkStoreLocationSim };
@@ -1624,17 +1658,38 @@
                                      logMessageSim(`Generated Order ${orderId} (Profile: ${profileName}, Zone: Sector-Based - No sectors chosen, fallback) at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER');
                                 }
                             } else if (selectedZone.type === 'route') {
-                                const uniformPoints = generateUniformPointInPolygon(1, chandigarhGeoJsonPolygon);
-                                newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...darkStoreLocationSim };
-                                logMessageSim(`Generated Order ${orderId} (Profile: ${profileName}, Zone: Route-Based - Placeholder Uniform) at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER');
+                                // Placeholder: Generate uniformly within bounding box of route points
+                                if (selectedZone.routePoints && selectedZone.routePoints.length >= 2) {
+                                    let minRouteLat = Infinity, maxRouteLat = -Infinity, minRouteLng = Infinity, maxRouteLng = -Infinity;
+                                    selectedZone.routePoints.forEach(p => {
+                                        if (p[0] < minRouteLat) minRouteLat = p[0];
+                                        if (p[0] > maxRouteLat) maxRouteLat = p[0];
+                                        if (p[1] < minRouteLng) minRouteLng = p[1];
+                                        if (p[1] > maxRouteLng) maxRouteLng = p[1];
+                                    });
+                                    let attempts = 0;
+                                    do {
+                                        newOrderLocation = {
+                                            lat: minRouteLat + Math.random() * (maxRouteLat - minRouteLat),
+                                            lng: minRouteLng + Math.random() * (maxRouteLng - minRouteLng)
+                                        };
+                                        attempts++;
+                                    } while(!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 50);
+                                    if (attempts >= 50 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)){
+                                        newOrderLocation = generateUniformPointInPolygon(1, chandigarhGeoJsonPolygon)[0] || {...darkStoreLocationSim};
+                                    }
+                                } else {
+                                     newOrderLocation = generateUniformPointInPolygon(1, chandigarhGeoJsonPolygon)[0] || {...darkStoreLocationSim};
+                                }
+                                logMessageSim(`Generated Order ${orderId} (Profile: ${profileName}, Zone: Route-Based - Placeholder) at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER');
                             } else {
                                  newOrderLocation = { ...darkStoreLocationSim }; 
                                  logMessageSim(`Generated Order ${orderId} (Profile: ${profileName}, Zone: Unknown type, fallback) at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER');
                             }
-                        } else { // No active zone selected, fallback to default uniform or skip
-                             totalOrdersGeneratedStat--; return; // Don't generate if no active zone was chosen from profile
+                        } else { 
+                             totalOrdersGeneratedStat--; return; 
                         }
-                    } else { // No active zones in the profile at this time
+                    } else { 
                         totalOrdersGeneratedStat--; return; 
                     }
                 } else {
@@ -2067,6 +2122,8 @@
         let optDarkStoreMarkersLayer;
         let optOrderMarkersLayer; 
         let optOrderHeatmapLayer = null; 
+        let allOptimizationIterationsData = []; // To store data for table and charts
+
 
         function initOptimizationMapVisualisation() {
             if (optimizationMapInstance) { optimizationMapInstance.remove(); optimizationMapInstance = null;}
@@ -2127,7 +2184,14 @@
             const optLog = document.getElementById('optimizationLog');
             const runOptimizationButton = document.getElementById('runOptimizationBtn');
             const optimizationMapContainer = document.getElementById('optimizationMapContainer');
+            const comparisonTableContainer = document.getElementById('optimizationComparisonContainer');
+            const chartsContainer = document.getElementById('optimizationChartsContainer');
             
+            allOptimizationIterationsData = []; // Clear previous iteration data
+            comparisonTableContainer.classList.add('hidden'); // Hide table initially
+            chartsContainer.classList.add('hidden'); // Hide charts initially
+
+
             if (!targetDeliveryTimeInput || !ordersPerIterationInput || !maxSimTimePerIterationInput ||
                 !minAgentsInput || !maxAgentsInput || !darkStoreSelector ||
                 !resultsContainer || !optLog || !runOptimizationButton || !optimizationMapContainer ) {
@@ -2373,6 +2437,20 @@
                 if (currentIterationDeliveryTimes.length > 1 && currentAvgDeliveryTime !== Infinity) {
                      iterStdDevDelTime = calculateStdDev(currentIterationDeliveryTimes, currentAvgDeliveryTime).toFixed(1);
                 }
+                
+                allOptimizationIterationsData.push({
+                    agents: currentNumAgents,
+                    generatedOrders: ordersGeneratedThisIteration,
+                    deliveredOrders: iterationTotalDelivered,
+                    avgDeliveryTime: currentAvgDeliveryTime === Infinity ? null : parseFloat(currentAvgDeliveryTime.toFixed(1)),
+                    minDeliveryTime: iterMinDelTime === "N/A" ? null : parseFloat(iterMinDelTime),
+                    maxDeliveryTime: iterMaxDelTime === "N/A" ? null : parseFloat(iterMaxDelTime),
+                    stdDevDeliveryTime: iterStdDevDelTime === "N/A" ? null : parseFloat(iterStdDevDelTime),
+                    avgAgentUtilization: parseFloat(currentAvgAgentUtilization.toFixed(1)) || 0,
+                    avgOrderWaitTime: currentAvgOrderWaitTime === Infinity ? null : parseFloat(currentAvgOrderWaitTime.toFixed(1)),
+                    undeliveredOrders: iterationUndeliveredOrders
+                });
+
 
                 if (iterationSimTime >= maxSimTime && iterationTotalDelivered < ordersGeneratedThisIteration) {
                      logMessageOpt(`For ${currentNumAgents} agents: Timed out at ${maxSimTime} mins. Generated: ${ordersGeneratedThisIteration}, Delivered: ${iterationTotalDelivered}.`, 'SYSTEM', optLog);
@@ -2477,12 +2555,98 @@
                  document.getElementById('optOverallAvgDistance').textContent = "N/A";
             }
 
+            // Populate Comparison Table and Charts
+            populateOptimizationComparisonTable(allOptimizationIterationsData);
+            renderOptimizationCharts(allOptimizationIterationsData, targetAvgTime);
+            comparisonTableContainer.classList.remove('hidden');
+            chartsContainer.classList.remove('hidden');
+
 
             logMessageOpt(`Optimization complete. Best result found with ${bestAgentCount !== -1 ? bestAgentCount : 'N/A'} agents (Target: ${targetAvgTime} min).`, 'SYSTEM_BOLD', optLog);
             optLog.scrollTop = optLog.scrollHeight;
             runOptimizationButton.disabled = false;
             runOptimizationButton.textContent = "Run Workforce Optimization";
         }
+
+        function populateOptimizationComparisonTable(iterationData) {
+            const tableBody = document.getElementById('optimizationComparisonTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ""; // Clear previous data
+
+            iterationData.forEach(iter => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = iter.agents;
+                row.insertCell().textContent = iter.generatedOrders;
+                row.insertCell().textContent = iter.deliveredOrders;
+                row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
+                row.insertCell().textContent = iter.minDeliveryTime !== null ? iter.minDeliveryTime.toFixed(1) : "N/A";
+                row.insertCell().textContent = iter.maxDeliveryTime !== null ? iter.maxDeliveryTime.toFixed(1) : "N/A";
+                row.insertCell().textContent = iter.stdDevDeliveryTime !== null ? iter.stdDevDeliveryTime.toFixed(1) : "N/A";
+                row.insertCell().textContent = iter.avgAgentUtilization !== null ? iter.avgAgentUtilization.toFixed(1) + "%" : "N/A";
+                row.insertCell().textContent = iter.avgOrderWaitTime !== null ? iter.avgOrderWaitTime.toFixed(1) : "N/A";
+                row.insertCell().textContent = iter.undeliveredOrders;
+            });
+        }
+
+        function renderOptimizationCharts(iterationData, targetTime) {
+            const labels = iterationData.map(iter => iter.agents);
+            const avgDeliveryTimes = iterationData.map(iter => iter.avgDeliveryTime);
+            const avgUtilizations = iterationData.map(iter => iter.avgAgentUtilization);
+
+            // Destroy previous charts if they exist
+            if (deliveryTimeChartInstance) {
+                deliveryTimeChartInstance.destroy();
+            }
+            if (utilizationChartInstance) {
+                utilizationChartInstance.destroy();
+            }
+
+            // Delivery Time Chart
+            const dtCtx = document.getElementById('deliveryTimeChart').getContext('2d');
+            deliveryTimeChartInstance = new Chart(dtCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg. Delivery Time (min)',
+                        data: avgDeliveryTimes,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    },
+                    {
+                        label: 'Target Avg. Delivery Time (min)',
+                        data: Array(labels.length).fill(targetTime),
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0 // No points for target line
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'} } , x: {title: {display: true, text: 'Number of Agents'}}}
+                }
+            });
+
+            // Utilization Chart
+            const utilCtx = document.getElementById('utilizationChart').getContext('2d');
+            utilizationChartInstance = new Chart(utilCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg. Agent Utilization (%)',
+                        data: avgUtilizations,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, max: 100, title: {display: true, text: 'Utilization (%)'} }, x:{title: {display: true, text: 'Number of Agents'}} }
+                }
+            });
+        }
+
 
         // --- Demand Profile UI Logic ---
         let zoneCounter = 0;
