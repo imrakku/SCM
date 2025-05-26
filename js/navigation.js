@@ -63,7 +63,6 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
     } else {
         console.warn(`[Nav] Active link for section ${sectionId} not found.`);
     }
-
     // Lazy initialize section-specific JavaScript or update if already initialized
     try {
         switch (sectionId) {
