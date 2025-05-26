@@ -2,7 +2,7 @@
 import { chandigarhSectors, chandigarhCenter } from '../data/chandigarhData.js';
 import { initializeMap, getMapInstance } from '../mapUtils.js';
 import { logMessage } from '../logger.js';
-// Correctly import the function from simulation.js
+// This import should now work if simulation.js exports the function correctly.
 import { populateOrderGenerationProfileSelectorSim } from './simulation.js';
 
 
