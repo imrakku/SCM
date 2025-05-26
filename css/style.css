@@ -1,38 +1,58 @@
+/* General Body and Font Styles */
 body {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
     background-color: #f1f5f9; /* slate-100 */
+    color: #334155; /* text-slate-700, default text color */
 }
+
+/* Navigation Styles */
 .nav-active {
     border-bottom-width: 3px;
     border-color: #1d4ed8; /* blue-700 */
     color: #1d4ed8; /* blue-700 */
     font-weight: 700;
 }
+
 .nav-link:hover {
     color: #2563eb; /* blue-600 */
 }
+
+/* Content Section Visibility */
 .content-section {
     display: none;
 }
+
 .content-section.active {
     display: block;
 }
-#simulationMap, #clusteringMapViz, #optimizationMapViz, #profileCreationMap, #scenarioComparisonMap {
+
+/* Map Container Styles */
+#simulationMap,
+#clusteringMapViz,
+#optimizationMapViz,
+#profileCreationMap,
+#scenarioComparisonMap { /* Added scenarioComparisonMap for consistency if you plan to use it */
     height: 500px;
     min-height: 400px;
     border-radius: 0.75rem; /* rounded-xl */
     background-color: #e2e8f0; /* slate-200 */
     border: 1px solid #cbd5e1; /* slate-300 */
+    width: 100%; /* Ensure maps take full width of their container */
 }
- #profileCreationMap {
-    height: 300px; 
+
+#profileCreationMap { /* Specific override for profile creation map height */
+    height: 300px;
     min-height: 250px;
 }
+
+/* Leaflet Popup Styles */
 .leaflet-popup-content-wrapper {
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+
+/* Button Styles */
 .btn {
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem; /* rounded-lg */
@@ -42,15 +62,22 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     line-height: 1.25;
+    border: none; /* Remove default browser borders */
+    display: inline-flex; /* For aligning text and potential icons */
+    align-items: center;
+    justify-content: center;
 }
+
 .btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px -3px rgba(0,0,0,0.15);
 }
+
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
 .btn-primary {
     background-color: #2563eb; /* blue-600 */
     color: white;
@@ -59,6 +86,7 @@ body {
 .btn-primary:hover:not(:disabled) {
     background-color: #1d4ed8; /* blue-700 */
 }
+
 .btn-secondary {
     background-color: #475569; /* slate-600 */
     color: white;
@@ -67,6 +95,7 @@ body {
 .btn-secondary:hover:not(:disabled) {
     background-color: #334155; /* slate-700 */
 }
+
 .btn-danger {
     background-color: #dc2626; /* red-600 */
     color: white;
@@ -75,16 +104,19 @@ body {
 .btn-danger:hover:not(:disabled) {
     background-color: #b91c1c; /* red-700 */
 }
+
 .btn-sm {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
 }
 
+/* Scrollbar Styles for Log Containers */
 .log-container::-webkit-scrollbar { width: 8px; }
 .log-container::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; } /* slate-200 */
 .log-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
 .log-container::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
 
+/* Card Styles */
 .card {
     background-color: white;
     border-radius: 0.75rem; /* rounded-xl */
@@ -92,7 +124,8 @@ body {
     padding: 2.5rem; /* p-10 */
     margin-bottom: 2.5rem; /* mb-10 */
 }
-.stat-card {
+
+.stat-card { /* Used for smaller stat displays within sections */
     background-color: #f8fafc; /* slate-50 */
     padding: 1.5rem; /* p-6 */
     border-radius: 0.75rem; /* rounded-xl */
@@ -100,6 +133,7 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
+/* Custom Marker Icon Styles */
 .marker-icon-base {
     display: flex; align-items: center; justify-content: center;
     font-weight: 700;
@@ -117,6 +151,7 @@ body {
 .order-pending { background-color: #16a34a; } /* green-600 */
 .order-assigned { background-color: #facc15; color: #713f12; } /* yellow-400, text-yellow-800 */
 
+/* Range Input Styles */
 input[type="range"] {
     -webkit-appearance: none; appearance: none; width: 100%; height: 12px;
     background: #cbd5e1; /* slate-300 */
@@ -136,17 +171,21 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:active {
     transform: scale(1.1);
 }
-input[type="range"]::-moz-range-thumb {
+input[type="range"]::-moz-range-thumb { /* Firefox */
     width: 24px; height: 24px; background: #2563eb; /* blue-600 */
     border-radius: 50%; cursor: pointer; border: 4px solid white;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
+
+/* Simulation Controls Grid */
 .simulation-controls-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem; 
-    align-items: flex-start; 
+    gap: 1.5rem;
+    align-items: flex-start;
 }
+
+/* Control Label (for sliders etc.) */
 .control-label {
     display: flex;
     justify-content: space-between;
@@ -155,7 +194,10 @@ input[type="range"]::-moz-range-thumb {
 }
 .control-label label {
     font-weight: 500; /* font-medium */
+    color: #374151; /* text-slate-700 */
 }
+
+/* Input Group Styling */
 .input-group {
     margin-bottom: 1rem; /* mb-4 */
 }
@@ -165,38 +207,50 @@ input[type="range"]::-moz-range-thumb {
     color: #374151; /* text-slate-700 */
     margin-bottom: 0.25rem; /* mb-1 */
 }
-.input-group input[type="number"], .input-group input[type="text"], .input-group select, .input-group input[type="checkbox"] {
+.input-group input[type="number"],
+.input-group input[type="text"],
+.input-group select {
     width: 100%;
     padding: 0.5rem 0.75rem; /* py-2 px-3 */
     border-radius: 0.375rem; /* rounded-md */
     border: 1px solid #d1d5db; /* border-slate-300 */
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    background-color: white; /* Ensure background for inputs */
 }
- .input-group input[type="number"]:focus, .input-group input[type="text"]:focus, .input-group select:focus, .input-group input[type="checkbox"]:focus {
+.input-group input[type="number"]:focus,
+.input-group input[type="text"]:focus,
+.input-group select:focus {
     border-color: #2563eb; /* blue-600 */
     outline: 2px solid transparent;
     outline-offset: 2px;
     box-shadow: 0 0 0 2px rgba(59,130,246,0.4); /* ring-blue-500/40 */
 }
-.input-group input[type="checkbox"] { 
-    width: auto; 
+.input-group input[type="checkbox"] { /* Specific for checkbox alignment and sizing */
+    width: auto;
     padding: 0;
     margin-right: 0.5rem;
-    accent-color: #2563eb;
+    accent-color: #2563eb; /* blue-600 */
+    height: 1rem; /* Standardize checkbox size */
+    width: 1rem;
 }
-.checkbox-group label { 
-     display: inline-flex; 
-     align-items: center; 
+.checkbox-group label { /* For aligning checkbox with its text label */
+     display: inline-flex;
+     align-items: center;
      cursor: pointer;
+     font-weight: 500; /* font-medium */
+     color: #374151; /* text-slate-700 */
 }
 
-.voronoi-cell-path { 
+/* Voronoi Path Styles */
+.voronoi-cell-path {
     stroke: #0ea5e9; /* sky-500 */
-    stroke-width: 1.5px; 
-    fill: false; 
-    fill-opacity: 0; 
+    stroke-width: 1.5px;
+    fill: none; /* Changed from 'false' to 'none' for clarity */
+    fill-opacity: 0;
 }
- .checkbox-label { 
+
+/* Checkbox Label (General purpose, e.g., "Show Order Connections") */
+.checkbox-label {
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -208,77 +262,114 @@ input[type="range"]::-moz-range-thumb {
     margin-right: 0.5rem; /* mr-2 */
     accent-color: #2563eb; /* blue-600 */
 }
-.simulation-stats-container, .optimization-results-container, #optimizationComparisonContainer, #scenarioComparisonResultsContainer {
+
+/* Stats and Results Containers */
+.simulation-stats-container,
+.optimization-results-container,
+#optimizationComparisonContainer, /* ID for specific table container */
+#scenarioComparisonResultsContainer { /* ID for specific table container */
     background-color: #e0f2fe; /* sky-100 */
     border: 1px solid #7dd3fc; /* sky-300 */
     border-radius: 0.75rem; /* rounded-xl */
     padding: 1.5rem; /* p-6 */
     margin-top: 2rem; /* mt-8 */
 }
-.simulation-stats-container h4, .optimization-results-container h4, #optimizationComparisonContainer h4, #scenarioComparisonResultsContainer h4 {
+.simulation-stats-container h4,
+.optimization-results-container h4,
+#optimizationComparisonContainer h4,
+#scenarioComparisonResultsContainer h4 {
     color: #0c4a6e; /* sky-800 */
     margin-bottom: 1rem; /* mb-4 */
     border-bottom: 2px solid #38bdf8; /* sky-400 */
     padding-bottom: 0.5rem; /* pb-2 */
+    font-size: 1.5rem; /* text-2xl */
+    font-weight: 600; /* font-semibold */
+    text-align: center;
 }
-.simulation-stats-grid, .optimization-results-grid {
+
+/* Grid for Stats */
+.simulation-stats-grid,
+.optimization-results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem; /* gap-4 */
 }
-.simulation-stats-grid p, .optimization-results-grid p, .optimization-results-container li {
+.simulation-stats-grid p,
+.optimization-results-grid p,
+.optimization-results-container li { /* For lists within optimization results */
     background-color: #f0f9ff; /* sky-50 */
     padding: 0.75rem; /* p-3 */
     border-radius: 0.375rem; /* rounded-md */
     border: 1px solid #bae6fd; /* sky-200 */
     font-size: 0.9rem;
-}
-.simulation-stats-grid strong, .optimization-results-grid strong, .optimization-results-container strong {
     color: #075985; /* sky-700 */
 }
-.optimization-log, .simulation-log {
+.simulation-stats-grid strong,
+.optimization-results-grid strong,
+.optimization-results-container strong { /* Make strong text more prominent */
+    color: #0369a1; /* sky-600 */
+    font-weight: 600;
+}
+
+/* Log Display Styles (Simulation & Optimization) */
+.optimization-log,
+.simulation-log {
     background-color: #1e293b; /* slate-800 */
     color: #e2e8f0; /* slate-200 */
     padding: 1rem; /* p-4 */
     border-radius: 0.5rem; /* rounded-lg */
     margin-top: 1rem; /* mt-4 */
-    max-height: 350px; 
+    max-height: 350px;
     overflow-y: auto;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 0.85rem; 
+    font-size: 0.85rem;
     line-height: 1.4;
 }
- .log-message { margin-bottom: 0.25rem; }
-.log-info { color: #93c5fd; } 
-.log-agent { color: #fdba74; } 
-.log-order { color: #86efac; } 
-.log-system { color: #fde047; } 
-.log-error { color: #fda4af; font-weight: bold;} 
-.log-system-bold { color: #fde047; font-weight: bold;} 
-.log-traffic { color: #a5b4fc; } 
-.log-cost { color: #f9a8d4; } 
+.log-message { margin-bottom: 0.25rem; }
+.log-info { color: #93c5fd; } /* sky-300 */
+.log-agent { color: #fdba74; } /* orange-300 */
+.log-order { color: #86efac; } /* green-300 */
+.log-system { color: #fde047; } /* yellow-300 */
+.log-error { color: #fda4af; font-weight: bold;} /* rose-300 */
+.log-system-bold { color: #fde047; font-weight: bold;} /* yellow-300 */
+.log-traffic { color: #a5b4fc; } /* indigo-300 */
+.log-cost { color: #f9a8d4; } /* pink-300 */
 
 
+/* Demand Profile Specific Styles */
 .profile-zone {
-    border: 1px solid #e2e8f0; 
+    border: 1px solid #e2e8f0; /* slate-200 */
     padding: 1rem;
     margin-bottom: 1rem;
-    border-radius: 0.5rem;
-    background-color: #f8fafc; 
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #f8fafc; /* slate-50 */
 }
 .sector-select-container {
     max-height: 150px;
     overflow-y: auto;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
+    border: 1px solid #d1d5db; /* slate-300 */
+    border-radius: 0.375rem; /* rounded-md */
     padding: 0.5rem;
+    background-color: white;
 }
-.sector-select-container label {
+.sector-select-container label { /* For checkboxes within sector select */
     display: block;
     margin-bottom: 0.25rem;
+    font-weight: normal; /* Override .input-group label */
+    color: #475569; /* slate-600 */
 }
+.sector-select-container label input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+
+/* Comparison Table Styles (Workforce Opt & Scenario Analysis) */
 .comparison-table-container {
-    overflow-x: auto; 
+    overflow-x: auto;
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0; /* slate-200 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .comparison-table {
     width: 100%;
@@ -286,81 +377,119 @@ input[type="range"]::-moz-range-thumb {
     margin-top: 1rem;
     font-size: 0.85rem;
 }
-.comparison-table th, .comparison-table td {
-    border: 1px solid #cbd5e1; 
+.comparison-table th,
+.comparison-table td {
+    border: 1px solid #cbd5e1; /* slate-300 */
     padding: 0.5rem 0.75rem;
     text-align: left;
-    white-space: nowrap; 
+    white-space: nowrap;
 }
 .comparison-table th {
-    background-color: #e2e8f0; 
-    color: #334155; 
+    background-color: #e2e8f0; /* slate-200 */
+    color: #334155; /* slate-700 */
     font-weight: 600;
+    position: sticky; /* For better scrolling on wide tables */
+    top: 0;
+    z-index: 10;
 }
 .comparison-table tbody tr:nth-child(even) {
-    background-color: #f8fafc; 
+    background-color: #f8fafc; /* slate-50 */
 }
 .comparison-table tbody tr:hover {
-    background-color: #f1f5f9; 
-}
-.chart-container {
-    margin-top: 1rem; 
-    padding: 1rem;
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    min-height: 300px; 
-}
-.live-chart-container { 
-     margin-top: 1rem;
-     padding: 0.75rem;
-     background-color: #f9fafb; 
-     border-radius: 0.5rem;
-     border: 1px solid #e5e7eb; 
-     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.live-chart-container h5 {
-    text-align: center;
-    font-size: 0.9rem;
-    color: #4b5563; 
-    margin-bottom: 0.5rem;
+    background-color: #f1f5f9; /* slate-100 */
 }
 
-#savedScenariosListContainer {
+/* Chart Container Styles (Workforce Opt & Simulation Live Charts) */
+.chart-container { /* For Workforce Opt charts */
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    min-height: 300px;
+}
+.live-chart-container { /* For Simulation live charts */
+     margin-top: 1rem;
+     padding: 0.75rem;
+     background-color: #f9fafb; /* gray-50 */
+     border-radius: 0.5rem; /* rounded-lg */
+     border: 1px solid #e5e7eb; /* gray-200 */
+     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+     min-height: 250px; /* Slightly smaller for live view */
+}
+.live-chart-container h5, .chart-container h4 { /* Chart titles */
+    text-align: center;
+    font-size: 0.9rem;
+    color: #4b5563; /* gray-600 */
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+.chart-container h4 { /* Workforce opt chart titles slightly larger */
+    font-size: 1.125rem; /* text-xl */
+    color: #374151; /* slate-700 */
+}
+
+
+/* Saved Scenarios List (Scenario Analysis & Demand Profiles) */
+#savedScenariosListContainer, /* For Scenario Analysis */
+#savedProfilesListContainer {  /* For Demand Profiles */
     max-height: 400px;
     overflow-y: auto;
-    background-color: #f8fafc; 
+    background-color: #f8fafc; /* slate-50 */
     padding: 1rem;
-    border-radius: 0.5rem; 
-    border: 1px solid #e2e8f0; 
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e2e8f0; /* slate-200 */
 }
-#savedScenariosListContainer li {
+#savedScenariosListContainer li,
+#savedProfilesListContainer ul li { /* Target li inside the ul for profiles */
     padding: 0.5rem;
-    border-bottom: 1px solid #e2e8f0; 
+    border-bottom: 1px solid #e2e8f0; /* slate-200 */
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
- #savedScenariosListContainer li:last-child {
+ #savedScenariosListContainer li:last-child,
+ #savedProfilesListContainer ul li:last-child {
     border-bottom: none;
 }
-#savedScenariosListContainer li:hover {
-    background-color: #f1f5f9; 
+#savedScenariosListContainer li:hover,
+#savedProfilesListContainer ul li:hover {
+    background-color: #f1f5f9; /* slate-100 */
 }
-#savedScenariosListContainer li input[type="checkbox"] {
+#savedScenariosListContainer li input[type="checkbox"] { /* Checkbox in scenario list */
     margin-right: 0.75rem;
-    accent-color: #2563eb; 
+    accent-color: #2563eb; /* blue-600 */
+    height: 1rem; width: 1rem;
 }
-.cost-kpi-grid { 
+
+/* Cost KPI Grid (Simulation & Optimization) */
+.cost-kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
-    margin-top: 1.5rem; 
-    padding-top: 1.5rem; 
-    border-top: 1px dashed #cbd5e1; 
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #cbd5e1; /* slate-300 */
 }
 .cost-kpi-grid p {
-    background-color: #eff6ff; 
-    border-left: 4px solid #2563eb; 
+    background-color: #eff6ff; /* blue-50 */
+    border-left: 4px solid #2563eb; /* blue-600 */
+    padding: 0.75rem; /* p-3 */
+    border-radius: 0.375rem; /* rounded-md */
+    font-size: 0.9rem;
+    color: #1e40af; /* blue-800 */
+}
+.cost-kpi-grid strong {
+    color: #1e3a8a; /* blue-700 */
+    font-weight: 600;
+}
+
+/* Footer Specifics */
+#sectorCoordinatesContainer {
+    /* Tailwind classes are in HTML, but ensure it's hidden by default if JS fails */
+    /* max-width, mx-auto, bg, p, rounded, text-sm are handled by Tailwind */
+}
+#sectorCoordinatesList {
+    /* Tailwind classes for text color and whitespace are in HTML */
 }
