@@ -2,220 +2,295 @@
 body {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    background-color: #f1f5f9; /* slate-100 */
-    color: #334155; /* text-slate-700, default text color */
+    background-color: #f1f5f9; /* slate-100 (Light gray background) */
+    color: #1e293b; /* slate-800 (Dark gray for primary text) */
+    line-height: 1.6;
 }
 
-/* Navigation Styles */
-.nav-active {
-    border-bottom-width: 3px;
-    border-color: #1d4ed8; /* blue-700 */
-    color: #1d4ed8; /* blue-700 */
-    font-weight: 700;
+/* Header & Navigation Styles */
+header {
+    background-color: white; /* Clean white header */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Softer shadow */
 }
-
+h1.text-3xl { /* Main title in header */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+.nav-link {
+    color: #334155; /* slate-700 (Darker gray for readability) */
+    font-weight: 500; /* Medium weight for nav links */
+    padding: 0.5rem 0.75rem; /* Adjust padding for balance */
+    border-radius: 0.375rem; /* rounded-md */
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
 .nav-link:hover {
-    color: #2563eb; /* blue-600 */
+    color: #1d4ed8; /* Primary Deep Blue on hover */
+    background-color: #eff6ff; /* blue-50 (Very light blue background on hover) */
 }
+.nav-active {
+    color: #1d4ed8; /* Primary Deep Blue for active link */
+    font-weight: 700; /* Bold for active link */
+    border-bottom-width: 2px; /* Thinner, more subtle active indicator */
+    border-color: #1d4ed8;
+    background-color: transparent; /* Ensure no background conflicts with border */
+}
+
 
 /* Content Section Visibility */
 .content-section {
     display: none;
 }
-
 .content-section.active {
     display: block;
 }
+
+/* Card Styles */
+.card {
+    background-color: white;
+    border-radius: 0.75rem; /* rounded-xl */
+    border: 1px solid #e2e8f0; /* slate-200 (Subtle border) */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Softer, more modern shadow */
+    padding: 2rem; /* Adjusted padding */
+    margin-bottom: 2rem; /* Adjusted margin */
+}
+.card h2 { /* Main headings within cards */
+    color: #1e293b; /* slate-800 */
+    border-bottom-color: #60a5fa; /* blue-400 (Lighter blue for accent border) */
+}
+.card h3 { /* Sub-headings within cards */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+.card p, .card li {
+    color: #334155; /* slate-700 (Slightly lighter text for paragraphs) */
+}
+.stat-card {
+    background-color: #f8fafc; /* slate-50 (Very light gray) */
+    padding: 1.5rem;
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e2e8f0; /* slate-200 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.stat-card h4 {
+    color: #475569; /* slate-600 */
+}
+.stat-card p.text-5xl { /* Large stat numbers */
+    color: #2563eb; /* Primary Blue */
+}
+
 
 /* Map Container Styles */
 #simulationMap,
 #clusteringMapViz,
 #optimizationMapViz,
 #profileCreationMap,
-#scenarioComparisonMap { /* Added scenarioComparisonMap for consistency if you plan to use it */
+#scenarioComparisonMap {
     height: 500px;
     min-height: 400px;
-    border-radius: 0.75rem; /* rounded-xl */
+    border-radius: 0.5rem; /* rounded-lg */
     background-color: #e2e8f0; /* slate-200 */
     border: 1px solid #cbd5e1; /* slate-300 */
-    width: 100%; /* Ensure maps take full width of their container */
 }
-
-#profileCreationMap { /* Specific override for profile creation map height */
+#profileCreationMap {
     height: 300px;
     min-height: 250px;
 }
 
 /* Leaflet Popup Styles */
 .leaflet-popup-content-wrapper {
-    border-radius: 0.5rem; /* rounded-lg */
+    border-radius: 0.375rem; /* rounded-md */
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Button Styles */
+/* Button Styles - More Professional & Consistent */
 .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem; /* rounded-lg */
-    font-weight: 600;
-    transition: background-color 0.2s, opacity 0.2s, transform 0.15s, box-shadow 0.15s;
+    padding: 0.625rem 1.25rem; /* Adjusted padding (10px 20px) */
+    border-radius: 0.375rem; /* rounded-md */
+    font-weight: 500; /* Medium weight */
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.1s ease-out, box-shadow 0.15s ease-in-out;
     cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.25;
-    border: none; /* Remove default browser borders */
-    display: inline-flex; /* For aligning text and potential icons */
+    text-transform: none; /* No uppercase for a more modern feel, or keep if preferred */
+    letter-spacing: normal; /* Reset letter spacing */
+    line-height: 1.5;
+    border: 1px solid transparent; /* Base border */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow */
 }
-
 .btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px -3px rgba(0,0,0,0.15);
+    transform: translateY(-1px); /* Subtle lift */
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.07);
 }
-
+.btn:active:not(:disabled) {
+    transform: translateY(0px);
+    box-shadow: inset 0 1px 2px 0 rgba(0,0,0,0.05);
+}
 .btn:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
 .btn-primary {
     background-color: #2563eb; /* blue-600 */
+    border-color: #2563eb;
     color: white;
-    box-shadow: 0 4px 8px -2px rgba(37, 99, 235, 0.4);
 }
 .btn-primary:hover:not(:disabled) {
     background-color: #1d4ed8; /* blue-700 */
+    border-color: #1d4ed8;
 }
 
 .btn-secondary {
     background-color: #475569; /* slate-600 */
+    border-color: #475569;
     color: white;
-    box-shadow: 0 4px 8px -2px rgba(71, 85, 105, 0.3);
 }
 .btn-secondary:hover:not(:disabled) {
     background-color: #334155; /* slate-700 */
+    border-color: #334155;
 }
+/* Alternative secondary: Light gray with dark text */
+/* .btn-secondary {
+    background-color: #e2e8f0; /* slate-200 */
+/* border-color: #cbd5e1; /* slate-300 */
+/* color: #1e293b; /* slate-800 */
+/* }
+.btn-secondary:hover:not(:disabled) {
+    background-color: #cbd5e1; /* slate-300 */
+/* border-color: #94a3b8; /* slate-400 */
+/* } */
+
 
 .btn-danger {
-    background-color: #dc2626; /* red-600 */
+    background-color: #ef4444; /* red-500 */
+    border-color: #ef4444;
     color: white;
-    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.3);
 }
 .btn-danger:hover:not(:disabled) {
-    background-color: #b91c1c; /* red-700 */
+    background-color: #dc2626; /* red-600 */
+    border-color: #dc2626;
 }
 
 .btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.5rem 1rem; /* 8px 16px */
+    font-size: 0.875rem; /* text-sm */
 }
 
-/* Scrollbar Styles for Log Containers */
-.log-container::-webkit-scrollbar { width: 8px; }
-.log-container::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; } /* slate-200 */
-.log-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
-.log-container::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
-
-/* Card Styles */
-.card {
-    background-color: white;
-    border-radius: 0.75rem; /* rounded-xl */
-    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-    padding: 2.5rem; /* p-10 */
-    margin-bottom: 2.5rem; /* mb-10 */
+/* Scrollbar Styles */
+.log-container::-webkit-scrollbar,
+.sector-select-container::-webkit-scrollbar,
+#savedScenariosListContainer::-webkit-scrollbar,
+#savedProfilesListContainer::-webkit-scrollbar {
+    width: 6px;
+}
+.log-container::-webkit-scrollbar-track,
+.sector-select-container::-webkit-scrollbar-track,
+#savedScenariosListContainer::-webkit-scrollbar-track,
+#savedProfilesListContainer::-webkit-scrollbar-track {
+    background: #e2e8f0; /* slate-200 */
+    border-radius: 10px;
+}
+.log-container::-webkit-scrollbar-thumb,
+.sector-select-container::-webkit-scrollbar-thumb,
+#savedScenariosListContainer::-webkit-scrollbar-thumb,
+#savedProfilesListContainer::-webkit-scrollbar-thumb {
+    background: #94a3b8; /* slate-400 */
+    border-radius: 10px;
+}
+.log-container::-webkit-scrollbar-thumb:hover,
+.sector-select-container::-webkit-scrollbar-thumb:hover,
+#savedScenariosListContainer::-webkit-scrollbar-thumb:hover,
+#savedProfilesListContainer::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* slate-500 */
 }
 
-.stat-card { /* Used for smaller stat displays within sections */
-    background-color: #f8fafc; /* slate-50 */
-    padding: 1.5rem; /* p-6 */
-    border-radius: 0.75rem; /* rounded-xl */
-    border: 1px solid #e2e8f0; /* slate-200 */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-}
-
-/* Custom Marker Icon Styles */
+/* Custom Marker Icon Styles (already good, ensure consistency) */
 .marker-icon-base {
     display: flex; align-items: center; justify-content: center;
     font-weight: 700;
     font-size: 12px;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 28px; height: 28px;
     color: white;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     border: 2px solid white;
 }
 .agent-available { background-color: #2563eb; } /* blue-600 */
-.agent-busy { background-color: #ea580c; } /* orange-600 */
-.order-pending { background-color: #16a34a; } /* green-600 */
-.order-assigned { background-color: #facc15; color: #713f12; } /* yellow-400, text-yellow-800 */
+.agent-busy { background-color: #f59e0b; } /* amber-500 (Warmer than orange for busy) */
+
+/* Star marker for orders (from previous update) - ensure colors are consistent */
+.order-star-marker svg text {
+    font-family: 'Inter', sans-serif; /* Ensure consistent font */
+}
 
 /* Range Input Styles */
 input[type="range"] {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 12px;
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px; /* Slimmer track */
     background: #cbd5e1; /* slate-300 */
-    border-radius: 6px; outline: none; cursor: pointer;
+    border-radius: 4px; outline: none; cursor: pointer;
     transition: background 0.15s ease-in-out;
 }
 input[type="range"]:hover {
     background: #94a3b8; /* slate-400 */
 }
 input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none; width: 24px; height: 24px;
+    -webkit-appearance: none; appearance: none; width: 20px; height: 20px; /* Slightly smaller thumb */
     background: #2563eb; /* blue-600 */
-    border-radius: 50%; cursor: pointer; border: 4px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 50%; cursor: pointer; border: 3px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     transition: transform 0.15s ease-in-out;
 }
 input[type="range"]::-webkit-slider-thumb:active {
     transform: scale(1.1);
 }
-input[type="range"]::-moz-range-thumb { /* Firefox */
-    width: 24px; height: 24px; background: #2563eb; /* blue-600 */
-    border-radius: 50%; cursor: pointer; border: 4px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; background: #2563eb;
+    border-radius: 50%; cursor: pointer; border: 3px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 /* Simulation Controls Grid */
 .simulation-controls-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
+    gap: 1.25rem; /* Slightly reduced gap */
     align-items: flex-start;
 }
-
-/* Control Label (for sliders etc.) */
 .control-label {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem; /* mb-2 */
+    margin-bottom: 0.375rem; /* mb-1.5 */
 }
 .control-label label {
-    font-weight: 500; /* font-medium */
-    color: #374151; /* text-slate-700 */
+    font-weight: 500;
+    color: #334155; /* slate-700 */
 }
+.control-label span { /* The value display next to slider label */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+
 
 /* Input Group Styling */
 .input-group {
-    margin-bottom: 1rem; /* mb-4 */
+    margin-bottom: 1rem;
 }
 .input-group label {
     display: block;
-    font-weight: 500; /* font-medium */
-    color: #374151; /* text-slate-700 */
-    margin-bottom: 0.25rem; /* mb-1 */
+    font-weight: 500;
+    color: #334155; /* slate-700 */
+    margin-bottom: 0.25rem;
 }
 .input-group input[type="number"],
 .input-group input[type="text"],
 .input-group select {
     width: 100%;
-    padding: 0.5rem 0.75rem; /* py-2 px-3 */
+    padding: 0.5rem 0.75rem;
     border-radius: 0.375rem; /* rounded-md */
-    border: 1px solid #d1d5db; /* border-slate-300 */
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-    background-color: white; /* Ensure background for inputs */
+    border: 1px solid #cbd5e1; /* slate-300 */
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+    background-color: white;
+    color: #1e293b; /* slate-800 */
 }
 .input-group input[type="number"]:focus,
 .input-group input[type="text"]:focus,
@@ -223,172 +298,158 @@ input[type="range"]::-moz-range-thumb { /* Firefox */
     border-color: #2563eb; /* blue-600 */
     outline: 2px solid transparent;
     outline-offset: 2px;
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.4); /* ring-blue-500/40 */
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25); /* Softer ring */
 }
-.input-group input[type="checkbox"] { /* Specific for checkbox alignment and sizing */
-    width: auto;
-    padding: 0;
+.input-group input[type="checkbox"] {
+    width: 1rem; height: 1rem; /* Standard size */
     margin-right: 0.5rem;
     accent-color: #2563eb; /* blue-600 */
-    height: 1rem; /* Standardize checkbox size */
-    width: 1rem;
+    border-radius: 0.25rem; /* Slightly rounded checkbox */
+    border: 1px solid #94a3b8; /* slate-400 */
 }
-.checkbox-group label { /* For aligning checkbox with its text label */
+.checkbox-group label, .checkbox-label {
      display: inline-flex;
      align-items: center;
      cursor: pointer;
-     font-weight: 500; /* font-medium */
-     color: #374151; /* text-slate-700 */
+     font-weight: normal; /* Normal weight for checkbox labels */
+     color: #334155; /* slate-700 */
 }
+
 
 /* Voronoi Path Styles */
 .voronoi-cell-path {
-    stroke: #0ea5e9; /* sky-500 */
-    stroke-width: 1.5px;
-    fill: none; /* Changed from 'false' to 'none' for clarity */
+    stroke: #06b6d4; /* cyan-500 (Accent color) */
+    stroke-width: 1px; /* Thinner for a cleaner look */
+    fill: none;
     fill-opacity: 0;
-}
-
-/* Checkbox Label (General purpose, e.g., "Show Order Connections") */
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #475569; /* slate-600 */
-}
-.checkbox-label input[type="checkbox"] {
-    cursor: pointer;
-    margin-right: 0.5rem; /* mr-2 */
-    accent-color: #2563eb; /* blue-600 */
 }
 
 /* Stats and Results Containers */
 .simulation-stats-container,
 .optimization-results-container,
-#optimizationComparisonContainer, /* ID for specific table container */
-#scenarioComparisonResultsContainer { /* ID for specific table container */
-    background-color: #e0f2fe; /* sky-100 */
-    border: 1px solid #7dd3fc; /* sky-300 */
-    border-radius: 0.75rem; /* rounded-xl */
-    padding: 1.5rem; /* p-6 */
-    margin-top: 2rem; /* mt-8 */
+#optimizationComparisonContainer,
+#scenarioComparisonResultsContainer {
+    background-color: #f0f9ff; /* blue-50 (Very light blue) */
+    border: 1px solid #bae6fd; /* blue-200 */
+    border-radius: 0.5rem; /* rounded-lg */
+    padding: 1.5rem;
+    margin-top: 2rem;
 }
 .simulation-stats-container h4,
 .optimization-results-container h4,
 #optimizationComparisonContainer h4,
 #scenarioComparisonResultsContainer h4 {
-    color: #0c4a6e; /* sky-800 */
-    margin-bottom: 1rem; /* mb-4 */
-    border-bottom: 2px solid #38bdf8; /* sky-400 */
-    padding-bottom: 0.5rem; /* pb-2 */
-    font-size: 1.5rem; /* text-2xl */
-    font-weight: 600; /* font-semibold */
+    color: #075985; /* sky-700 (Darker blue for heading) */
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #7dd3fc; /* sky-300 */
+    padding-bottom: 0.5rem;
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 600;
     text-align: center;
 }
 
-/* Grid for Stats */
 .simulation-stats-grid,
 .optimization-results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem; /* gap-4 */
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); /* Slightly adjusted minmax */
+    gap: 1rem;
 }
 .simulation-stats-grid p,
 .optimization-results-grid p,
-.optimization-results-container li { /* For lists within optimization results */
-    background-color: #f0f9ff; /* sky-50 */
-    padding: 0.75rem; /* p-3 */
+.optimization-results-container li {
+    background-color: white;
+    padding: 0.75rem;
     border-radius: 0.375rem; /* rounded-md */
-    border: 1px solid #bae6fd; /* sky-200 */
-    font-size: 0.9rem;
-    color: #075985; /* sky-700 */
+    border: 1px solid #e2e8f0; /* slate-200 */
+    font-size: 0.875rem; /* text-sm */
+    color: #334155; /* slate-700 */
 }
 .simulation-stats-grid strong,
 .optimization-results-grid strong,
-.optimization-results-container strong { /* Make strong text more prominent */
-    color: #0369a1; /* sky-600 */
+.optimization-results-container strong {
+    color: #1e3a8a; /* blue-800 (Darker blue for strong text) */
     font-weight: 600;
 }
 
-/* Log Display Styles (Simulation & Optimization) */
+/* Log Display Styles */
 .optimization-log,
 .simulation-log {
-    background-color: #1e293b; /* slate-800 */
-    color: #e2e8f0; /* slate-200 */
-    padding: 1rem; /* p-4 */
-    border-radius: 0.5rem; /* rounded-lg */
-    margin-top: 1rem; /* mt-4 */
+    background-color: #0f172a; /* slate-900 (Very dark for logs) */
+    color: #cbd5e1; /* slate-300 (Light gray text) */
+    padding: 1rem;
+    border-radius: 0.375rem; /* rounded-md */
+    margin-top: 1rem;
     max-height: 350px;
     overflow-y: auto;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.85rem;
-    line-height: 1.4;
+    font-family: 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8125rem; /* 13px */
+    line-height: 1.5;
 }
 .log-message { margin-bottom: 0.25rem; }
-.log-info { color: #93c5fd; } /* sky-300 */
-.log-agent { color: #fdba74; } /* orange-300 */
-.log-order { color: #86efac; } /* green-300 */
-.log-system { color: #fde047; } /* yellow-300 */
-.log-error { color: #fda4af; font-weight: bold;} /* rose-300 */
-.log-system-bold { color: #fde047; font-weight: bold;} /* yellow-300 */
-.log-traffic { color: #a5b4fc; } /* indigo-300 */
-.log-cost { color: #f9a8d4; } /* pink-300 */
+.log-message em { font-style: normal; color: #94a3b8; /* slate-400 for prefixes */ }
+.log-info { color: #60a5fa; } /* blue-400 */
+.log-agent { color: #fbbf24; } /* amber-400 */
+.log-order { color: #34d399; } /* emerald-400 */
+.log-system { color: #a5b4fc; } /* indigo-300 */
+.log-error { color: #f87171; font-weight: bold;} /* red-400 */
+.log-system-bold { color: #a5b4fc; font-weight: bold;}
+.log-traffic { color: #e879f9; } /* fuchsia-400 */
+.log-cost { color: #fb7185; } /* rose-400 */
 
 
 /* Demand Profile Specific Styles */
 .profile-zone {
-    border: 1px solid #e2e8f0; /* slate-200 */
+    border: 1px solid #e2e8f0;
     padding: 1rem;
     margin-bottom: 1rem;
-    border-radius: 0.5rem; /* rounded-lg */
-    background-color: #f8fafc; /* slate-50 */
+    border-radius: 0.375rem;
+    background-color: #f8fafc;
 }
 .sector-select-container {
     max-height: 150px;
     overflow-y: auto;
-    border: 1px solid #d1d5db; /* slate-300 */
-    border-radius: 0.375rem; /* rounded-md */
+    border: 1px solid #cbd5e1; /* slate-300 */
+    border-radius: 0.375rem;
     padding: 0.5rem;
     background-color: white;
 }
-.sector-select-container label { /* For checkboxes within sector select */
+.sector-select-container label {
     display: block;
     margin-bottom: 0.25rem;
-    font-weight: normal; /* Override .input-group label */
-    color: #475569; /* slate-600 */
+    font-weight: normal;
+    color: #475569;
 }
 .sector-select-container label input[type="checkbox"] {
     margin-right: 0.5rem;
 }
 
 
-/* Comparison Table Styles (Workforce Opt & Scenario Analysis) */
+/* Comparison Table Styles */
 .comparison-table-container {
     overflow-x: auto;
     background-color: white;
     border-radius: 0.5rem;
-    border: 1px solid #e2e8f0; /* slate-200 */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 .comparison-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
-    font-size: 0.85rem;
+    /* margin-top: 1rem; Removed, container has margin */
+    font-size: 0.8125rem; /* 13px for denser tables */
 }
 .comparison-table th,
 .comparison-table td {
-    border: 1px solid #cbd5e1; /* slate-300 */
-    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0; /* slate-200 */
+    padding: 0.625rem 0.75rem; /* 10px 12px */
     text-align: left;
     white-space: nowrap;
 }
 .comparison-table th {
-    background-color: #e2e8f0; /* slate-200 */
-    color: #334155; /* slate-700 */
+    background-color: #f1f5f9; /* slate-100 */
+    color: #1e293b; /* slate-800 */
     font-weight: 600;
-    position: sticky; /* For better scrolling on wide tables */
+    position: sticky;
     top: 0;
     z-index: 10;
 }
@@ -396,58 +457,60 @@ input[type="range"]::-moz-range-thumb { /* Firefox */
     background-color: #f8fafc; /* slate-50 */
 }
 .comparison-table tbody tr:hover {
-    background-color: #f1f5f9; /* slate-100 */
+    background-color: #eff6ff; /* blue-50 */
 }
 
-/* Chart Container Styles (Workforce Opt & Simulation Live Charts) */
-.chart-container { /* For Workforce Opt charts */
+/* Chart Container Styles */
+.chart-container {
     margin-top: 1rem;
     padding: 1rem;
     background-color: white;
-    border-radius: 0.5rem; /* rounded-lg */
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
     min-height: 300px;
 }
-.live-chart-container { /* For Simulation live charts */
+.live-chart-container {
      margin-top: 1rem;
      padding: 0.75rem;
-     background-color: #f9fafb; /* gray-50 */
-     border-radius: 0.5rem; /* rounded-lg */
-     border: 1px solid #e5e7eb; /* gray-200 */
-     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-     min-height: 250px; /* Slightly smaller for live view */
+     background-color: #f8fafc; /* slate-50 */
+     border-radius: 0.5rem;
+     border: 1px solid #e2e8f0;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+     min-height: 250px;
 }
-.live-chart-container h5, .chart-container h4 { /* Chart titles */
+.live-chart-container h5, .chart-container h4 {
     text-align: center;
-    font-size: 0.9rem;
-    color: #4b5563; /* gray-600 */
-    margin-bottom: 0.5rem;
+    font-size: 0.875rem; /* text-sm */
+    color: #475569; /* slate-600 */
+    margin-bottom: 0.75rem; /* Increased margin */
     font-weight: 600;
 }
-.chart-container h4 { /* Workforce opt chart titles slightly larger */
-    font-size: 1.125rem; /* text-xl */
-    color: #374151; /* slate-700 */
+.chart-container h4 {
+    font-size: 1rem; /* text-base for main chart titles */
+    color: #1e293b; /* slate-800 */
 }
 
 
-/* Saved Scenarios List (Scenario Analysis & Demand Profiles) */
-#savedScenariosListContainer, /* For Scenario Analysis */
-#savedProfilesListContainer {  /* For Demand Profiles */
+/* Saved Scenarios/Profiles List */
+#savedScenariosListContainer,
+#savedProfilesListContainer {
     max-height: 400px;
     overflow-y: auto;
-    background-color: #f8fafc; /* slate-50 */
-    padding: 1rem;
-    border-radius: 0.5rem; /* rounded-lg */
-    border: 1px solid #e2e8f0; /* slate-200 */
+    background-color: #f8fafc;
+    padding: 0.75rem; /* Adjusted padding */
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
 }
 #savedScenariosListContainer li,
-#savedProfilesListContainer ul li { /* Target li inside the ul for profiles */
-    padding: 0.5rem;
-    border-bottom: 1px solid #e2e8f0; /* slate-200 */
+#savedProfilesListContainer ul li {
+    padding: 0.625rem 0.5rem; /* Adjusted padding */
+    border-bottom: 1px solid #e2e8f0;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background-color 0.15s ease-in-out;
 }
  #savedScenariosListContainer li:last-child,
  #savedProfilesListContainer ul li:last-child {
@@ -455,41 +518,54 @@ input[type="range"]::-moz-range-thumb { /* Firefox */
 }
 #savedScenariosListContainer li:hover,
 #savedProfilesListContainer ul li:hover {
-    background-color: #f1f5f9; /* slate-100 */
+    background-color: #eff6ff; /* blue-50 */
 }
-#savedScenariosListContainer li input[type="checkbox"] { /* Checkbox in scenario list */
+#savedScenariosListContainer li input[type="checkbox"] {
     margin-right: 0.75rem;
-    accent-color: #2563eb; /* blue-600 */
+    accent-color: #2563eb;
     height: 1rem; width: 1rem;
 }
 
-/* Cost KPI Grid (Simulation & Optimization) */
+/* Cost KPI Grid */
 .cost-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Adjusted minmax */
     gap: 1rem;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px dashed #cbd5e1; /* slate-300 */
+    border-top: 1px dashed #cbd5e1;
 }
 .cost-kpi-grid p {
     background-color: #eff6ff; /* blue-50 */
-    border-left: 4px solid #2563eb; /* blue-600 */
-    padding: 0.75rem; /* p-3 */
-    border-radius: 0.375rem; /* rounded-md */
-    font-size: 0.9rem;
-    color: #1e40af; /* blue-800 */
+    border-left: 3px solid #2563eb; /* Primary blue accent */
+    padding: 0.75rem;
+    border-radius: 0.25rem; /* Slightly less rounded */
+    font-size: 0.875rem;
+    color: #1e3a8a; /* blue-800 */
 }
 .cost-kpi-grid strong {
-    color: #1e3a8a; /* blue-700 */
+    color: #1e40af; /* blue-700 */
     font-weight: 600;
 }
 
 /* Footer Specifics */
+footer {
+    background-color: #0f172a; /* slate-900 */
+    color: #94a3b8; /* slate-400 */
+}
+footer p.text-slate-300 { color: #cbd5e1; /* slate-300 */ }
 #sectorCoordinatesContainer {
-    /* Tailwind classes are in HTML, but ensure it's hidden by default if JS fails */
-    /* max-width, mx-auto, bg, p, rounded, text-sm are handled by Tailwind */
+    background-color: #1e293b; /* slate-800 */
 }
 #sectorCoordinatesList {
-    /* Tailwind classes for text color and whitespace are in HTML */
+    color: #94a3b8; /* slate-400 */
 }
+
+/* Alert/Info boxes in section descriptions */
+div[role="alert"] { /* General styling for the explanation boxes */
+    font-size: 0.9rem; /* text-sm for Tailwind */
+}
+div[role="alert"] p.font-bold {
+    font-size: 1rem; /* text-base for Tailwind */
+}
+
