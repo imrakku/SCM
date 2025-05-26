@@ -36,6 +36,8 @@ let currentSimulationTime = 0;
 let orderIdCounter = 0;
 let agentIdCounter = 1;
 let isSimulationRunning = false;
+
+// --- Heatmap Specific State ---
 let deliveryTimeHeatmapLayer = null;
 let deliveredOrderDataForHeatmap = [];
 
@@ -85,7 +87,7 @@ let liveChartData = {
     activeAgentsHistory: [],
 };
 
-// --- DOM Elements (will be cached in initializeSimulationSection) ---
+// --- DOM Elements ---
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -97,8 +99,6 @@ let statsTotalOrdersGeneratedEl, statsTotalOrdersDeliveredEl, statsAvgDeliveryTi
 let toggleDeliveryTimeHeatmapCheckboxEl;
 
 
-// --- Function Definitions ---
-
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
@@ -109,7 +109,6 @@ export function setSimParameter(key, value) {
         console.warn(`[Sim] Attempted to set unknown simulation parameter: ${key}`);
     }
 }
-
 export function getSimParameter(key) {
     return simParams.hasOwnProperty(key) ? simParams[key] : undefined;
 }
@@ -260,6 +259,8 @@ function resetSimulationState() {
     }
     if (toggleDeliveryTimeHeatmapCheckboxEl) {
         toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        // Disable checkbox if heatmap layer itself is null (failed to init)
+        toggleDeliveryTimeHeatmapCheckboxEl.disabled = (deliveryTimeHeatmapLayer === null);
     }
 
     for (let key in stats) {
@@ -325,11 +326,15 @@ function resetSimulation() {
 function toggleDeliveryTimeHeatmapDisplay() {
     if (!simulationMap) {
         console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
         return;
     }
     if (!deliveryTimeHeatmapLayer) {
         console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
-        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        if (toggleDeliveryTimeHeatmapCheckboxEl) {
+            toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+            toggleDeliveryTimeHeatmapCheckboxEl.disabled = true; // Keep it disabled
+        }
         return;
     }
 
@@ -360,7 +365,7 @@ function updateDeliveryTimeHeatmapData() {
     const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
         lat: d.lat, lng: d.lng, value: d.value
     }));
-    deliveryTimeHeatmapLayer.setData(heatmapPoints);
+    deliveryTimeHeatmapLayer.setData(heatmapPoints); // For useLocalExtrema: true
 }
 
 // --- CORE SIMULATION LOGIC ---
@@ -757,39 +762,6 @@ export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap] };
 }
 
-// This function MUST be exported for demandProfiles.js
-export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
-    if (!orderGenerationProfileSelectEl) {
-        // Attempt to cache it if not already done (e.g. if demandProfiles init runs before sim init fully)
-        orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
-        if (!orderGenerationProfileSelectEl) {
-            console.warn("[Sim] Order generation profile select element ('orderGenerationProfileSelect') not found during populate.");
-            return;
-        }
-    }
-
-    const currentVal = orderGenerationProfileSelectEl.value;
-    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
-    orderGenerationProfileSelectEl.innerHTML = '';
-    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
-
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported from demandProfiles.js
-    
-    profilesToUse.forEach(profile => {
-        const option = document.createElement('option');
-        option.value = `custom_${profile.name}`;
-        option.textContent = `Custom: ${profile.name}`;
-        orderGenerationProfileSelectEl.appendChild(option);
-    });
-
-    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
-        orderGenerationProfileSelectEl.value = currentVal;
-    } else {
-        orderGenerationProfileSelectEl.value = 'default_uniform';
-    }
-    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
-}
-
 // Main initialization function for this module, called by navigation.js
 export function initializeSimulationSection() {
     // Cache standard DOM elements
@@ -799,7 +771,7 @@ export function initializeSimulationSection() {
     startSimBtnEl = document.getElementById('startSimBtn');
     pauseSimBtnEl = document.getElementById('pauseSimBtn');
     resetSimBtnEl = document.getElementById('resetSimBtn');
-    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect'); // Crucial for populateOrderGenerationProfileSelectorSim
+    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
     uniformOrderRadiusContainerEl = document.getElementById('uniformOrderRadiusContainer');
     defaultOrderFocusRadiusContainerEl = document.getElementById('defaultOrderFocusRadiusContainer');
     defaultOrderSpreadContainerEl = document.getElementById('defaultOrderSpreadContainer');
@@ -813,7 +785,7 @@ export function initializeSimulationSection() {
     statsAvgAgentUtilizationEl = document.getElementById('statsAvgAgentUtilization');
     statsTotalAgentTravelTimeEl = document.getElementById('statsTotalAgentTravelTime');
     statsTotalAgentHandlingTimeEl = document.getElementById('statsTotalAgentHandlingTime');
-    statsTotalSimTimeEl = document.getElementById('statsTotalSimTime');
+    statsTotalSimTimeEl = document.getElementById('statsTotalSimTime'); // Make sure this ID exists in HTML for stats
     statsTotalAgentLaborCostEl = document.getElementById('statsTotalAgentLaborCost');
     statsTotalTravelCostEl = document.getElementById('statsTotalTravelCost');
     statsTotalFixedDeliveryCostsEl = document.getElementById('statsTotalFixedDeliveryCosts');
@@ -835,11 +807,13 @@ export function initializeSimulationSection() {
             });
             console.log("[Sim] L.heatLayer is available. Heatmap layer initialized.");
         } else {
-            console.error("[Sim] L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or leaflet-heatmap script is missing.");
+            console.error("[Sim] CRITICAL: L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or is missing. Heatmap functionality will be disabled.");
             deliveryTimeHeatmapLayer = null;
+            if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true; // Disable checkbox
         }
     } else {
-        console.error("Simulation map failed to initialize!");
+        console.error("[Sim] CRITICAL: Simulation map failed to initialize!");
+        if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true; // Disable checkbox if map fails
     }
 
     initializeLiveCharts();
@@ -870,8 +844,13 @@ export function initializeSimulationSection() {
         }
     });
 
-    populateOrderGenerationProfileSelectorSim(); // Initial population
-    resetSimulationState();
+    // Initial population of the order profile selector
+    // This needs access to getCustomDemandProfiles, which is in demandProfiles.js
+    // It's better if demandProfiles.js calls this function when its own profiles are loaded/updated.
+    // For now, ensure it's called after DOM elements are cached.
+    populateOrderGenerationProfileSelectorSim();
+    resetSimulationState(); // This will also call createAgent and update UI
     toggleSimConfigLock(false);
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
 }
+
