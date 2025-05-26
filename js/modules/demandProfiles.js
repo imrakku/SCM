@@ -2,31 +2,27 @@
 import { chandigarhSectors, chandigarhCenter } from '../data/chandigarhData.js';
 import { initializeMap, getMapInstance } from '../mapUtils.js';
 import { logMessage } from '../logger.js';
-// Import a function from simulation.js to update its profile selector
-// We'll need to ensure simulation.js exports this: populateOrderGenerationProfileSelectorSim
+// Correctly import the function from simulation.js
 import { populateOrderGenerationProfileSelectorSim } from './simulation.js';
 
 
 // Module-specific state
-let demandProfilesMap; // Leaflet map instance for this section
-let customDemandProfiles = []; // Array to store saved profiles
-let zoneCounter = 0; // For uniquely identifying zones in the form
-let currentEditingZoneId = null; // Tracks which zone's hotspot/route is being edited on the map
-let tempProfileZoneMarkers = []; // Markers for hotspot centers or route points during creation
-let currentRoutePoints = []; // For drawing a route segment interactively
-let currentRoutePolylineLayer = null; // Leaflet layer for the current route being drawn
+let demandProfilesMap;
+let customDemandProfiles = [];
+let zoneCounter = 0;
+let currentEditingZoneId = null;
+let tempProfileZoneMarkers = [];
+let currentRoutePoints = [];
+let currentRoutePolylineLayer = null;
 
 // DOM Elements
 let profileNameInputEl, profileZonesContainerEl, addZoneToProfileBtnEl;
 let saveProfileBtnEl, clearProfileFormBtnEl, savedProfilesListEl;
 let profileCreationMapContainerEl, finishCurrentRouteBtnEl;
-let simulationLogEl; // For logging profile actions if no dedicated log area
+let simulationLogEl;
 
-/**
- * Initializes the Demand Profiles section.
- */
+
 export function initializeDemandProfilesSection() {
-    // Cache DOM elements
     profileNameInputEl = document.getElementById('profileNameInput');
     profileZonesContainerEl = document.getElementById('profileZonesContainer');
     addZoneToProfileBtnEl = document.getElementById('addZoneToProfileBtn');
@@ -34,39 +30,39 @@ export function initializeDemandProfilesSection() {
     clearProfileFormBtnEl = document.getElementById('clearProfileFormBtn');
     savedProfilesListEl = document.getElementById('savedProfilesList');
     profileCreationMapContainerEl = document.getElementById('profileCreationMapContainer');
-    finishCurrentRouteBtnEl = document.getElementById('finishCurrentRouteBtn'); // Assuming this button exists for finishing routes
-
-    // Use the main simulation log if a dedicated one isn't present for this section
+    finishCurrentRouteBtnEl = document.getElementById('finishCurrentRouteBtn');
     simulationLogEl = document.getElementById('simulationLog');
 
-
-    // Initialize map for profile creation
     demandProfilesMap = initializeMap('profileCreationMap', chandigarhCenter, 12, 'demandProfiles');
-    demandProfilesMap.on('click', handleProfileMapClick);
+    if (demandProfilesMap) { // Ensure map was initialized before adding listener
+        demandProfilesMap.on('click', handleProfileMapClick);
+    } else {
+        console.error("Demand profiles map failed to initialize!");
+    }
 
-    // Event Listeners
+
     addZoneToProfileBtnEl?.addEventListener('click', addZoneToProfileForm);
     saveProfileBtnEl?.addEventListener('click', saveCustomDemandProfile);
     clearProfileFormBtnEl?.addEventListener('click', clearProfileForm);
     finishCurrentRouteBtnEl?.addEventListener('click', finishCurrentRouteSegment);
 
-
-    // Load existing profiles from session storage and display them
     loadProfilesFromSessionStorage();
     updateSavedProfilesListUI();
-    // Also update the simulation's profile selector
-    populateOrderGenerationProfileSelectorSim(customDemandProfiles);
+    // Ensure the simulation module's selector is also updated if it's already initialized
+    // This might be better handled by navigation.js ensuring simulation.js updates its own selector
+    // when the simulation tab becomes active after demand profiles have changed.
+    // For now, directly calling it here.
+    if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
+        populateOrderGenerationProfileSelectorSim(customDemandProfiles);
+    } else {
+        console.warn("populateOrderGenerationProfileSelectorSim is not available from simulation.js for demandProfiles init.");
+    }
 }
 
-/**
- * Handles clicks on the profile creation map to set hotspot centers or route points.
- * @param {L.LeafletMouseEvent} e The Leaflet map click event.
- */
 function handleProfileMapClick(e) {
     if (currentEditingZoneId) {
         const zoneDiv = document.querySelector(`.profile-zone[data-zone-id="${currentEditingZoneId}"]`);
         if (!zoneDiv) return;
-
         const zoneTypeSelect = zoneDiv.querySelector('.zone-type-select');
         if (!zoneTypeSelect) return;
 
@@ -88,16 +84,13 @@ function handleProfileMapClick(e) {
     }
 }
 
-/**
- * Adds a new zone configuration form to the profile creation UI.
- */
 function addZoneToProfileForm() {
     zoneCounter++;
     const currentZoneId = zoneCounter;
     if (profileCreationMapContainerEl) profileCreationMapContainerEl.classList.remove('hidden');
 
     const zoneDiv = document.createElement('div');
-    zoneDiv.className = 'profile-zone'; // Tailwind classes are in main CSS
+    zoneDiv.className = 'profile-zone';
     zoneDiv.setAttribute('data-zone-id', currentZoneId);
     zoneDiv.innerHTML = `
         <div class="flex justify-between items-center mb-2">
@@ -183,13 +176,13 @@ function addZoneToProfileForm() {
         routeFieldsDiv.classList.toggle('hidden', zoneTypeSelect.value !== 'route');
         currentEditingZoneId = (zoneTypeSelect.value === 'hotspot' || zoneTypeSelect.value === 'route') ? currentZoneId.toString() : null;
         if (zoneTypeSelect.value !== 'route') {
-            currentRoutePoints = []; // Clear route points if not a route type
+            currentRoutePoints = [];
             if (finishCurrentRouteBtnEl) finishCurrentRouteBtnEl.classList.add('hidden');
         }
         updateProfileMapVisuals();
     }
     zoneTypeSelect.addEventListener('change', toggleZoneFieldsUI);
-    toggleZoneFieldsUI(); // Initial call
+    toggleZoneFieldsUI();
 
     zoneDiv.querySelector('.remove-zone-btn').addEventListener('click', function() {
         zoneDiv.remove();
@@ -201,15 +194,15 @@ function addZoneToProfileForm() {
 
     zoneDiv.querySelectorAll('.hotspot-lat-input, .hotspot-lng-input, input[id^="zoneSpread"]').forEach(input => {
         input.addEventListener('input', () => { currentEditingZoneId = currentZoneId.toString(); updateProfileMapVisuals(); });
-        input.addEventListener('focus', () => { currentEditingZoneId = currentZoneId.toString(); }); // Set current zone for map click
+        input.addEventListener('focus', () => { currentEditingZoneId = currentZoneId.toString(); });
     });
 
     zoneDiv.querySelector('.start-add-route-btn').addEventListener('click', function() {
          currentEditingZoneId = this.dataset.zoneId;
-         currentRoutePoints = []; // Reset for new route definition for this zone
+         currentRoutePoints = [];
          const routePointsInput = document.getElementById(`zoneRoutePoints${currentEditingZoneId}`);
          if(routePointsInput) routePointsInput.value = '';
-         logMessage(`Started defining route for Zone ${currentEditingZoneId}. Click on the map.`, 'SYSTEM', simulationLogEl);
+         if(simulationLogEl) logMessage(`Started defining route for Zone ${currentEditingZoneId}. Click on the map.`, 'SYSTEM', simulationLogEl);
          updateProfileMapVisuals();
          if (finishCurrentRouteBtnEl) finishCurrentRouteBtnEl.classList.remove('hidden');
     });
@@ -220,19 +213,14 @@ function addZoneToProfileForm() {
         }
         const routePointsInput = document.getElementById(`zoneRoutePoints${zoneIdToClear}`);
         if(routePointsInput) routePointsInput.value = '';
-        updateProfileMapVisuals(); // This will clear visuals if currentEditingZoneId matches
+        updateProfileMapVisuals();
     });
 
     updateProfileMapVisuals();
 }
 
-/**
- * Updates markers and polylines on the profile creation map based on current form inputs.
- */
 function updateProfileMapVisuals() {
     if (!demandProfilesMap) return;
-
-    // Clear previous temporary markers/layers
     tempProfileZoneMarkers.forEach(marker => marker.remove());
     tempProfileZoneMarkers = [];
     if (currentRoutePolylineLayer) {
@@ -249,13 +237,12 @@ function updateProfileMapVisuals() {
             const lat = parseFloat(zoneDiv.querySelector('.hotspot-lat-input').value);
             const lng = parseFloat(zoneDiv.querySelector('.hotspot-lng-input').value);
             const spreadKm = parseFloat(zoneDiv.querySelector('input[id^="zoneSpread"]').value);
-
             if (!isNaN(lat) && !isNaN(lng) && !isNaN(spreadKm) && spreadKm > 0) {
                 const marker = L.marker([lat, lng]).addTo(demandProfilesMap)
                     .bindPopup(`Hotspot Center (Zone ${zoneId})<br>Spread: ${spreadKm} km`);
                 if (zoneId === currentEditingZoneId) marker.openPopup();
                 const circle = L.circle([lat, lng], {
-                    radius: spreadKm * 1000, // meters
+                    radius: spreadKm * 1000,
                     color: 'red', fillColor: '#f03', fillOpacity: 0.2, interactive: false
                 }).addTo(demandProfilesMap);
                 tempProfileZoneMarkers.push(marker, circle);
@@ -275,43 +262,30 @@ function updateProfileMapVisuals() {
     demandProfilesMap.invalidateSize();
 }
 
-/**
- * Finalizes the current route segment being drawn.
- * (Currently, this might just hide the button or could be used for more complex route logic)
- */
 function finishCurrentRouteSegment() {
-    logMessage(`Route segment for Zone ${currentEditingZoneId} finalized with ${currentRoutePoints.length} points.`, 'SYSTEM', simulationLogEl);
-    // currentEditingZoneId = null; // Or keep it for further edits until another zone is selected
+    if(simulationLogEl) logMessage(`Route segment for Zone ${currentEditingZoneId} finalized with ${currentRoutePoints.length} points.`, 'SYSTEM', simulationLogEl);
     if (finishCurrentRouteBtnEl) finishCurrentRouteBtnEl.classList.add('hidden');
-    // The route points are already in the textarea.
 }
 
-
-/**
- * Saves the currently defined custom demand profile to session storage and updates UI lists.
- */
 function saveCustomDemandProfile() {
     const profileName = profileNameInputEl?.value.trim();
     if (!profileName) {
         alert("Please enter a name for the profile.");
         return;
     }
-
     const existingProfileIndex = customDemandProfiles.findIndex(p => p.name === profileName);
     if (existingProfileIndex !== -1) {
         if (!confirm(`A profile named "${profileName}" already exists. Overwrite it?`)) {
              return;
          }
-        customDemandProfiles.splice(existingProfileIndex, 1); // Remove old to overwrite
+        customDemandProfiles.splice(existingProfileIndex, 1);
     }
-
     const zones = [];
     const zoneDivs = profileZonesContainerEl?.querySelectorAll('.profile-zone');
     if (!zoneDivs || zoneDivs.length === 0) {
         alert("Please add at least one zone to the profile.");
         return;
     }
-
     let profileIsValid = true;
     zoneDivs.forEach(zoneDiv => {
         if (!profileIsValid) return;
@@ -322,8 +296,7 @@ function saveCustomDemandProfile() {
         const endTimeInput = zoneDiv.querySelector('input[id^="zoneEndTime"]').value;
         const endTime = endTimeInput === '' || isNaN(parseInt(endTimeInput)) ? Infinity : parseInt(endTimeInput);
 
-
-        if (minOrders > maxOrders && maxOrders !== 0) { // Allow maxOrders = 0 if minOrders is also 0 (effectively disabled)
+        if (minOrders > maxOrders && maxOrders !== 0) {
             alert(`Min Orders (${minOrders}) cannot be greater than Max Orders (${maxOrders}) for a zone in profile "${profileName}".`);
             profileIsValid = false; return;
         }
@@ -331,9 +304,7 @@ function saveCustomDemandProfile() {
              alert(`Start Time (${startTime}) cannot be greater than End Time (${endTime}) for a zone in profile "${profileName}".`);
             profileIsValid = false; return;
         }
-
         let zoneData = { type, minOrders, maxOrders, startTime, endTime };
-
         if (type === 'hotspot') {
             const centerLat = parseFloat(zoneDiv.querySelector('.hotspot-lat-input').value);
             const centerLng = parseFloat(zoneDiv.querySelector('.hotspot-lng-input').value);
@@ -370,24 +341,20 @@ function saveCustomDemandProfile() {
             const routeSpreadKm = parseFloat(zoneDiv.querySelector('input[id^="zoneRouteSpread"]').value) || 0.5;
             zoneData = { ...zoneData, routePoints, routeSpreadKm };
         }
-        // 'uniform' type needs no extra data beyond common fields
         zones.push(zoneData);
     });
 
     if (!profileIsValid) return;
-
     customDemandProfiles.push({ name: profileName, zones: zones });
-    logMessage(`Custom demand profile "${profileName}" saved with ${zones.length} zone(s).`, 'PROFILE_SAVE', simulationLogEl);
+    if(simulationLogEl) logMessage(`Custom demand profile "${profileName}" saved with ${zones.length} zone(s).`, 'PROFILE_SAVE', simulationLogEl);
     saveProfilesToSessionStorage();
     updateSavedProfilesListUI();
-    populateOrderGenerationProfileSelectorSim(customDemandProfiles); // Update simulation selector
+    if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
+        populateOrderGenerationProfileSelectorSim(customDemandProfiles);
+    }
     clearProfileForm();
 }
 
-
-/**
- * Clears the demand profile creation form.
- */
 function clearProfileForm() {
     if (profileNameInputEl) profileNameInputEl.value = '';
     if (profileZonesContainerEl) profileZonesContainerEl.innerHTML = '';
@@ -406,9 +373,6 @@ function clearProfileForm() {
     if (finishCurrentRouteBtnEl) finishCurrentRouteBtnEl.classList.add('hidden');
 }
 
-/**
- * Updates the list of saved profiles in the UI.
- */
 function updateSavedProfilesListUI() {
     if (!savedProfilesListEl) return;
     savedProfilesListEl.innerHTML = '';
@@ -418,14 +382,13 @@ function updateSavedProfilesListUI() {
     }
     customDemandProfiles.forEach((profile) => {
         const li = document.createElement('li');
-        // Tailwind classes are in main CSS
         li.innerHTML = `
             <span class="font-medium text-slate-700 hover:text-blue-600 flex-grow">${profile.name} (${profile.zones.length} zones)</span>
             <button type="button" class="btn btn-secondary btn-sm text-xs load-profile-btn ml-2">Load</button>
             <button type="button" class="btn btn-danger btn-sm text-xs delete-profile-btn ml-2">Delete</button>
         `;
         li.querySelector('.load-profile-btn').addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent li click if any
+            e.stopPropagation();
             loadProfileForEditing(profile.name);
         });
         li.querySelector('.delete-profile-btn').addEventListener('click', (e) => {
@@ -436,33 +399,24 @@ function updateSavedProfilesListUI() {
     });
 }
 
-/**
- * Loads a saved profile into the form for editing.
- * @param {string} profileName The name of the profile to load.
- */
 function loadProfileForEditing(profileName) {
     const profile = customDemandProfiles.find(p => p.name === profileName);
     if (!profile) return;
-
     clearProfileForm();
     if (profileNameInputEl) profileNameInputEl.value = profile.name;
 
     profile.zones.forEach(zoneData => {
-        addZoneToProfileForm(); // This increments zoneCounter and creates a new zone form
-        const newZoneDiv = profileZonesContainerEl?.lastElementChild; // Get the newly added zone div
+        addZoneToProfileForm();
+        const newZoneDiv = profileZonesContainerEl?.lastElementChild;
         if (newZoneDiv) {
-            const currentZoneId = newZoneDiv.dataset.zoneId; // Get the ID of the new zone
+            const currentZoneId = newZoneDiv.dataset.zoneId;
             newZoneDiv.querySelector('.zone-type-select').value = zoneData.type;
-
-            // Trigger change to show/hide correct fields
             newZoneDiv.querySelector('.zone-type-select').dispatchEvent(new Event('change'));
-
             newZoneDiv.querySelector(`input[id^="zoneMinOrders"]`).value = zoneData.minOrders;
             newZoneDiv.querySelector(`input[id^="zoneMaxOrders"]`).value = zoneData.maxOrders;
             newZoneDiv.querySelector(`input[id^="zoneStartTime"]`).value = zoneData.startTime;
-            const endTimeVal = zoneData.endTime === Infinity ? '' : zoneData.endTime; // Handle Infinity for input
+            const endTimeVal = zoneData.endTime === Infinity ? '' : zoneData.endTime;
             newZoneDiv.querySelector(`input[id^="zoneEndTime"]`).value = endTimeVal;
-
 
             if (zoneData.type === 'hotspot') {
                 newZoneDiv.querySelector('.hotspot-lat-input').value = zoneData.centerLat;
@@ -477,32 +431,25 @@ function loadProfileForEditing(profileName) {
                 const routePointsInput = newZoneDiv.querySelector('textarea[id^="zoneRoutePoints"]');
                 if (routePointsInput) routePointsInput.value = JSON.stringify(zoneData.routePoints || []);
                 newZoneDiv.querySelector('input[id^="zoneRouteSpread"]').value = zoneData.routeSpreadKm || 0.5;
-                // Set currentRoutePoints if this is the zone being actively edited on map (might need more logic here)
-                // For now, just populating the textarea is enough for saving. Map interaction would re-init currentRoutePoints.
             }
         }
     });
     if (profileCreationMapContainerEl) profileCreationMapContainerEl.classList.remove('hidden');
-    updateProfileMapVisuals(); // Update map based on loaded data
+    updateProfileMapVisuals();
 }
 
-/**
- * Deletes a custom demand profile.
- * @param {string} profileName The name of the profile to delete.
- */
 function deleteCustomProfile(profileName) {
     if (confirm(`Are you sure you want to delete the profile "${profileName}"?`)) {
         customDemandProfiles = customDemandProfiles.filter(p => p.name !== profileName);
         saveProfilesToSessionStorage();
         updateSavedProfilesListUI();
-        populateOrderGenerationProfileSelectorSim(customDemandProfiles); // Update simulation selector
-        logMessage(`Custom demand profile "${profileName}" deleted.`, 'PROFILE_DELETE', simulationLogEl);
+        if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
+            populateOrderGenerationProfileSelectorSim(customDemandProfiles);
+        }
+        if(simulationLogEl) logMessage(`Custom demand profile "${profileName}" deleted.`, 'PROFILE_DELETE', simulationLogEl);
     }
 }
 
-/**
- * Saves the current list of customDemandProfiles to session storage.
- */
 function saveProfilesToSessionStorage() {
     try {
         sessionStorage.setItem('customDemandProfiles', JSON.stringify(customDemandProfiles));
@@ -512,9 +459,6 @@ function saveProfilesToSessionStorage() {
     }
 }
 
-/**
- * Loads profiles from session storage into the `customDemandProfiles` array.
- */
 function loadProfilesFromSessionStorage() {
     try {
         const storedProfiles = sessionStorage.getItem('customDemandProfiles');
@@ -523,12 +467,11 @@ function loadProfilesFromSessionStorage() {
         }
     } catch (e) {
         console.error("Error loading profiles from session storage:", e);
-        customDemandProfiles = []; // Reset to empty if storage is corrupted
+        customDemandProfiles = [];
         sessionStorage.removeItem('customDemandProfiles');
     }
 }
 
-// Export any functions needed by other modules, e.g., if simulation needs to get profile data directly
 export function getCustomDemandProfiles() {
-    return [...customDemandProfiles]; // Return a copy
+    return [...customDemandProfiles];
 }
