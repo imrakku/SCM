@@ -49,7 +49,6 @@
                 <p class="mb-8 text-lg leading-relaxed text-slate-600">
                     The overarching goal is to furnish data-driven, actionable insights that promote efficient resource allocation, reduce delivery lead times, enhance operational resilience, and ultimately improve customer satisfaction in complex urban delivery networks.
                 </p>
-
                 <div class="bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-8 rounded-xl border border-blue-200 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-800">Project Lead</h3>
                     <ul class="list-none space-y-1.5 text-slate-700 text-lg">
@@ -74,7 +73,6 @@
                 <p class="mb-6 leading-relaxed text-slate-600">
                     Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.
                 </p>
-                
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
@@ -92,7 +90,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="grid md:grid-cols-2 gap-8 mb-10">
                     <div class="stat-card text-center p-8">
                         <h4 class="font-semibold text-xl mb-2 text-slate-500">Total Orders Simulated</h4>
@@ -135,7 +132,6 @@
                 <p class="mb-6 leading-relaxed text-slate-600">
                     Define custom order generation profiles by combining uniform demand, specific hotspot zones, sector-based demand, or route-based demand. These profiles can then be selected in the "Simulation" tab. Saved profiles are available for the current browser session.
                 </p>
-
                 <div class="grid md:grid-cols-2 gap-8">
                     <div>
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
@@ -143,10 +139,8 @@
                             <label for="profileNameInput">Profile Name:</label>
                             <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
                         </div>
-                        
                         <div id="profileZonesContainer" class="space-y-4 mb-4">
                             </div>
-
                         <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
                         <div class="flex space-x-2">
                             <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
@@ -175,7 +169,6 @@
         <section id="simulation" class="content-section">
             <div class="card">
                 <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Interactive Delivery Simulation</h2>
-                
                 <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
                     <div class="simulation-controls-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -221,8 +214,7 @@
                                 <option value="default_focused">Default: Focused Around Dark Store</option>
                                 </select>
                         </div>
-                        <div id="uniformOrderRadiusContainer" class="input-group hidden">
-                            <div class="control-label">
+                        <div id="uniformOrderRadiusContainer" class="input-group hidden"> <div class="control-label">
                                 <label for="uniformOrderRadiusKmSlider" class="block text-md font-medium text-slate-700">Uniform Order Radius (km):</label>
                                 <span id="uniformOrderRadiusKmValue" class="font-bold text-xl text-blue-700">5</span>
                             </div>
@@ -273,16 +265,13 @@
                         </div>
                     </div>
                 </div>
-
                 <p class="mb-8 leading-relaxed text-slate-600 text-lg">
                     Adjust simulation parameters above. Click "Start Simulation" to observe agents and orders on the map. Agent routes are simplified for this web demonstration.
                 </p>
-                
                 <div class="text-center text-slate-600 mb-4">
-                    Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl text-slate-800">0</span> minutes 
+                    Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl text-slate-800">0</span> minutes
                     (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)
                 </div>
-
                 <div class="grid lg:grid-cols-3 gap-x-8 gap-y-8">
                     <div class="lg:col-span-2 space-y-6">
                         <div id="simulationMap" class="w-full shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
@@ -302,7 +291,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="lg:col-span-1 space-y-6">
                         <div class="stat-card">
                             <h4 class="font-semibold text-xl mb-3 text-slate-700">Agent Status</h4>
@@ -359,7 +347,6 @@
                 <p class="mb-6 leading-relaxed text-slate-600">
                     This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated within a specified radius around this store. Cost parameters are taken from the Simulation page.
                 </p>
-
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
                     <div class="grid md:grid-cols-2 gap-6">
@@ -389,7 +376,7 @@
                             <label for="optMaxAgents">Max Agents to Test:</label>
                             <input type="number" id="optMaxAgents" value="15" min="1" max="25" step="1" class="w-full">
                         </div>
-                         <div class="input-group md:col-span-2"> 
+                         <div class="input-group md:col-span-2">
                             <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
                             <input type="number" id="optMaxSimTimePerIteration" value="120" min="1" step="1" class="w-full">
                         </div>
@@ -398,12 +385,10 @@
                         <button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button>
                     </div>
                 </div>
-                
                 <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden">
                      <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Best Agent Count)</h4>
                     <div id="optimizationMapViz" class="w-full"></div>
                 </div>
-
                 <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Iteration Comparison Table</h4>
                     <div class="comparison-table-container">
@@ -429,7 +414,6 @@
                         </table>
                     </div>
                 </div>
-
                  <div id="optimizationChartsContainer" class="hidden mt-8 grid md:grid-cols-2 gap-6">
                     <div class="chart-container">
                         <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4>
@@ -448,8 +432,6 @@
                         <canvas id="avgOrderWaitTimeChart"></canvas>
                     </div>
                 </div>
-
-
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Optimization Results (Best Scenario)</h4>
                     <div class="optimization-results-grid">
@@ -520,8 +502,6 @@
                 </div>
             </div>
         </section>
-
-
     </main>
 
     <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
