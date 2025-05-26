@@ -35,19 +35,22 @@
     <main class="container mx-auto p-4 md:p-8 mt-8">
         <section id="home" class="content-section active">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Optimizing Last-Mile Delivery in Chandigarh</h2>
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Welcome to the Chandigarh Logistics Simulator!</h2>
+                <p class="mb-4 text-lg leading-relaxed text-slate-600">
+                    This tool is designed to help understand and optimize last-mile delivery operations within Chandigarh. It allows you to explore different aspects of logistics planning, from identifying ideal locations for small warehouses (dark stores) to simulating daily delivery activities and figuring out the best number of delivery agents.
+                </p>
                 <p class="mb-6 text-lg leading-relaxed text-slate-600">
-                    This capstone project, undertaken by Rakshit Monga at the Indian Institute of Management Sirmaur, presents a comprehensive approach to optimizing last-mile delivery logistics within the urban context of Chandigarh. The study meticulously combines critical facets of logistics planning:
+                    Navigate through the tabs above to access different modules:
                 </p>
                 <ol class="list-decimal list-inside space-y-3 mb-6 text-lg text-slate-600">
-                    <li class="pl-2"><strong class="text-slate-700">Advanced Demand Clustering:</strong> Strategically identifying optimal locations for dark stores by simulating realistic demand patterns.</li>
-                    <li class="pl-2"><strong class="text-slate-700">Custom Demand Profiling:</strong> Define and save custom order generation profiles with multiple uniform and hotspot zones to simulate diverse demand scenarios.</li>
-                    <li class="pl-2"><strong class="text-slate-700">Dynamic Delivery Simulation:</strong> Developing and evaluating a real-time system for agent assignment, order fulfillment, and operational efficiency, now with dynamic traffic, selectable demand profiles, and cost modeling.</li>
-                     <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> An analytical tool to simulate different workforce sizes against varying demand to identify optimal agent counts, including cost considerations.</li>
-                     <li class="pl-2"><strong class="text-slate-700">Scenario Analysis & Comparison:</strong> Save and compare results from different simulation runs to make informed decisions.</li>
+                    <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
+                    <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
+                    <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs.</li>
+                     <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently.</li>
+                     <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
                 </ol>
                 <p class="mb-8 text-lg leading-relaxed text-slate-600">
-                    The overarching goal is to furnish data-driven, actionable insights that promote efficient resource allocation, reduce delivery lead times, enhance operational resilience, and ultimately improve customer satisfaction in complex urban delivery networks.
+                    The goal is to provide data-driven insights for better resource allocation, faster deliveries, and improved customer satisfaction. This project was developed by Rakshit Monga as part of studies at the Indian Institute of Management Sirmaur.
                 </p>
                 <div class="bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-8 rounded-xl border border-blue-200 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-800">Project Lead</h3>
@@ -61,19 +64,29 @@
                     </ul>
                     <p class="mt-4 text-sm text-slate-500 italic">Indian Institute of Management Sirmaur</p>
                 </div>
-                <p class="mt-8 text-lg text-slate-600">
-                    Navigate through the sections using the menu above to explore the detailed clustering analysis methodology, interact with the live delivery simulation, use the workforce optimization tool, or compare different scenarios.
-                </p>
             </div>
         </section>
 
         <section id="clustering" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Voronoi Analysis</h2>
-                <p class="mb-6 leading-relaxed text-slate-600">
-                    Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.
-                </p>
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Dark Store Placement</h2>
+                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <p class="font-bold text-lg mb-2">What is this section for?</p>
+                    <p class="text-base leading-relaxed">This section helps you identify potentially optimal locations for "dark stores" (small, local warehouses for quick delivery) within Chandigarh. It does this by simulating customer order locations and then grouping them to find central points for these stores.</p>
+                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li>Set the number of general "Background Orders" spread across the city.</li>
+                        <li>Set the number of "Hotspot Orders" concentrated in specific busy areas.</li>
+                        <li>Specify how many "Number of Dark Stores" you want the system to identify.</li>
+                        <li>Click "Regenerate Clustering Data". The map will show simulated orders (dots), identified dark store locations (red markers), and their approximate service areas (Voronoi cells).</li>
+                        <li>You can toggle "Show Order-to-Store Connections" to see which orders are assigned to which store.</li>
+                        <li>Review the statistics below the map for insights into order distribution and distances.</li>
+                    </ul>
+                    <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
+                    <p class="text-base leading-relaxed">The map visualizes potential dark store locations based on your inputs. The statistics provide data on how well these locations cover the simulated demand, helping you understand service efficiency. These dark stores can then be used in the "Workforce Optimization" section.</p>
+                </div>
+
+                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
                         <div class="input-group">
@@ -128,10 +141,27 @@
 
         <section id="demandProfiles" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
-                <p class="mb-6 leading-relaxed text-slate-600">
-                    Define custom order generation profiles by combining uniform demand, specific hotspot zones, sector-based demand, or route-based demand. These profiles can then be selected in the "Simulation" tab. Saved profiles are available for the current browser session.
-                </p>
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
+                <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <p class="font-bold text-lg mb-2">What is this section for?</p>
+                    <p class="text-base leading-relaxed">This section allows you to create and save different "demand profiles" – patterns of how customer orders might arise across Chandigarh. For example, you could create a profile for "Evening Rush in Sector 17" or "Weekend Orders City-Wide."</p>
+                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li>Give your profile a unique "Profile Name".</li>
+                        <li>Click "Add Zone" to define areas and times for order generation. For each zone, you can specify:
+                            <ul class="list-disc list-inside ml-6 text-sm">
+                                <li><strong>Zone Type:</strong> Uniform (city-wide), Hotspot (around a point), Sector-based, or Route-based.</li>
+                                <li><strong>Min/Max Orders:</strong> How many orders to generate in this zone during its active time.</li>
+                                <li><strong>Start/End Time:</strong> When this zone is active during the simulation (in simulation minutes).</li>
+                                <li>For Hotspots/Routes, you can click on the small map to define centers or points.</li>
+                            </ul>
+                        </li>
+                        <li>Click "Save Profile". It will appear in the "Saved Profiles" list on the right.</li>
+                        <li>These custom profiles can then be selected in the "Simulation" tab to see how your logistics network performs under different demand conditions.</li>
+                    </ul>
+                     <p class="text-sm mt-2 italic">Note: Profiles are currently saved for your current browser session only.</p>
+                </div>
+
                 <div class="grid md:grid-cols-2 gap-8">
                     <div>
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
@@ -168,7 +198,30 @@
 
         <section id="simulation" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Interactive Delivery Simulation</h2>
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Interactive Delivery Simulation</h2>
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <p class="font-bold text-lg mb-2">What is this section for?</p>
+                    <p class="text-base leading-relaxed">This is the heart of the simulator! Here, you can run a live simulation of delivery operations. You'll see orders appear on the map, delivery agents pick them up from a central dark store, and deliver them to customers.</p>
+                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set:
+                            <ul class="list-disc list-inside ml-6 text-sm">
+                                <li>Number of available delivery agents.</li>
+                                <li>How frequently new orders arrive (Order Arrival Rate).</li>
+                                <li>Agent speeds and store handling time.</li>
+                                <li>The "Order Generation Profile" (use a default or a custom one you created).</li>
+                                <li>Route complexity, traffic conditions, and operational costs.</li>
+                            </ul>
+                        </li>
+                        <li>Click "Start Simulation".</li>
+                        <li>Observe the map: Agents (numbered circles) will move, and orders (star icons) will appear.</li>
+                        <li>Monitor the "Agent Status," "Active Orders," "Simulation Log," and live charts for real-time updates.</li>
+                        <li>The "Simulation Statistics" and "Cost KPIs" at the bottom will update as the simulation progresses.</li>
+                        <li>You can "Pause," "Resume" (by clicking Start again), or "Reset" the simulation.</li>
+                        <li>Use "Save Current Scenario Results" to save the outcome for later comparison in the "Scenario Analysis" tab.</li>
+                    </ul>
+                </div>
+
                 <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
                     <div class="simulation-controls-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -212,9 +265,10 @@
                             <select id="orderGenerationProfileSelect" class="mt-1">
                                 <option value="default_uniform" selected>Default: Uniform City-Wide</option>
                                 <option value="default_focused">Default: Focused Around Dark Store</option>
-                                </select>
+                            </select>
                         </div>
-                        <div id="uniformOrderRadiusContainer" class="input-group hidden"> <div class="control-label">
+                        <div id="uniformOrderRadiusContainer" class="input-group hidden">
+                            <div class="control-label">
                                 <label for="uniformOrderRadiusKmSlider" class="block text-md font-medium text-slate-700">Uniform Order Radius (km):</label>
                                 <span id="uniformOrderRadiusKmValue" class="font-bold text-xl text-blue-700">5</span>
                             </div>
@@ -265,9 +319,6 @@
                         </div>
                     </div>
                 </div>
-                <p class="mb-8 leading-relaxed text-slate-600 text-lg">
-                    Adjust simulation parameters above. Click "Start Simulation" to observe agents and orders on the map. Agent routes are simplified for this web demonstration.
-                </p>
                 <div class="text-center text-slate-600 mb-4">
                     Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl text-slate-800">0</span> minutes
                     (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)
@@ -343,10 +394,24 @@
 
         <section id="workforceOptimization" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
-                <p class="mb-6 leading-relaxed text-slate-600">
-                    This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated within a specified radius around this store. Cost parameters are taken from the Simulation page.
-                </p>
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
+                <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <p class="font-bold text-lg mb-2">What is this section for?</p>
+                    <p class="text-base leading-relaxed">This tool helps you estimate a good number of delivery agents to employ. It runs several short simulations, each with a different number of agents, for a specific dark store and order demand around it. The goal is to find a balance between meeting delivery time targets and managing operational costs.</p>
+                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li>First, ensure you've run the "Clustering" analysis to identify dark stores.</li>
+                        <li>Set your "Target Avg. Delivery Time" (e.g., 15 minutes).</li>
+                        <li>Select a "Dark Store" from the dropdown (populated from the Clustering results).</li>
+                        <li>Define the "Order Generation Radius" around this store and the "Orders per Iteration" (how many orders to simulate for each agent count).</li>
+                        <li>Set the "Min Agents" and "Max Agents" to test (e.g., test from 1 agent up to 15 agents).</li>
+                        <li>The "Max Sim Time per Iteration" prevents a single test from running too long if orders aren't getting delivered.</li>
+                        <li>Click "Run Workforce Optimization". The system will simulate each agent count and display results.</li>
+                    </ul>
+                    <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
+                    <p class="text-base leading-relaxed">A table comparing key metrics (delivery times, utilization, costs) for each number of agents tested. Charts will visualize these trends. The "Optimization Results (Best Scenario)" section will highlight the agent count that best met your target delivery time, along with its associated statistics and costs. This helps in making data-informed staffing decisions.</p>
+                </div>
+
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
                     <div class="grid md:grid-cols-2 gap-6">
@@ -410,7 +475,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -455,7 +520,7 @@
                     <div class="mt-4">
                         <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Optimal Scenario):</h5>
                         <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
-                            </ul>
+                        </ul>
                         <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
                     </div>
                     <h5 class="text-xl font-semibold text-slate-700 mt-6 mb-2">Optimization Log:</h5>
@@ -468,10 +533,23 @@
 
         <section id="scenarioAnalysis" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
-                <p class="mb-6 leading-relaxed text-slate-600">
-                    Save results from different simulation runs (from the "Simulation" page) and compare them side-by-side. This helps in understanding the impact of various parameters on performance and cost. Scenarios are saved in your browser's local storage.
-                </p>
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
+                 <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <p class="font-bold text-lg mb-2">What is this section for?</p>
+                    <p class="text-base leading-relaxed">This section allows you to compare the results of different simulation runs side-by-side. After running various simulations with different parameters (e.g., more agents, different order profiles, changed traffic), you can save those results and then come here to analyze their impact on performance and cost.</p>
+                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li>First, run one or more simulations in the "Simulation" tab. At the end of each simulation (or when you're satisfied with its run), click the "Save Current Scenario Results" button there.</li>
+                        <li>Saved scenarios will appear in the "Saved Scenarios" list on the left of this page.</li>
+                        <li>Select the checkboxes next to the scenarios you want to compare.</li>
+                        <li>Click "Compare Selected". A table will appear on the right showing a detailed comparison of parameters and results for your chosen scenarios.</li>
+                        <li>You can "Clear All Saved Scenarios" if you want to start fresh.</li>
+                    </ul>
+                    <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
+                    <p class="text-base leading-relaxed">A detailed table that helps you understand how changing different inputs (like number of agents or order arrival rates) affects outcomes like average delivery time, agent utilization, and total operational costs. This is useful for making strategic decisions about your logistics setup.</p>
+                     <p class="text-sm mt-2 italic">Note: Scenarios are saved in your browser's local storage, so they will persist even if you close and reopen your browser (unless you clear your browser data).</p>
+                </div>
+
                 <div class="grid md:grid-cols-3 gap-8">
                     <div class="md:col-span-1">
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
@@ -491,9 +569,9 @@
                              <div class="comparison-table-container">
                                 <table id="scenarioComparisonTable" class="comparison-table">
                                     <thead>
-                                        </thead>
+                                    </thead>
                                     <tbody>
-                                        </tbody>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
