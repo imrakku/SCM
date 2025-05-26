@@ -1,7 +1,7 @@
 // js/modules/simulation.js
 import {
     chandigarhGeoJsonPolygon,
-    chandigarhSectors, // Make sure this is imported if used by custom profiles
+    chandigarhSectors,
     defaultDarkStoreLocationSim,
     SIMULATION_STEP_INTERVAL_MS,
     MINUTES_PER_SIMULATION_STEP,
@@ -13,7 +13,7 @@ import {
     getDistanceKm,
     isPointInPolygon,
     createAgentIcon,
-    createOrderIcon, // This function will be updated in mapUtils.js
+    createOrderIcon,
     darkStoreIcon,
     generateWaypoints
 } from '../mapUtils.js';
@@ -21,6 +21,8 @@ import { initializeChart, updateChartData, calculateStdDev, getChartInstance } f
 import { logMessage } from '../logger.js';
 import { getCustomDemandProfiles } from './demandProfiles.js';
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
+// Import the function to save scenarios
+import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 
 
 // --- Simulation State Variables ---
@@ -53,16 +55,15 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40, // Default for "Medium" (Updated to new Medium value)
+    currentOrderGenerationProbability: 0.40, // Default for "Medium" (Updated)
 };
 
-// Updated order generation probabilities
 export const orderGenerationProbabilities = {
-    1: 0.15, // Very Low (Was 0.05 or 0.10)
-    2: 0.25, // Low (Was 0.1 or 0.20)
-    3: 0.40, // Medium (Was 0.2 or 0.35 - Increased)
-    4: 0.55, // High (Was 0.3 or 0.50)
-    5: 0.70  // Very High (Was 0.4 or 0.65)
+    1: 0.15, // Very Low
+    2: 0.25, // Low
+    3: 0.40, // Medium
+    4: 0.55, // High
+    5: 0.70  // Very High
 };
 
 export const orderSpreadFactors = {1: 0.02, 2: 0.035, 3: 0.05, 4: 0.065, 5: 0.08}; // Legacy
@@ -89,7 +90,6 @@ let liveChartData = {
 };
 
 // --- DOM Elements ---
-// (These should be initialized in initializeSimulationSection)
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -103,12 +103,8 @@ let statsTotalOrdersGeneratedEl, statsTotalOrdersDeliveredEl, statsAvgDeliveryTi
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
-        // console.log(`SimParam Updated: ${key} = ${value}`);
         if (key === 'orderGenerationProfile') {
             toggleProfileSpecificControlsUI();
-        }
-        if (key === 'currentOrderGenerationProbability') {
-             // console.log(`[SimParams] currentOrderGenerationProbability updated to: ${value}`);
         }
     } else {
         console.warn(`Attempted to set unknown simulation parameter: ${key}`);
@@ -147,7 +143,7 @@ export function initializeSimulationSection() {
     statsTotalFixedDeliveryCostsEl = document.getElementById('statsTotalFixedDeliveryCosts');
     statsOverallTotalOperationalCostEl = document.getElementById('statsOverallTotalOperationalCost');
     statsAverageCostPerOrderEl = document.getElementById('statsAverageCostPerOrder');
-    saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn');
+    saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn'); // Cache the button
 
     simulationMap = initializeMap('simulationMap', defaultDarkStoreLocationSim, 13, 'simulation');
     if (simulationMap) {
@@ -161,9 +157,14 @@ export function initializeSimulationSection() {
 
     initializeLiveCharts();
 
+    // Event Listeners
     startSimBtnEl?.addEventListener('click', startSimulation);
     pauseSimBtnEl?.addEventListener('click', pauseSimulation);
     resetSimBtnEl?.addEventListener('click', resetSimulation);
+    // Attach listener for the Save Scenario button HERE
+    saveCurrentSimScenarioBtnEl?.addEventListener('click', saveCurrentSimulationScenario);
+
+
     orderGenerationProfileSelectEl?.addEventListener('change', () => {
         setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
     });
@@ -240,11 +241,6 @@ function resetSimulationState() {
     }
     updateLiveCharts();
 
-    // Set initial probability based on the current slider value for "Order Arrival Rate"
-    // This is handled by initializeSliders in uiElements.js which calls setSimParameter
-    // and the action within initializeSliders for 'orderFrequencySlider' sets 'currentOrderGenerationProbability'
-    // We can log the effective probability at the start of a simulation run.
-
     const numAgents = getSimParameter('numAgents');
     for (let i = 0; i < numAgents; i++) {
         createAgent();
@@ -266,7 +262,7 @@ function resetSimulationState() {
 function startSimulation() {
     if (isSimulationRunning) return;
     if (currentSimulationTime === 0) {
-        resetSimulationState(); // Ensures params are fresh if changed before a new start
+        resetSimulationState();
         logMessage(`Simulation started. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
     } else {
         logMessage(`Simulation resumed. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
@@ -336,9 +332,6 @@ function generateUniformPointInChd(numPoints, polygonCoords) {
         if (isPointInPolygon([lng, lat], polygonCoords)) {
             points.push({ lat, lng });
         }
-    }
-    if (points.length < numPoints) {
-        // console.warn(`[OrderGenHelper] Only generated ${points.length}/${numPoints} uniform points within polygon after ${attempts} attempts.`);
     }
     return points;
 }
@@ -794,3 +787,4 @@ export function getCurrentSimulationParameters() {
 export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime };
 }
+
