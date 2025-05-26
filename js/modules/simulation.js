@@ -19,7 +19,7 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
-import { getCustomDemandProfiles } from './demandProfiles.js';
+import { getCustomDemandProfiles } from './demandProfiles.js'; // Used in populateOrderGenerationProfileSelectorSim
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 
@@ -58,7 +58,7 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40,
+    currentOrderGenerationProbability: 0.40, // Default for "Medium"
 };
 
 export const orderGenerationProbabilities = {
@@ -105,10 +105,10 @@ export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
         if (key === 'orderGenerationProfile') {
-            toggleProfileSpecificControlsUI(); // Ensure this is defined or called safely
+            toggleProfileSpecificControlsUI();
         }
     } else {
-        console.warn(`Attempted to set unknown simulation parameter: ${key}`);
+        console.warn(`[Sim] Attempted to set unknown simulation parameter: ${key}`);
     }
 }
 
@@ -118,7 +118,6 @@ export function getSimParameter(key) {
 
 function toggleProfileSpecificControlsUI() {
     const selectedProfile = getSimParameter('orderGenerationProfile');
-    // Ensure elements are cached before use, or guard access
     if(uniformOrderRadiusContainerEl) uniformOrderRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_uniform');
     if(defaultOrderFocusRadiusContainerEl) defaultOrderFocusRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_focused');
     if(defaultOrderSpreadContainerEl) defaultOrderSpreadContainerEl.classList.toggle('hidden', true);
@@ -140,17 +139,18 @@ function createAgent() {
         distanceTraveledThisSimKm: 0,
     };
     agents.push(newAgent);
-    if (simulationMap) {
+    if (simulationMap && agentMarkers) { // Ensure agentMarkers is initialized
         agentMarkers[agentId] = L.marker([newAgent.location.lat, newAgent.location.lng], { icon: createAgentIcon(agentId, false) })
             .addTo(simulationMap)
             .bindPopup(`<b>Agent ${newAgent.id}</b><br>Status: ${newAgent.status}<br>Speed: ${agentSpeed.toFixed(1)} km/h`);
     }
 }
 
-function updateSimTimeDisplayLocal(time) { // Renamed to avoid conflict if uiElements has a similar one
-    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min"; // Update the stats display
-    const simTimeDisplaySpan = document.getElementById('simTimeDisplay'); // The main display
+function updateSimTimeDisplayLocal(time) {
+    const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
     if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
+    // Also update the stats total sim time if that element exists
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
 }
 
 
@@ -210,7 +210,7 @@ function updateSimulationStatsUI() {
     statsAvgAgentUtilizationEl.textContent = avgAgentUtilization + (avgAgentUtilization !== "N/A" ? "%" : "");
     statsTotalAgentTravelTimeEl.textContent = stats.totalAgentTravelTime.toFixed(0) + " min";
     statsTotalAgentHandlingTimeEl.textContent = stats.totalAgentHandlingTime.toFixed(0) + " min";
-    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = currentSimulationTime + " min"; // Ensure this element is cached
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = currentSimulationTime + " min";
     const totalAgentLaborCost = (stats.totalAgentActiveTime / 60) * getSimParameter('agentCostPerHour');
     const totalTravelCostVal = stats.totalDistanceTraveledByAgentsKm * getSimParameter('costPerKmTraveled');
     const totalFixedDeliveryCostsVal = stats.totalOrdersDelivered * getSimParameter('fixedCostPerDelivery');
@@ -278,11 +278,11 @@ function resetSimulationState() {
 
     const numAgents = getSimParameter('numAgents');
     for (let i = 0; i < numAgents; i++) {
-        createAgent(); // Defined above
+        createAgent();
     }
 
-    updateSimTimeDisplayLocal(currentSimulationTime); // Use local version
-    updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor')); // From uiElements
+    updateSimTimeDisplayLocal(currentSimulationTime);
+    updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
     updateAgentStatusListUI();
     updatePendingOrdersListUI();
     updateSimulationStatsUI();
@@ -291,7 +291,7 @@ function resetSimulationState() {
 
     if (startSimBtnEl) startSimBtnEl.disabled = false;
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
-    toggleSimConfigLock(false); // From uiElements
+    toggleSimConfigLock(false);
 }
 
 // --- Event Handler Functions ---
@@ -319,12 +319,12 @@ function pauseSimulation() {
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
 }
 
-function resetSimulation() { // This is the function that was causing the ReferenceError
+function resetSimulation() {
     if (isSimulationRunning) {
         isSimulationRunning = false;
         clearInterval(simulationIntervalId);
     }
-    resetSimulationState(); // Calls the main state reset logic
+    resetSimulationState();
 }
 
 function toggleDeliveryTimeHeatmapDisplay() {
@@ -368,8 +368,7 @@ function updateDeliveryTimeHeatmapData() {
     deliveryTimeHeatmapLayer.setData(heatmapPoints);
 }
 
-// --- CORE SIMULATION LOGIC (generateOrder, assignOrders, updateAgentsMovementAndStatus, simulationStep) ---
-// (These functions are substantial and should be placed here. Assuming they are correct from previous versions)
+// --- CORE SIMULATION LOGIC ---
 function generateUniformPointInChd(numPoints, polygonCoords) {
     const points = [];
     if (numPoints <= 0) return points;
@@ -544,7 +543,7 @@ function generateOrder() {
         assignmentTime: null, noAgentLogged: false,
     };
     orders.push(newOrder);
-    if (simulationMap) {
+    if (simulationMap && orderMarkers) { // Ensure orderMarkers is initialized
         orderMarkers[orderId] = L.marker([newOrder.location.lat, newOrder.location.lng], { icon: createOrderIcon(orderId, 'pending') })
             .addTo(simulationMap)
             .bindPopup(`<b>Order ${orderId}</b><br>Status: ${newOrder.status}<br>Placed at: T+${newOrder.timePlaced} min`);
@@ -719,13 +718,13 @@ function updateAgentsMovementAndStatus() {
 function simulationStep() {
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
-    updateSimTimeDisplayLocal(currentSimulationTime); // Use local version
+    updateSimTimeDisplayLocal(currentSimulationTime);
 
     if (getSimParameter('enableDynamicTraffic') && (currentSimulationTime % DYNAMIC_TRAFFIC_UPDATE_INTERVAL === 0 || currentSimulationTime === MINUTES_PER_SIMULATION_STEP)) {
         const factors = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
         setSimParameter('currentDynamicTrafficFactor', factors[Math.floor(Math.random() * factors.length)]);
         logMessage(`Dynamic traffic condition changed. New factor: ${getSimParameter('currentDynamicTrafficFactor').toFixed(1)}x`, "TRAFFIC", simulationLogEl, currentSimulationTime);
-        updateTrafficStatusDisplay(getSimParameter('currentDynamicTrafficFactor')); // From uiElements
+        updateTrafficStatusDisplay(getSimParameter('currentDynamicTrafficFactor'));
     }
 
     const orderGenProb = getSimParameter('currentOrderGenerationProbability');
@@ -742,7 +741,6 @@ function simulationStep() {
     orders = orders.filter(o => o.status !== 'delivered');
 }
 
-// --- CHART FUNCTIONS (already defined in the provided code) ---
 function initializeLiveCharts() {
     initializeChart('pendingOrdersChart', 'pendingOrders', {
         type: 'line',
@@ -756,11 +754,9 @@ function initializeLiveCharts() {
     });
 }
 
-// --- EXPORTED FUNCTIONS for other modules ---
 export function getCurrentSimulationParameters() {
     return { ...simParams };
 }
 export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap] };
 }
-
