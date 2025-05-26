@@ -1,62 +1,63 @@
 // js/modules/scenarioAnalysis.js
 import { logMessage } from '../logger.js';
-import { getCurrentSimulationParameters, getCurrentSimulationStats } from './simulation.js'; // To get data to save
+import { getCurrentSimulationParameters, getCurrentSimulationStats } from './simulation.js';
+import { calculateStdDev } from '../chartUtils.js'; // For stats calculation if needed here
 
 const SCENARIO_STORAGE_KEY = 'chandigarhLogisticsScenarios';
 
 // DOM Elements
 let savedScenariosListContainerEl, compareSelectedScenariosBtnEl, clearAllScenariosBtnEl,
     scenarioComparisonResultsContainerEl, scenarioComparisonTableEl, scenarioComparisonPlaceholderEl,
-    mainSimulationLogEl; // Use main sim log for scenario save/clear messages
+    mainSimulationLogEl;
 
 /**
  * Initializes the Scenario Analysis section.
  */
 export function initializeScenarioAnalysisSection() {
-    savedScenariosListContainerEl = document.getElementById('savedScenariosListContainer'); // This is the div containing the ul
+    savedScenariosListContainerEl = document.getElementById('savedScenariosListContainer');
     compareSelectedScenariosBtnEl = document.getElementById('compareSelectedScenariosBtn');
     clearAllScenariosBtnEl = document.getElementById('clearAllScenariosBtn');
     scenarioComparisonResultsContainerEl = document.getElementById('scenarioComparisonResultsContainer');
     scenarioComparisonTableEl = document.getElementById('scenarioComparisonTable');
     scenarioComparisonPlaceholderEl = document.getElementById('scenarioComparisonPlaceholder');
-    mainSimulationLogEl = document.getElementById('simulationLog'); // For logging save/clear actions
+    mainSimulationLogEl = document.getElementById('simulationLog'); // Use main sim log for scenario save/clear messages
 
-    // Event Listeners
-    // The save button is on the simulation page, so its listener should be there or in main.js
-    // For now, we assume it calls `saveCurrentSimulationScenario` from this module.
-    // This can be attached in main.js or simulation.js to the 'saveCurrentSimScenarioBtn'
-    const saveBtn = document.getElementById('saveCurrentSimScenarioBtn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveCurrentSimulationScenario);
-    }
-
-
+    // Event Listeners for buttons within this section
     compareSelectedScenariosBtnEl?.addEventListener('click', displaySelectedScenarioComparisons);
     clearAllScenariosBtnEl?.addEventListener('click', clearAllSavedScenarios);
+
+    // The listener for 'saveCurrentSimScenarioBtn' is now in simulation.js
+    // as the button is part of the Simulation section's UI.
 
     loadSavedScenarios(); // Load and display any existing scenarios
 }
 
 /**
  * Saves the current state of the main simulation as a new scenario.
+ * This function is EXPORTED to be called from simulation.js
  */
-function saveCurrentSimulationScenario() {
+export function saveCurrentSimulationScenario() {
     const simParams = getCurrentSimulationParameters();
     const simStats = getCurrentSimulationStats();
 
     if (!simParams || !simStats) {
         alert("Could not retrieve current simulation data to save.");
+        // Log to the main simulation log if available
+        if(mainSimulationLogEl) logMessage("Failed to retrieve simulation data for saving scenario.", 'SYS_ERROR', mainSimulationLogEl, simStats?.currentSimTime);
         return;
     }
 
     const scenarioName = prompt("Enter a name for this scenario:", `Sim @ T+${simStats.currentSimTime} - ${simStats.totalOrdersDelivered} delivered`);
-    if (!scenarioName) return;
+    if (!scenarioName) {
+        if(mainSimulationLogEl) logMessage("Scenario saving cancelled by user.", 'SYSTEM', mainSimulationLogEl, simStats.currentSimTime);
+        return;
+    }
 
     const scenarioData = {
         name: scenarioName,
         timestamp: new Date().toISOString(),
-        parameters: { ...simParams }, // Spread to copy
-        results: { // Map relevant stats
+        parameters: { ...simParams },
+        results: {
             totalOrdersGenerated: simStats.totalOrdersGenerated,
             totalOrdersDelivered: simStats.totalOrdersDelivered,
             avgDeliveryTime: simStats.totalOrdersDelivered > 0 ? parseFloat((simStats.sumDeliveryTimes / simStats.totalOrdersDelivered).toFixed(1)) : null,
@@ -64,7 +65,7 @@ function saveCurrentSimulationScenario() {
             maxDeliveryTime: simStats.allDeliveryTimes.length > 0 ? parseFloat(Math.max(...simStats.allDeliveryTimes).toFixed(1)) : null,
             stdDevDeliveryTime: simStats.allDeliveryTimes.length > 1 && simStats.totalOrdersDelivered > 0 ? parseFloat(calculateStdDev(simStats.allDeliveryTimes, (simStats.sumDeliveryTimes / simStats.totalOrdersDelivered)).toFixed(1)) : null,
             avgOrderWaitTime: simStats.countAssignedOrders > 0 ? parseFloat((simStats.sumOrderWaitTimes / simStats.countAssignedOrders).toFixed(1)) : null,
-            avgAgentUtilization: parseFloat(document.getElementById('statsAvgAgentUtilization').textContent) || null, // Get from UI as it's calculated there
+            avgAgentUtilization: parseFloat(document.getElementById('statsAvgAgentUtilization')?.textContent) || null,
             totalSimTime: simStats.currentSimTime,
             totalAgentLaborCost: parseFloat(document.getElementById('statsTotalAgentLaborCost')?.textContent.replace('₹', '')) || 0,
             totalTravelCost: parseFloat(document.getElementById('statsTotalTravelCost')?.textContent.replace('₹', '')) || 0,
@@ -74,11 +75,10 @@ function saveCurrentSimulationScenario() {
         }
     };
 
-    // Clean up parameters that might not be relevant for all profiles
     const activeProfile = scenarioData.parameters.orderGenerationProfile;
     if (activeProfile !== 'default_uniform') {
         delete scenarioData.parameters.uniformOrderRadiusKm;
-        delete scenarioData.parameters.orderLocationSpreadFactor; // Old slider
+        delete scenarioData.parameters.orderLocationSpreadFactor;
     }
     if (activeProfile !== 'default_focused') {
         delete scenarioData.parameters.defaultFocusRadiusKm;
@@ -89,51 +89,43 @@ function saveCurrentSimulationScenario() {
          delete scenarioData.parameters.defaultFocusRadiusKm;
     }
 
-
     let scenarios = getSavedScenarios();
     scenarios.push(scenarioData);
     try {
         localStorage.setItem(SCENARIO_STORAGE_KEY, JSON.stringify(scenarios));
         alert(`Scenario "${scenarioName}" saved!`);
-        logMessage(`Scenario "${scenarioName}" saved.`, 'SCENARIO_SAVE', mainSimulationLogEl, simStats.currentSimTime);
-        // If the scenario analysis tab is active, refresh its list
+        if(mainSimulationLogEl) logMessage(`Scenario "${scenarioName}" saved.`, 'SCENARIO_SAVE', mainSimulationLogEl, simStats.currentSimTime);
         if (document.getElementById('scenarioAnalysis')?.classList.contains('active')) {
             loadSavedScenarios();
         }
     } catch (e) {
         console.error("Error saving scenario to localStorage:", e);
         alert("Failed to save scenario. LocalStorage might be full or disabled.");
+        if(mainSimulationLogEl) logMessage(`Error saving scenario: ${e.message}`, 'SYS_ERROR', mainSimulationLogEl, simStats.currentSimTime);
     }
 }
 
-/**
- * Retrieves saved scenarios from localStorage.
- * @returns {Array<object>} Array of scenario objects.
- */
 function getSavedScenarios() {
     try {
         const scenariosJSON = localStorage.getItem(SCENARIO_STORAGE_KEY);
         return scenariosJSON ? JSON.parse(scenariosJSON) : [];
     } catch (e) {
         console.error("Error reading scenarios from localStorage:", e);
-        localStorage.removeItem(SCENARIO_STORAGE_KEY); // Clear corrupted data
+        localStorage.removeItem(SCENARIO_STORAGE_KEY);
         return [];
     }
 }
 
-/**
- * Loads saved scenarios and populates the UI list.
- */
 export function loadSavedScenarios() {
     if (!savedScenariosListContainerEl) return;
     const scenarios = getSavedScenarios();
-    const listUlEl = savedScenariosListContainerEl.querySelector('ul#savedScenariosList'); // Target the UL directly
+    const listUlEl = savedScenariosListContainerEl.querySelector('ul#savedScenariosList');
 
     if (!listUlEl) {
         console.error("UL element for saved scenarios not found inside the container.");
         return;
     }
-    listUlEl.innerHTML = ''; // Clear existing items
+    listUlEl.innerHTML = '';
 
     if (scenarios.length === 0) {
         listUlEl.innerHTML = '<li class="italic text-slate-500">No scenarios saved yet. Click "Save Current Scenario Results" on the Simulation page.</li>';
@@ -142,7 +134,6 @@ export function loadSavedScenarios() {
 
     scenarios.forEach((scenario, index) => {
         const li = document.createElement('li');
-        // Tailwind classes are in main CSS
         li.innerHTML = `
             <label class="flex items-center w-full cursor-pointer p-2 hover:bg-slate-100 rounded-md">
                 <input type="checkbox" class="mr-3 scenario-checkbox accent-blue-600" data-scenario-index="${index}">
@@ -154,9 +145,6 @@ export function loadSavedScenarios() {
     });
 }
 
-/**
- * Displays a comparison table for the selected scenarios.
- */
 function displaySelectedScenarioComparisons() {
     const listUlEl = savedScenariosListContainerEl?.querySelector('ul#savedScenariosList');
     if (!listUlEl) return;
@@ -183,7 +171,6 @@ function displaySelectedScenarioComparisons() {
     if (tbody) tbody.innerHTML = "";
 
     const metrics = [
-        // Parameters
         { key: 'name', source: 'scenario', displayName: 'Scenario Name', isParam: true },
         { key: 'numAgents', source: 'parameters', displayName: 'Agents', isParam: true },
         { key: 'orderFrequency', source: 'parameters', displayName: 'Order Freq. Setting', isParam: true, map: {1: "V.Low", 2: "Low", 3: "Med", 4: "High", 5: "V.High"} },
@@ -200,7 +187,6 @@ function displaySelectedScenarioComparisons() {
         { key: 'agentCostPerHour', source: 'parameters', displayName: 'Agent Cost/hr', isParam: true, unit: '₹' },
         { key: 'costPerKmTraveled', source: 'parameters', displayName: 'Cost/km', isParam: true, unit: '₹' },
         { key: 'fixedCostPerDelivery', source: 'parameters', displayName: 'Fixed Cost/Del.', isParam: true, unit: '₹' },
-        // Results
         { key: 'totalSimTime', source: 'results', displayName: 'Sim Runtime', unit: 'min' },
         { key: 'totalOrdersGenerated', source: 'results', displayName: 'Generated Orders' },
         { key: 'totalOrdersDelivered', source: 'results', displayName: 'Delivered Orders' },
@@ -223,23 +209,22 @@ function displaySelectedScenarioComparisons() {
     headerRow.appendChild(thMetric);
     selectedScenarios.forEach((scenario, index) => {
         const th = document.createElement('th');
-        th.textContent = `Scenario ${index + 1}`; // Short name or index
+        th.textContent = `Scenario ${index + 1}`;
         headerRow.appendChild(th);
     });
 
     metrics.forEach(metricInfo => {
-        // Only add row if at least one scenario has this metric (or it's a scenario name)
         const hasMetric = selectedScenarios.some(scen => {
             if (metricInfo.source === 'scenario') return scen[metricInfo.key] !== undefined;
             return scen[metricInfo.source] && scen[metricInfo.source][metricInfo.key] !== undefined;
         });
 
-        if (metricInfo.key === 'name' || hasMetric) { // Always show name, or if metric exists
+        if (metricInfo.key === 'name' || hasMetric) {
             const row = tbody.insertRow();
             const cellMetricName = row.insertCell();
             cellMetricName.textContent = metricInfo.displayName;
             cellMetricName.style.fontWeight = '500';
-            if (metricInfo.isParam) cellMetricName.style.backgroundColor = '#f0f9ff'; // Light blue for params
+            if (metricInfo.isParam) cellMetricName.style.backgroundColor = '#f0f9ff';
 
             selectedScenarios.forEach(scenario => {
                 const cell = row.insertCell();
@@ -258,10 +243,10 @@ function displaySelectedScenarioComparisons() {
                         displayValue = metricInfo.format(value);
                     } else if (metricInfo.map && metricInfo.map.hasOwnProperty(value)) {
                         displayValue = metricInfo.map[value];
-                    } else if (typeof value === 'number' && !Number.isInteger(value) && !metricInfo.displayName.toLowerCase().includes('prob')) { // Don't toFixed probability
+                    } else if (typeof value === 'number' && !Number.isInteger(value) && !metricInfo.displayName.toLowerCase().includes('prob')) {
                         if (metricInfo.unit === '₹') displayValue = value.toFixed(2);
-                        else if (metricInfo.unit !== '%') displayValue = value.toFixed(1); // For min, %, etc.
-                        else displayValue = value.toFixed(1); // For %
+                        else if (metricInfo.unit !== '%') displayValue = value.toFixed(1);
+                        else displayValue = value.toFixed(1);
                     }
                     const unitAlreadyPresent = typeof displayValue === 'string' && metricInfo.unit && displayValue.endsWith(metricInfo.unit);
                     cell.textContent = displayValue + (metricInfo.unit && displayValue !== "N/A" && typeof displayValue !== 'boolean' && !unitAlreadyPresent ? ` ${metricInfo.unit}` : "");
@@ -271,16 +256,13 @@ function displaySelectedScenarioComparisons() {
     });
 }
 
-/**
- * Clears all saved scenarios from localStorage.
- */
 function clearAllSavedScenarios() {
     if (confirm("Are you sure you want to delete ALL saved scenarios? This action cannot be undone.")) {
         try {
             localStorage.removeItem(SCENARIO_STORAGE_KEY);
             alert("All scenarios cleared.");
-            logMessage("All scenarios cleared.", 'SCENARIO_CLEAR', mainSimulationLogEl);
-            loadSavedScenarios(); // Refresh the list (will show empty)
+            if(mainSimulationLogEl) logMessage("All scenarios cleared.", 'SCENARIO_CLEAR', mainSimulationLogEl);
+            loadSavedScenarios();
             if(scenarioComparisonPlaceholderEl) scenarioComparisonPlaceholderEl.classList.remove('hidden');
             if(scenarioComparisonResultsContainerEl) scenarioComparisonResultsContainerEl.classList.add('hidden');
         } catch (e) {
