@@ -28,20 +28,28 @@ const sectionInitialized = {
  * @param {NodeListOf<HTMLElement>} contentSections All content sections.
  */
 export function showSection(sectionId, clickedLink, navLinks, contentSections) {
-    // console.log(`Attempting to show section: ${sectionId}`);
+    console.log(`[Nav] Attempting to show section: ${sectionId}`);
 
-    contentSections.forEach(section => section.classList.remove('active'));
-    navLinks.forEach(link => link.classList.remove('nav-active'));
+    // Remove active class from all sections and nav links
+    contentSections.forEach(section => {
+        section.classList.remove('active');
+        // console.log(`[Nav] Removed 'active' from section: ${section.id}`);
+    });
+    navLinks.forEach(link => {
+        link.classList.remove('nav-active');
+        // console.log(`[Nav] Removed 'nav-active' from link: ${link.getAttribute('href')}`);
+    });
 
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
-        // console.log(`Section ${sectionId} activated.`);
+        console.log(`[Nav] Added 'active' to target section: ${sectionId}. Visible: ${window.getComputedStyle(targetSection).display}`);
     } else {
-        console.error(`Target section with ID "${sectionId}" not found.`);
-        // Fallback to home if target section doesn't exist
-        document.getElementById('home')?.classList.add('active');
-        document.querySelector('.nav-link[href="#home"]')?.classList.add('nav-active');
+        console.error(`[Nav] Target section with ID "${sectionId}" not found. Defaulting to home.`);
+        const homeSection = document.getElementById('home');
+        if (homeSection) homeSection.classList.add('active');
+        const homeLink = document.querySelector('.nav-link[href="#home"]');
+        if (homeLink) homeLink.classList.add('nav-active');
         return;
     }
 
@@ -51,66 +59,73 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
     }
     if (activeLink) {
         activeLink.classList.add('nav-active');
+        console.log(`[Nav] Added 'nav-active' to link: ${activeLink.getAttribute('href')}`);
     } else {
-        // console.warn(`Active link for section ${sectionId} not found.`);
+        console.warn(`[Nav] Active link for section ${sectionId} not found.`);
     }
 
     // Lazy initialize section-specific JavaScript or update if already initialized
-    switch (sectionId) {
-        case 'clustering':
-            if (!sectionInitialized.clustering) {
-                initializeClusteringSection();
-                sectionInitialized.clustering = true;
-            }
-            // Ensure map is visible and sized correctly if already initialized
-            getMapInstance('clustering')?.invalidateSize();
-            break;
-        case 'demandProfiles':
-            if (!sectionInitialized.demandProfiles) {
-                initializeDemandProfilesSection(); // This loads profiles and updates its own UI
-                sectionInitialized.demandProfiles = true;
-            }
-            // When navigating to demand profiles, ensure its map is sized
-            getMapInstance('demandProfiles')?.invalidateSize();
-            break;
-        case 'simulation':
-            if (!sectionInitialized.simulation) {
-                initializeSimulationSection(); // This will init the sim and its profile selector
-                sectionInitialized.simulation = true;
-            } else {
-                // If already initialized, ensure its profile selector is up-to-date
-                // with any changes from the demandProfiles module.
-                const currentCustomProfiles = getCustomDemandProfiles(); // Get latest profiles
-                populateOrderGenerationProfileSelectorSim(currentCustomProfiles);
-            }
-            getMapInstance('simulation')?.invalidateSize();
-            break;
-        case 'workforceOptimization':
-            if (!sectionInitialized.workforceOptimization) {
-                initializeWorkforceOptimizationSection(); // This will init and populate its dark store selector
-                sectionInitialized.workforceOptimization = true;
-            } else {
-                // If already initialized, ensure its dark store selector is up-to-date
-                // with any changes from the clustering module.
-                populateDarkStoreSelectorForOpt(globalClusteredDarkStores); // globalClusteredDarkStores should be latest
-            }
-            getMapInstance('workforceOptimization')?.invalidateSize();
-            break;
-        case 'scenarioAnalysis':
-            if (!sectionInitialized.scenarioAnalysis) {
-                initializeScenarioAnalysisSection(); // This will load scenarios initially
-                sectionInitialized.scenarioAnalysis = true;
-            } else {
-                // If returning to this tab, reload scenarios in case new ones were saved
-                loadSavedScenarios();
-            }
-            break;
-        case 'home':
-        default:
-            // No complex JS initialization typically needed for the home section
-            break;
+    try {
+        switch (sectionId) {
+            case 'clustering':
+                if (!sectionInitialized.clustering) {
+                    console.log("[Nav] Initializing Clustering Section...");
+                    initializeClusteringSection();
+                    sectionInitialized.clustering = true;
+                }
+                getMapInstance('clustering')?.invalidateSize();
+                break;
+            case 'demandProfiles':
+                if (!sectionInitialized.demandProfiles) {
+                    console.log("[Nav] Initializing Demand Profiles Section...");
+                    initializeDemandProfilesSection();
+                    sectionInitialized.demandProfiles = true;
+                }
+                getMapInstance('demandProfiles')?.invalidateSize();
+                break;
+            case 'simulation':
+                if (!sectionInitialized.simulation) {
+                    console.log("[Nav] Initializing Simulation Section...");
+                    initializeSimulationSection();
+                    sectionInitialized.simulation = true;
+                } else {
+                    console.log("[Nav] Updating Simulation Section (Profile Selector)...");
+                    const currentCustomProfiles = getCustomDemandProfiles();
+                    populateOrderGenerationProfileSelectorSim(currentCustomProfiles);
+                }
+                getMapInstance('simulation')?.invalidateSize();
+                break;
+            case 'workforceOptimization':
+                if (!sectionInitialized.workforceOptimization) {
+                    console.log("[Nav] Initializing Workforce Optimization Section...");
+                    initializeWorkforceOptimizationSection();
+                    sectionInitialized.workforceOptimization = true;
+                } else {
+                    console.log("[Nav] Updating Workforce Optimization Section (Dark Store Selector)...");
+                    populateDarkStoreSelectorForOpt(globalClusteredDarkStores);
+                }
+                getMapInstance('workforceOptimization')?.invalidateSize();
+                break;
+            case 'scenarioAnalysis':
+                if (!sectionInitialized.scenarioAnalysis) {
+                    console.log("[Nav] Initializing Scenario Analysis Section...");
+                    initializeScenarioAnalysisSection();
+                    sectionInitialized.scenarioAnalysis = true;
+                } else {
+                    console.log("[Nav] Updating Scenario Analysis Section (Reloading Scenarios)...");
+                    loadSavedScenarios();
+                }
+                break;
+            case 'home':
+            default:
+                // No complex JS initialization typically needed for the home section
+                console.log(`[Nav] Switched to simple section: ${sectionId}`);
+                break;
+        }
+    } catch (error) {
+        console.error(`[Nav] Error during initialization or update of section "${sectionId}":`, error);
     }
-    // console.log(`Finished showing section: ${sectionId}. Initialized state:`, sectionInitialized);
+    console.log(`[Nav] Finished showing section: ${sectionId}. Initialized state:`, JSON.parse(JSON.stringify(sectionInitialized)));
 }
 
 /**
@@ -121,19 +136,20 @@ export function setupNavigation() {
     const contentSections = document.querySelectorAll('.content-section');
 
     if (navLinks.length === 0 || contentSections.length === 0) {
-        console.error("Navigation links or content sections not found. Navigation will not work.");
+        console.error("[NavSetup] Critical Error: Navigation links or content sections not found. Navigation will not work.");
         return;
     }
-    // console.log(`SetupNavigation: Found ${navLinks.length} nav links and ${contentSections.length} content sections.`);
-
+    console.log(`[NavSetup] Found ${navLinks.length} nav links and ${contentSections.length} content sections.`);
 
     navLinks.forEach(link => {
         link.addEventListener('click', function(event) {
-            // event.preventDefault(); // Uncomment if you need to stop default anchor behavior for any reason
+            // Using event.currentTarget to ensure we get the element the listener was attached to.
             const sectionId = event.currentTarget.getAttribute('href').substring(1);
+            console.log(`[NavClick] Link clicked for section: ${sectionId}`);
             showSection(sectionId, event.currentTarget, navLinks, contentSections);
-            // The hash will be updated by default browser behavior for anchor tags.
-            // If preventDefault is used, update manually: window.location.hash = sectionId;
+            // The URL hash will be updated by default browser behavior for anchor tags.
+            // If you were to use event.preventDefault(), you'd need to set it manually:
+            // window.location.hash = sectionId;
         });
     });
 
@@ -142,9 +158,13 @@ export function setupNavigation() {
     let initialSectionId = 'home'; // Default to home
     if (initialHash && document.getElementById(initialHash)) {
         initialSectionId = initialHash;
+        console.log(`[NavSetup] Initial section from hash: ${initialSectionId}`);
+    } else if (initialHash) {
+        console.warn(`[NavSetup] Hash "${initialHash}" does not correspond to a valid section ID. Defaulting to home.`);
+    } else {
+        console.log(`[NavSetup] No hash found. Defaulting to home section.`);
     }
 
     const initialActiveLink = document.querySelector(`.nav-link[href="#${initialSectionId}"]`);
-    // console.log(`Initial section to show: ${initialSectionId}`);
     showSection(initialSectionId, initialActiveLink, navLinks, contentSections);
 }
