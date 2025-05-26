@@ -1,12 +1,12 @@
 // js/uiElements.js
 import { chandigarhSectors } from './data/chandigarhData.js';
 import {
-    updateSimParameters,
+    // updateSimParameters, // This was the problematic import, now removed
     getSimParameter,
     setSimParameter,
-    orderGenerationProbabilities,
-    orderSpreadFactors
-} from './modules/simulation.js'; // Assuming simulation.js exports these
+    orderGenerationProbabilities, // Assuming this is exported by simulation.js
+    orderSpreadFactors // Assuming this is exported by simulation.js
+} from './modules/simulation.js';
 
 /**
  * Initializes all range sliders in the application.
@@ -37,26 +37,36 @@ export function initializeSliders() {
                 valueEl.textContent = config.map ? config.map[val] : val;
             };
 
-            const updateLinkedSliders = (currentVal) => {
+            const updateLinkedSliders = (currentValStr) => {
+                // Ensure currentVal is parsed correctly based on slider type
+                const currentVal = (config.type === 'directFloat' || config.id.includes('Km')) ? parseFloat(currentValStr) : parseInt(currentValStr);
+
                 if (config.isMin) {
                     const maxSlider = document.getElementById(config.linkedMax);
-                    if (maxSlider && parseInt(currentVal) > parseInt(maxSlider.value)) {
-                        maxSlider.value = currentVal;
-                        document.getElementById(config.linkedMaxValueEl).textContent = currentVal;
-                        setSimParameter(slidersConfig.find(s => s.id === config.linkedMax)?.paramKey, parseInt(currentVal));
+                    if (maxSlider) {
+                        const maxSliderVal = (slidersConfig.find(s => s.id === config.linkedMax)?.type === 'directFloat' || config.linkedMax.includes('Km')) ? parseFloat(maxSlider.value) : parseInt(maxSlider.value);
+                        if (currentVal > maxSliderVal) {
+                            maxSlider.value = currentValStr; // Keep as string for slider value
+                            document.getElementById(config.linkedMaxValueEl).textContent = currentValStr;
+                            setSimParameter(slidersConfig.find(s => s.id === config.linkedMax)?.paramKey, currentVal);
+                        }
                     }
                 } else if (config.isMax) {
                     const minSlider = document.getElementById(config.linkedMin);
-                    if (minSlider && parseInt(currentVal) < parseInt(minSlider.value)) {
-                        minSlider.value = currentVal;
-                        document.getElementById(config.linkedMinValueEl).textContent = currentVal;
-                        setSimParameter(slidersConfig.find(s => s.id === config.linkedMin)?.paramKey, parseInt(currentVal));
+                    if (minSlider) {
+                         const minSliderVal = (slidersConfig.find(s => s.id === config.linkedMin)?.type === 'directFloat' || config.linkedMin.includes('Km')) ? parseFloat(minSlider.value) : parseInt(minSlider.value);
+                        if (currentVal < minSliderVal) {
+                            minSlider.value = currentValStr; // Keep as string for slider value
+                            document.getElementById(config.linkedMinValueEl).textContent = currentValStr;
+                            setSimParameter(slidersConfig.find(s => s.id === config.linkedMin)?.paramKey, currentVal);
+                        }
                     }
                 }
             };
 
+
             sliderEl.addEventListener('input', () => {
-                const rawValue = sliderEl.value;
+                const rawValue = sliderEl.value; // This is always a string
                 let processedValue;
 
                 updateValueDisplay();
@@ -71,36 +81,41 @@ export function initializeSliders() {
                         setSimParameter(config.paramKey, processedValue);
                         break;
                     case 'map':
-                        // For mapped values, the action usually updates a different parameter
                         if (config.action) {
-                            config.action(rawValue); // Action might set a specific sim parameter
+                            config.action(rawValue);
                         } else {
-                            // If no specific action, store the mapped key or raw value if needed
-                            setSimParameter(config.paramKey, rawValue); // Or config.map[rawValue] if the mapped text is the desired value
+                            setSimParameter(config.paramKey, rawValue);
                         }
-                        processedValue = rawValue; // Keep raw value for linked slider logic if any
+                        // For linked slider logic, we still need a numerical representation if applicable
+                        // This part might need adjustment based on what 'rawValue' represents for 'map' type
+                        processedValue = parseInt(rawValue); // Assuming rawValue for map is index-like
                         break;
+                    default:
+                        processedValue = rawValue; // Fallback
                 }
-                updateLinkedSliders(processedValue); // Use processed value for linked logic
+                updateLinkedSliders(rawValue); // Pass raw string value, parsing happens inside updateLinkedSliders
             });
 
             // Set initial display and parameter value
             updateValueDisplay();
-            let initialValue;
-            if (config.type === 'direct') initialValue = parseInt(sliderEl.value);
-            else if (config.type === 'directFloat') initialValue = parseFloat(sliderEl.value);
-            else if (config.type === 'map' && config.action) config.action(sliderEl.value); // Trigger action for initial map value
-            else initialValue = sliderEl.value; // Store raw value for map if no action
+            let initialValueForParam;
+            const currentSliderValue = sliderEl.value;
 
-            if(config.paramKey && (config.type === 'direct' || config.type === 'directFloat')) {
-                setSimParameter(config.paramKey, initialValue);
+            if (config.type === 'direct') initialValueForParam = parseInt(currentSliderValue);
+            else if (config.type === 'directFloat') initialValueForParam = parseFloat(currentSliderValue);
+            else if (config.type === 'map' && config.action) {
+                config.action(currentSliderValue); // Action sets the specific param
+                initialValueForParam = null; // Action handles it
+            }
+            else initialValueForParam = currentSliderValue;
+
+            if(config.paramKey && initialValueForParam !== null) { // Check if action already handled it
+                setSimParameter(config.paramKey, initialValueForParam);
             }
             // Initial check for linked sliders
             if (config.isMin || config.isMax) {
-                updateLinkedSliders(initialValue);
+                updateLinkedSliders(currentSliderValue);
             }
-        } else {
-            // console.warn(`Slider or value element not found for config:`, config.id);
         }
     });
 
