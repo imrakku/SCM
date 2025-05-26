@@ -19,7 +19,7 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
-import { getCustomDemandProfiles } from './demandProfiles.js'; // Used in populateOrderGenerationProfileSelectorSim
+import { getCustomDemandProfiles } from './demandProfiles.js';
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 
@@ -36,10 +36,8 @@ let currentSimulationTime = 0;
 let orderIdCounter = 0;
 let agentIdCounter = 1;
 let isSimulationRunning = false;
-
-// --- Heatmap Specific State ---
 let deliveryTimeHeatmapLayer = null;
-let deliveredOrderDataForHeatmap = []; // Stores {lat, lng, value: deliveryDuration}
+let deliveredOrderDataForHeatmap = [];
 
 // --- Simulation Parameters (with defaults) ---
 let simParams = {
@@ -58,7 +56,7 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40, // Default for "Medium"
+    currentOrderGenerationProbability: 0.40,
 };
 
 export const orderGenerationProbabilities = {
@@ -99,7 +97,7 @@ let statsTotalOrdersGeneratedEl, statsTotalOrdersDeliveredEl, statsAvgDeliveryTi
 let toggleDeliveryTimeHeatmapCheckboxEl;
 
 
-// --- Function Definitions (Order Matters for Event Handlers) ---
+// --- Function Definitions ---
 
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
@@ -139,7 +137,7 @@ function createAgent() {
         distanceTraveledThisSimKm: 0,
     };
     agents.push(newAgent);
-    if (simulationMap && agentMarkers) { // Ensure agentMarkers is initialized
+    if (simulationMap && agentMarkers) {
         agentMarkers[agentId] = L.marker([newAgent.location.lat, newAgent.location.lng], { icon: createAgentIcon(agentId, false) })
             .addTo(simulationMap)
             .bindPopup(`<b>Agent ${newAgent.id}</b><br>Status: ${newAgent.status}<br>Speed: ${agentSpeed.toFixed(1)} km/h`);
@@ -149,10 +147,8 @@ function createAgent() {
 function updateSimTimeDisplayLocal(time) {
     const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
     if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
-    // Also update the stats total sim time if that element exists
     if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
 }
-
 
 function updateAgentStatusListUI() {
     if (!agentStatusListEl) return;
@@ -242,7 +238,6 @@ function updateLiveCharts() {
       updateChartData('activeAgents', liveChartData.simTimeHistory, [{ data: liveChartData.activeAgentsHistory, label: 'Active Agents', borderColor: 'rgb(54, 162, 235)', tension: 0.1, fill: false }]);
     }
 }
-
 
 function resetSimulationState() {
     currentSimulationTime = 0;
@@ -543,7 +538,7 @@ function generateOrder() {
         assignmentTime: null, noAgentLogged: false,
     };
     orders.push(newOrder);
-    if (simulationMap && orderMarkers) { // Ensure orderMarkers is initialized
+    if (simulationMap && orderMarkers) {
         orderMarkers[orderId] = L.marker([newOrder.location.lat, newOrder.location.lng], { icon: createOrderIcon(orderId, 'pending') })
             .addTo(simulationMap)
             .bindPopup(`<b>Order ${orderId}</b><br>Status: ${newOrder.status}<br>Placed at: T+${newOrder.timePlaced} min`);
@@ -754,9 +749,129 @@ function initializeLiveCharts() {
     });
 }
 
+// --- EXPORTED FUNCTIONS for other modules ---
 export function getCurrentSimulationParameters() {
     return { ...simParams };
 }
 export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap] };
+}
+
+// This function MUST be exported for demandProfiles.js
+export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
+    if (!orderGenerationProfileSelectEl) {
+        // Attempt to cache it if not already done (e.g. if demandProfiles init runs before sim init fully)
+        orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
+        if (!orderGenerationProfileSelectEl) {
+            console.warn("[Sim] Order generation profile select element ('orderGenerationProfileSelect') not found during populate.");
+            return;
+        }
+    }
+
+    const currentVal = orderGenerationProfileSelectEl.value;
+    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
+    orderGenerationProfileSelectEl.innerHTML = '';
+    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
+
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported from demandProfiles.js
+    
+    profilesToUse.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = `custom_${profile.name}`;
+        option.textContent = `Custom: ${profile.name}`;
+        orderGenerationProfileSelectEl.appendChild(option);
+    });
+
+    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
+        orderGenerationProfileSelectEl.value = currentVal;
+    } else {
+        orderGenerationProfileSelectEl.value = 'default_uniform';
+    }
+    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
+}
+
+// Main initialization function for this module, called by navigation.js
+export function initializeSimulationSection() {
+    // Cache standard DOM elements
+    agentStatusListEl = document.getElementById('agentStatusList');
+    pendingOrdersListEl = document.getElementById('pendingOrdersList');
+    simulationLogEl = document.getElementById('simulationLog');
+    startSimBtnEl = document.getElementById('startSimBtn');
+    pauseSimBtnEl = document.getElementById('pauseSimBtn');
+    resetSimBtnEl = document.getElementById('resetSimBtn');
+    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect'); // Crucial for populateOrderGenerationProfileSelectorSim
+    uniformOrderRadiusContainerEl = document.getElementById('uniformOrderRadiusContainer');
+    defaultOrderFocusRadiusContainerEl = document.getElementById('defaultOrderFocusRadiusContainer');
+    defaultOrderSpreadContainerEl = document.getElementById('defaultOrderSpreadContainer');
+    statsTotalOrdersGeneratedEl = document.getElementById('statsTotalOrdersGenerated');
+    statsTotalOrdersDeliveredEl = document.getElementById('statsTotalOrdersDelivered');
+    statsAvgDeliveryTimeEl = document.getElementById('statsAvgDeliveryTime');
+    statsMinDeliveryTimeEl = document.getElementById('statsMinDeliveryTime');
+    statsMaxDeliveryTimeEl = document.getElementById('statsMaxDeliveryTime');
+    statsStdDevDeliveryTimeEl = document.getElementById('statsStdDevDeliveryTime');
+    statsAvgOrderWaitTimeEl = document.getElementById('statsAvgOrderWaitTime');
+    statsAvgAgentUtilizationEl = document.getElementById('statsAvgAgentUtilization');
+    statsTotalAgentTravelTimeEl = document.getElementById('statsTotalAgentTravelTime');
+    statsTotalAgentHandlingTimeEl = document.getElementById('statsTotalAgentHandlingTime');
+    statsTotalSimTimeEl = document.getElementById('statsTotalSimTime');
+    statsTotalAgentLaborCostEl = document.getElementById('statsTotalAgentLaborCost');
+    statsTotalTravelCostEl = document.getElementById('statsTotalTravelCost');
+    statsTotalFixedDeliveryCostsEl = document.getElementById('statsTotalFixedDeliveryCosts');
+    statsOverallTotalOperationalCostEl = document.getElementById('statsOverallTotalOperationalCost');
+    statsAverageCostPerOrderEl = document.getElementById('statsAverageCostPerOrder');
+    saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn');
+    toggleDeliveryTimeHeatmapCheckboxEl = document.getElementById('toggleDeliveryTimeHeatmap');
+
+    simulationMap = initializeMap('simulationMap', defaultDarkStoreLocationSim, 13, 'simulation');
+    if (simulationMap) {
+        simDarkStoreMarker = L.marker([defaultDarkStoreLocationSim.lat, defaultDarkStoreLocationSim.lng], { icon: darkStoreIcon })
+            .addTo(simulationMap)
+            .bindPopup('<b>Dark Store Chandigarh (Simulation)</b><br>Central Hub')
+            .openPopup();
+
+        if (typeof L.heatLayer === 'function') {
+            deliveryTimeHeatmapLayer = L.heatLayer([], {
+                radius: 25, maxOpacity: 0.7, scaleRadius: true, useLocalExtrema: true, valueField: 'value'
+            });
+            console.log("[Sim] L.heatLayer is available. Heatmap layer initialized.");
+        } else {
+            console.error("[Sim] L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or leaflet-heatmap script is missing.");
+            deliveryTimeHeatmapLayer = null;
+        }
+    } else {
+        console.error("Simulation map failed to initialize!");
+    }
+
+    initializeLiveCharts();
+
+    // Event Listeners
+    startSimBtnEl?.addEventListener('click', startSimulation);
+    pauseSimBtnEl?.addEventListener('click', pauseSimulation);
+    resetSimBtnEl?.addEventListener('click', resetSimulation);
+    saveCurrentSimScenarioBtnEl?.addEventListener('click', saveCurrentSimulationScenario);
+    toggleDeliveryTimeHeatmapCheckboxEl?.addEventListener('change', toggleDeliveryTimeHeatmapDisplay);
+
+    orderGenerationProfileSelectEl?.addEventListener('change', () => {
+        setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
+    });
+    document.getElementById('routeWaypointsSelect')?.addEventListener('change', (e) => setSimParameter('routeWaypoints', parseInt(e.target.value)));
+    document.getElementById('manualTrafficControl')?.addEventListener('change', (e) => {
+        setSimParameter('baseTrafficFactor', parseFloat(e.target.value));
+        if (!getSimParameter('enableDynamicTraffic')) {
+            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
+        }
+    });
+    document.getElementById('enableDynamicTraffic')?.addEventListener('change', (e) => {
+        setSimParameter('enableDynamicTraffic', e.target.checked);
+        if (!e.target.checked) {
+            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
+        } else {
+            logMessage('Dynamic traffic enabled. Fluctuations will apply.', "TRAFFIC", simulationLogEl, currentSimulationTime);
+        }
+    });
+
+    populateOrderGenerationProfileSelectorSim(); // Initial population
+    resetSimulationState();
+    toggleSimConfigLock(false);
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
 }
