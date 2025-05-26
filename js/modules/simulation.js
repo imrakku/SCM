@@ -13,7 +13,7 @@ import {
     getDistanceKm,
     isPointInPolygon,
     createAgentIcon,
-    createOrderIcon,
+    createOrderIcon, // This function will be updated in mapUtils.js
     darkStoreIcon,
     generateWaypoints
 } from '../mapUtils.js';
@@ -53,10 +53,18 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.2, // Default for "Medium"
+    currentOrderGenerationProbability: 0.40, // Default for "Medium" (Updated to new Medium value)
 };
 
-export const orderGenerationProbabilities = { 1: 0.05, 2: 0.1, 3: 0.2, 4: 0.3, 5: 0.4 };
+// Updated order generation probabilities
+export const orderGenerationProbabilities = {
+    1: 0.15, // Very Low (Was 0.05 or 0.10)
+    2: 0.25, // Low (Was 0.1 or 0.20)
+    3: 0.40, // Medium (Was 0.2 or 0.35 - Increased)
+    4: 0.55, // High (Was 0.3 or 0.50)
+    5: 0.70  // Very High (Was 0.4 or 0.65)
+};
+
 export const orderSpreadFactors = {1: 0.02, 2: 0.035, 3: 0.05, 4: 0.065, 5: 0.08}; // Legacy
 
 // --- Statistics Tracking ---
@@ -81,6 +89,7 @@ let liveChartData = {
 };
 
 // --- DOM Elements ---
+// (These should be initialized in initializeSimulationSection)
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -97,6 +106,9 @@ export function setSimParameter(key, value) {
         // console.log(`SimParam Updated: ${key} = ${value}`);
         if (key === 'orderGenerationProfile') {
             toggleProfileSpecificControlsUI();
+        }
+        if (key === 'currentOrderGenerationProbability') {
+             // console.log(`[SimParams] currentOrderGenerationProbability updated to: ${value}`);
         }
     } else {
         console.warn(`Attempted to set unknown simulation parameter: ${key}`);
@@ -138,7 +150,7 @@ export function initializeSimulationSection() {
     saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn');
 
     simulationMap = initializeMap('simulationMap', defaultDarkStoreLocationSim, 13, 'simulation');
-    if (simulationMap) { // Ensure map was initialized
+    if (simulationMap) {
         simDarkStoreMarker = L.marker([defaultDarkStoreLocationSim.lat, defaultDarkStoreLocationSim.lng], { icon: darkStoreIcon })
             .addTo(simulationMap)
             .bindPopup('<b>Dark Store Chandigarh (Simulation)</b><br>Central Hub')
@@ -146,7 +158,6 @@ export function initializeSimulationSection() {
     } else {
         console.error("Simulation map failed to initialize!");
     }
-
 
     initializeLiveCharts();
 
@@ -229,6 +240,11 @@ function resetSimulationState() {
     }
     updateLiveCharts();
 
+    // Set initial probability based on the current slider value for "Order Arrival Rate"
+    // This is handled by initializeSliders in uiElements.js which calls setSimParameter
+    // and the action within initializeSliders for 'orderFrequencySlider' sets 'currentOrderGenerationProbability'
+    // We can log the effective probability at the start of a simulation run.
+
     const numAgents = getSimParameter('numAgents');
     for (let i = 0; i < numAgents; i++) {
         createAgent();
@@ -250,10 +266,10 @@ function resetSimulationState() {
 function startSimulation() {
     if (isSimulationRunning) return;
     if (currentSimulationTime === 0) {
-        resetSimulationState();
-        logMessage("Simulation started.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        resetSimulationState(); // Ensures params are fresh if changed before a new start
+        logMessage(`Simulation started. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
     } else {
-        logMessage("Simulation resumed.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        logMessage(`Simulation resumed. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
     }
     isSimulationRunning = true;
     simulationIntervalId = setInterval(simulationStep, SIMULATION_STEP_INTERVAL_MS);
@@ -302,13 +318,6 @@ function createAgent() {
     }
 }
 
-/**
- * Generates a point uniformly within the Chandigarh polygon.
- * Helper for generateOrder.
- * @param {number} numPoints Number of points (usually 1).
- * @param {Array<[number, number]>} polygonCoords GeoJSON coords [lng, lat].
- * @returns {Array<{lat: number, lng: number}>}
- */
 function generateUniformPointInChd(numPoints, polygonCoords) {
     const points = [];
     if (numPoints <= 0) return points;
@@ -320,8 +329,7 @@ function generateUniformPointInChd(numPoints, polygonCoords) {
         if (p[1] < localBounds.minY) localBounds.minY = p[1];
         if (p[1] > localBounds.maxY) localBounds.maxY = p[1];
     });
-
-    while (points.length < numPoints && attempts < numPoints * 200) { // Increased attempts
+    while (points.length < numPoints && attempts < numPoints * 200) {
         attempts++;
         const lng = Math.random() * (localBounds.maxX - localBounds.minX) + localBounds.minX;
         const lat = Math.random() * (localBounds.maxY - localBounds.minY) + localBounds.minY;
@@ -330,20 +338,17 @@ function generateUniformPointInChd(numPoints, polygonCoords) {
         }
     }
     if (points.length < numPoints) {
-        console.warn(`[OrderGenHelper] Only generated ${points.length}/${numPoints} uniform points within polygon after ${attempts} attempts.`);
+        // console.warn(`[OrderGenHelper] Only generated ${points.length}/${numPoints} uniform points within polygon after ${attempts} attempts.`);
     }
     return points;
 }
 
-
 function generateOrder() {
-    console.log(`[Sim] Attempting to generate order. Probability: ${getSimParameter('currentOrderGenerationProbability')}`);
-    stats.totalOrdersGenerated++; // Increment first, decrement if fails
+    stats.totalOrdersGenerated++;
     const orderId = orderIdCounter++;
     let newOrderLocation;
     const selectedProfileId = getSimParameter('orderGenerationProfile');
     let profileSourceInfo = `Profile: ${selectedProfileId}`;
-    console.log(`[Sim] Selected Profile ID for order gen: ${selectedProfileId}`);
 
     const customProfiles = getCustomDemandProfiles();
 
@@ -351,7 +356,6 @@ function generateOrder() {
         const profileName = selectedProfileId.substring('custom_'.length);
         profileSourceInfo = `Custom: ${profileName}`;
         const customProfile = customProfiles.find(p => p.name === profileName);
-        console.log(`[Sim] Custom profile found:`, customProfile);
 
         if (customProfile && customProfile.zones && customProfile.zones.length > 0) {
             const activeZones = customProfile.zones.filter(zone => {
@@ -359,12 +363,10 @@ function generateOrder() {
                 const endTime = zone.endTime !== undefined ? zone.endTime : Infinity;
                 return currentSimulationTime >= startTime && currentSimulationTime <= endTime;
             });
-            console.log(`[Sim] Active zones for custom profile at T+${currentSimulationTime}:`, activeZones);
 
             if (activeZones.length > 0) {
                 let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (zone.maxOrders > 0 ? (zone.minOrders + zone.maxOrders) / 2 : 1), 0);
                 if (totalOrderWeight === 0) totalOrderWeight = activeZones.length;
-
                 let randomPick = Math.random() * totalOrderWeight;
                 let selectedZone = null;
                 for (const zone of activeZones) {
@@ -373,7 +375,6 @@ function generateOrder() {
                     randomPick -= weight;
                 }
                 if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)];
-                console.log(`[Sim] Selected zone for order:`, selectedZone);
 
                 if (selectedZone) {
                     profileSourceInfo += ` (Zone Type: ${selectedZone.type})`;
@@ -389,7 +390,6 @@ function generateOrder() {
                             attempts++;
                         } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
                         if (attempts >= 100 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
-                            console.warn(`[Sim] Hotspot generation failed boundary check for zone ${selectedZone.type}, falling back to center.`);
                             newOrderLocation = { ...hotspotCenter };
                         }
                     } else if (selectedZone.type === 'sector') {
@@ -405,15 +405,12 @@ function generateOrder() {
                                     attempts++;
                                 } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 50);
                                 if (attempts >= 50 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)){
-                                     console.warn(`[Sim] Sector generation failed boundary check for ${randomSectorName}, falling back to center.`);
                                      newOrderLocation = { ...sectorCenter };
                                 }
                             } else {
-                                console.warn(`[Sim] Sector data not found for ${randomSectorName}, falling back to dark store.`);
                                 newOrderLocation = { ...defaultDarkStoreLocationSim };
                             }
                         } else {
-                             console.warn(`[Sim] No sectors selected in sector zone, falling back to dark store.`);
                              newOrderLocation = { ...defaultDarkStoreLocationSim };
                         }
                     } else if (selectedZone.type === 'route') {
@@ -431,27 +428,21 @@ function generateOrder() {
                                 attempts++;
                             } while(!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 50);
                             if (attempts >= 50 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
-                                console.warn(`[Sim] Route-based generation failed boundary check, falling back to uniform.`);
                                 newOrderLocation = generateUniformPointInChd(1, chandigarhGeoJsonPolygon)[0] || {...defaultDarkStoreLocationSim};
                             }
                         } else {
-                            console.warn(`[Sim] No route points in route zone, falling back to uniform.`);
                             newOrderLocation = generateUniformPointInChd(1, chandigarhGeoJsonPolygon)[0] || {...defaultDarkStoreLocationSim};
                         }
                     } else {
-                        console.warn(`[Sim] Unknown custom zone type "${selectedZone.type}", falling back to dark store.`);
                         newOrderLocation = { ...defaultDarkStoreLocationSim };
                     }
                 } else {
-                    console.log(`[Sim] No specific zone selected within custom profile, no order generated this step.`);
                     stats.totalOrdersGenerated--; return;
                 }
             } else {
-                console.log(`[Sim] Custom profile "${profileName}" has no active zones at T+${currentSimulationTime}, no order generated this step.`);
                 stats.totalOrdersGenerated--; return;
             }
         } else {
-            console.warn(`[Sim] Custom profile "${profileName}" not found or has no zones, no order generated this step.`);
             stats.totalOrdersGenerated--; return;
         }
     } else if (selectedProfileId === 'default_focused') {
@@ -466,10 +457,9 @@ function generateOrder() {
             attempts++;
         } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
         if (attempts >= 100 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
-            console.warn(`[Sim] Default_focused generation failed boundary check, falling back to dark store.`);
             newOrderLocation = { ...defaultDarkStoreLocationSim };
         }
-    } else if (selectedProfileId === 'default_uniform') { // Default: 'default_uniform'
+    } else if (selectedProfileId === 'default_uniform') {
         profileSourceInfo = `Default Uniform (Radius: ${getSimParameter('uniformOrderRadiusKm')}km)`;
         const radiusDeg = getSimParameter('uniformOrderRadiusKm') / 111.0;
         let attempts = 0;
@@ -482,43 +472,35 @@ function generateOrder() {
             };
             attempts++;
         } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 200);
-
         if (attempts >= 200 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
-            console.warn(`[Sim] Default_uniform generation failed boundary check, falling back to city-wide uniform.`);
             const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
             newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...defaultDarkStoreLocationSim };
             profileSourceInfo += " (Fallback to city boundary)";
         }
     } else {
-        console.warn(`[Sim] Unknown profile ID "${selectedProfileId}", falling back to city-wide uniform.`);
         profileSourceInfo = "Fallback Uniform (Unknown Profile)";
         const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
         newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...defaultDarkStoreLocationSim };
     }
 
     if (!newOrderLocation) {
-        console.error(`[Sim] CRITICAL: newOrderLocation is undefined after profile processing. Profile: ${selectedProfileId}. No order generated.`);
-        stats.totalOrdersGenerated--; // Decrement as no order was actually made
+        stats.totalOrdersGenerated--;
         return;
     }
 
     logMessage(`Order ${orderId} from ${profileSourceInfo} at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER_GEN', simulationLogEl, currentSimulationTime);
-
     const newOrder = {
         id: orderId, location: newOrderLocation, status: 'pending',
         assignedAgentId: null, etaMinutes: null, timePlaced: currentSimulationTime,
         assignmentTime: null, noAgentLogged: false,
     };
     orders.push(newOrder);
-
     if (simulationMap) {
         orderMarkers[orderId] = L.marker([newOrder.location.lat, newOrder.location.lng], { icon: createOrderIcon(orderId, 'pending') })
             .addTo(simulationMap)
             .bindPopup(`<b>Order ${orderId}</b><br>Status: ${newOrder.status}<br>Placed at: T+${newOrder.timePlaced} min`);
     }
-    console.log(`[Sim] Successfully generated and added Order ${orderId}. Total orders array length: ${orders.length}`);
 }
-
 
 function calculateETA(agent, orderLocation) {
     const effectiveTraffic = getSimParameter('enableDynamicTraffic') ? getSimParameter('currentDynamicTrafficFactor') : getSimParameter('baseTrafficFactor');
@@ -691,12 +673,8 @@ function simulationStep() {
     }
 
     const orderGenProb = getSimParameter('currentOrderGenerationProbability');
-    // console.log(`[SimStep] Time: ${currentSimulationTime}, OrderGenProb: ${orderGenProb}, Random: ${Math.random().toFixed(3)}`);
     if (Math.random() < orderGenProb) {
-        console.log(`[SimStep] Condition met for order generation.`);
         generateOrder();
-    } else {
-        // console.log(`[SimStep] Condition NOT met for order generation.`);
     }
 
     updateAgentsMovementAndStatus();
