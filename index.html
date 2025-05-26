@@ -170,7 +170,7 @@
                             <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
                         </div>
                         <div id="profileZonesContainer" class="space-y-4 mb-4">
-                            </div>
+                        </div>
                         <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
                         <div class="flex space-x-2">
                             <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
@@ -204,21 +204,10 @@
                     <p class="text-base leading-relaxed">This is the heart of the simulator! Here, you can run a live simulation of delivery operations. You'll see orders appear on the map, delivery agents pick them up from a central dark store, and deliver them to customers.</p>
                     <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                     <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                        <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set:
-                            <ul class="list-disc list-inside ml-6 text-sm">
-                                <li>Number of available delivery agents.</li>
-                                <li>How frequently new orders arrive (Order Arrival Rate).</li>
-                                <li>Agent speeds and store handling time.</li>
-                                <li>The "Order Generation Profile" (use a default or a custom one you created).</li>
-                                <li>Route complexity, traffic conditions, and operational costs.</li>
-                            </ul>
-                        </li>
-                        <li>Click "Start Simulation".</li>
-                        <li>Observe the map: Agents (numbered circles) will move, and orders (star icons) will appear.</li>
-                        <li>Monitor the "Agent Status," "Active Orders," "Simulation Log," and live charts for real-time updates.</li>
-                        <li>The "Simulation Statistics" and "Cost KPIs" at the bottom will update as the simulation progresses.</li>
-                        <li>You can "Pause," "Resume" (by clicking Start again), or "Reset" the simulation.</li>
-                        <li>Use "Save Current Scenario Results" to save the outcome for later comparison in the "Scenario Analysis" tab.</li>
+                        <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
+                        <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
+                        <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
+                        <li>"Save Current Scenario Results" to compare different setups later.</li>
                     </ul>
                 </div>
 
@@ -330,6 +319,10 @@
                             <button id="startSimBtn" class="btn btn-primary w-full sm:flex-1">Start Simulation</button>
                             <button id="pauseSimBtn" class="btn btn-secondary w-full sm:flex-1">Pause Simulation</button>
                              <button id="resetSimBtn" class="btn btn-danger w-full sm:flex-1">Reset Simulation</button>
+                        </div>
+                        <div class="mt-4 text-center input-group checkbox-group justify-center">
+                            <input type="checkbox" id="toggleDeliveryTimeHeatmap" class="mr-2">
+                            <label for="toggleDeliveryTimeHeatmap" class="text-md font-medium text-slate-700 cursor-pointer">Show Delivery Time Heatmap</label>
                         </div>
                         <div class="grid md:grid-cols-2 gap-4 mt-4">
                             <div class="live-chart-container">
