@@ -36,6 +36,8 @@ let currentSimulationTime = 0;
 let orderIdCounter = 0;
 let agentIdCounter = 1;
 let isSimulationRunning = false;
+
+// --- Heatmap Specific State ---
 let deliveryTimeHeatmapLayer = null;
 let deliveredOrderDataForHeatmap = [];
 
@@ -150,6 +152,7 @@ function updateSimTimeDisplayLocal(time) {
     if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
 }
 
+
 function updateAgentStatusListUI() {
     if (!agentStatusListEl) return;
     agentStatusListEl.innerHTML = '';
@@ -260,6 +263,7 @@ function resetSimulationState() {
     }
     if (toggleDeliveryTimeHeatmapCheckboxEl) {
         toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        toggleDeliveryTimeHeatmapCheckboxEl.disabled = (deliveryTimeHeatmapLayer === null);
     }
 
     for (let key in stats) {
@@ -325,11 +329,15 @@ function resetSimulation() {
 function toggleDeliveryTimeHeatmapDisplay() {
     if (!simulationMap) {
         console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
         return;
     }
     if (!deliveryTimeHeatmapLayer) {
         console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
-        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        if (toggleDeliveryTimeHeatmapCheckboxEl) {
+            toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+            toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
+        }
         return;
     }
 
@@ -760,7 +768,6 @@ export function getCurrentSimulationStats() {
 // This function MUST be exported for demandProfiles.js
 export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
     if (!orderGenerationProfileSelectEl) {
-        // Attempt to cache it if not already done (e.g. if demandProfiles init runs before sim init fully)
         orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
         if (!orderGenerationProfileSelectEl) {
             console.warn("[Sim] Order generation profile select element ('orderGenerationProfileSelect') not found during populate.");
@@ -773,7 +780,7 @@ export function populateOrderGenerationProfileSelectorSim(customProfilesFromDema
     orderGenerationProfileSelectEl.innerHTML = '';
     defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
 
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported from demandProfiles.js
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported
     
     profilesToUse.forEach(profile => {
         const option = document.createElement('option');
@@ -792,14 +799,13 @@ export function populateOrderGenerationProfileSelectorSim(customProfilesFromDema
 
 // Main initialization function for this module, called by navigation.js
 export function initializeSimulationSection() {
-    // Cache standard DOM elements
     agentStatusListEl = document.getElementById('agentStatusList');
     pendingOrdersListEl = document.getElementById('pendingOrdersList');
     simulationLogEl = document.getElementById('simulationLog');
     startSimBtnEl = document.getElementById('startSimBtn');
     pauseSimBtnEl = document.getElementById('pauseSimBtn');
     resetSimBtnEl = document.getElementById('resetSimBtn');
-    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect'); // Crucial for populateOrderGenerationProfileSelectorSim
+    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
     uniformOrderRadiusContainerEl = document.getElementById('uniformOrderRadiusContainer');
     defaultOrderFocusRadiusContainerEl = document.getElementById('defaultOrderFocusRadiusContainer');
     defaultOrderSpreadContainerEl = document.getElementById('defaultOrderSpreadContainer');
@@ -835,16 +841,17 @@ export function initializeSimulationSection() {
             });
             console.log("[Sim] L.heatLayer is available. Heatmap layer initialized.");
         } else {
-            console.error("[Sim] L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or leaflet-heatmap script is missing.");
+            console.error("[Sim] CRITICAL: L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or is missing. Heatmap functionality will be disabled.");
             deliveryTimeHeatmapLayer = null;
+            if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
         }
     } else {
-        console.error("Simulation map failed to initialize!");
+        console.error("[Sim] CRITICAL: Simulation map failed to initialize!");
+        if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
     }
 
     initializeLiveCharts();
 
-    // Event Listeners
     startSimBtnEl?.addEventListener('click', startSimulation);
     pauseSimBtnEl?.addEventListener('click', pauseSimulation);
     resetSimBtnEl?.addEventListener('click', resetSimulation);
@@ -870,7 +877,7 @@ export function initializeSimulationSection() {
         }
     });
 
-    populateOrderGenerationProfileSelectorSim(); // Initial population
+    populateOrderGenerationProfileSelectorSim();
     resetSimulationState();
     toggleSimConfigLock(false);
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
