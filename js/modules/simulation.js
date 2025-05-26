@@ -87,7 +87,7 @@ let liveChartData = {
     activeAgentsHistory: [],
 };
 
-// --- DOM Elements ---
+// --- DOM Elements (will be cached in initializeSimulationSection) ---
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -99,275 +99,29 @@ let statsTotalOrdersGeneratedEl, statsTotalOrdersDeliveredEl, statsAvgDeliveryTi
 let toggleDeliveryTimeHeatmapCheckboxEl;
 
 
+// --- Function Definitions (Order Matters for Event Handlers) ---
+
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
         if (key === 'orderGenerationProfile') {
-            toggleProfileSpecificControlsUI();
+            toggleProfileSpecificControlsUI(); // Ensure this is defined or called safely
         }
     } else {
         console.warn(`Attempted to set unknown simulation parameter: ${key}`);
     }
 }
+
 export function getSimParameter(key) {
     return simParams.hasOwnProperty(key) ? simParams[key] : undefined;
 }
 
-
-export function initializeSimulationSection() {
-    // Cache standard DOM elements
-    agentStatusListEl = document.getElementById('agentStatusList');
-    pendingOrdersListEl = document.getElementById('pendingOrdersList');
-    simulationLogEl = document.getElementById('simulationLog');
-    startSimBtnEl = document.getElementById('startSimBtn');
-    pauseSimBtnEl = document.getElementById('pauseSimBtn');
-    resetSimBtnEl = document.getElementById('resetSimBtn');
-    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
-    uniformOrderRadiusContainerEl = document.getElementById('uniformOrderRadiusContainer');
-    defaultOrderFocusRadiusContainerEl = document.getElementById('defaultOrderFocusRadiusContainer');
-    defaultOrderSpreadContainerEl = document.getElementById('defaultOrderSpreadContainer');
-    statsTotalOrdersGeneratedEl = document.getElementById('statsTotalOrdersGenerated');
-    statsTotalOrdersDeliveredEl = document.getElementById('statsTotalOrdersDelivered');
-    statsAvgDeliveryTimeEl = document.getElementById('statsAvgDeliveryTime');
-    statsMinDeliveryTimeEl = document.getElementById('statsMinDeliveryTime');
-    statsMaxDeliveryTimeEl = document.getElementById('statsMaxDeliveryTime');
-    statsStdDevDeliveryTimeEl = document.getElementById('statsStdDevDeliveryTime');
-    statsAvgOrderWaitTimeEl = document.getElementById('statsAvgOrderWaitTime');
-    statsAvgAgentUtilizationEl = document.getElementById('statsAvgAgentUtilization');
-    statsTotalAgentTravelTimeEl = document.getElementById('statsTotalAgentTravelTime');
-    statsTotalAgentHandlingTimeEl = document.getElementById('statsTotalAgentHandlingTime');
-    statsTotalSimTimeEl = document.getElementById('statsTotalSimTime');
-    statsTotalAgentLaborCostEl = document.getElementById('statsTotalAgentLaborCost');
-    statsTotalTravelCostEl = document.getElementById('statsTotalTravelCost');
-    statsTotalFixedDeliveryCostsEl = document.getElementById('statsTotalFixedDeliveryCosts');
-    statsOverallTotalOperationalCostEl = document.getElementById('statsOverallTotalOperationalCost');
-    statsAverageCostPerOrderEl = document.getElementById('statsAverageCostPerOrder');
-    saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn');
-    toggleDeliveryTimeHeatmapCheckboxEl = document.getElementById('toggleDeliveryTimeHeatmap');
-
-    simulationMap = initializeMap('simulationMap', defaultDarkStoreLocationSim, 13, 'simulation');
-    if (simulationMap) {
-        simDarkStoreMarker = L.marker([defaultDarkStoreLocationSim.lat, defaultDarkStoreLocationSim.lng], { icon: darkStoreIcon })
-            .addTo(simulationMap)
-            .bindPopup('<b>Dark Store Chandigarh (Simulation)</b><br>Central Hub')
-            .openPopup();
-
-        // Initialize heatmap layer
-        if (typeof L.heatLayer === 'function') {
-            deliveryTimeHeatmapLayer = L.heatLayer([], {
-                radius: 25,
-                maxOpacity: 0.7,
-                scaleRadius: true,
-                useLocalExtrema: true, // Easier for dynamic data, scales based on current points
-                valueField: 'value'
-            });
-            console.log("[Sim] L.heatLayer is available. Heatmap layer initialized.");
-        } else {
-            console.error("[Sim] L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or leaflet-heatmap script is missing.");
-            deliveryTimeHeatmapLayer = null; // Ensure it's null if not initialized
-        }
-
-    } else {
-        console.error("Simulation map failed to initialize!");
-    }
-
-    initializeLiveCharts();
-
-    // Event Listeners
-    startSimBtnEl?.addEventListener('click', startSimulation);
-    pauseSimBtnEl?.addEventListener('click', pauseSimulation);
-    resetSimBtnEl?.addEventListener('click', resetSimulation);
-    saveCurrentSimScenarioBtnEl?.addEventListener('click', saveCurrentSimulationScenario);
-    toggleDeliveryTimeHeatmapCheckboxEl?.addEventListener('change', toggleDeliveryTimeHeatmapDisplay);
-
-    orderGenerationProfileSelectEl?.addEventListener('change', () => {
-        setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
-    });
-    document.getElementById('routeWaypointsSelect')?.addEventListener('change', (e) => setSimParameter('routeWaypoints', parseInt(e.target.value)));
-    document.getElementById('manualTrafficControl')?.addEventListener('change', (e) => {
-        setSimParameter('baseTrafficFactor', parseFloat(e.target.value));
-        if (!getSimParameter('enableDynamicTraffic')) {
-            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
-        }
-    });
-    document.getElementById('enableDynamicTraffic')?.addEventListener('change', (e) => {
-        setSimParameter('enableDynamicTraffic', e.target.checked);
-        if (!e.target.checked) {
-            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
-        } else {
-            logMessage('Dynamic traffic enabled. Fluctuations will apply.', "TRAFFIC", simulationLogEl, currentSimulationTime);
-        }
-    });
-
-    populateOrderGenerationProfileSelectorSim();
-    resetSimulationState();
-    toggleSimConfigLock(false);
-    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
-}
-
-function resetSimulationState() {
-    currentSimulationTime = 0;
-    orderIdCounter = 0;
-    agentIdCounter = 1;
-    isSimulationRunning = false;
-
-    agents.forEach(agent => { if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline); });
-    agents = [];
-    orders = [];
-    Object.values(agentMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); agentMarkers = {};
-    Object.values(orderMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); orderMarkers = {};
-
-    deliveredOrderDataForHeatmap = [];
-    if (deliveryTimeHeatmapLayer && simulationMap && simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
-        simulationMap.removeLayer(deliveryTimeHeatmapLayer);
-    }
-    if (deliveryTimeHeatmapLayer) {
-        deliveryTimeHeatmapLayer.setData({max:1, data:[]}); // Clear data
-    }
-    if (toggleDeliveryTimeHeatmapCheckboxEl) {
-        toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
-    }
-
-    for (let key in stats) {
-        if (Array.isArray(stats[key])) stats[key] = [];
-        else if (typeof stats[key] === 'number') stats[key] = 0;
-    }
-    for (let key in liveChartData) {
-        liveChartData[key] = [];
-    }
-    updateLiveCharts();
-
-    const numAgents = getSimParameter('numAgents');
-    for (let i = 0; i < numAgents; i++) {
-        createAgent();
-    }
-
-    updateSimTimeDisplay(currentSimulationTime);
-    updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
-    updateAgentStatusListUI();
-    updatePendingOrdersListUI();
-    updateSimulationStatsUI();
-    if (simulationLogEl) simulationLogEl.innerHTML = '<p class="log-system"><em>[SYS] Simulation log initialized.</em></p>';
-    logMessage("Simulation state initialized/reset.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-
-    if (startSimBtnEl) startSimBtnEl.disabled = false;
-    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
-    toggleSimConfigLock(false);
-}
-
-// --- HEATMAP FUNCTIONS ---
-function toggleDeliveryTimeHeatmapDisplay() {
-    if (!simulationMap) {
-        console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
-        return;
-    }
-    if (!deliveryTimeHeatmapLayer) {
-        console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
-        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false; // Uncheck if layer is broken
-        return;
-    }
-
-    if (toggleDeliveryTimeHeatmapCheckboxEl?.checked) {
-        updateDeliveryTimeHeatmapData();
-        if (!simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
-            deliveryTimeHeatmapLayer.addTo(simulationMap);
-            logMessage("Delivery Time Heatmap ON.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-        }
-    } else {
-        if (simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
-            simulationMap.removeLayer(deliveryTimeHeatmapLayer);
-            logMessage("Delivery Time Heatmap OFF.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-        }
-    }
-}
-
-function updateDeliveryTimeHeatmapData() {
-    if (!deliveryTimeHeatmapLayer) {
-        console.warn("[Heatmap] Heatmap layer not initialized. Cannot update data.");
-        return;
-    }
-    if (deliveredOrderDataForHeatmap.length === 0) {
-        deliveryTimeHeatmapLayer.setData({ max: 1, data: [] }); // Use a default max if no data
-        // console.log("[Heatmap] No data to display on heatmap.");
-        return;
-    }
-
-    const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
-        lat: d.lat,
-        lng: d.lng,
-        value: d.value
-    }));
-
-    // For useLocalExtrema: true, leaflet-heatmap handles min/max scaling automatically.
-    // If you were to use useLocalExtrema: false, you'd need to calculate and set 'max'.
-    // Example: const maxVal = Math.max(...heatmapPoints.map(p => p.value), 1);
-    // deliveryTimeHeatmapLayer.setData({ max: maxVal, data: heatmapPoints });
-    deliveryTimeHeatmapLayer.setData(heatmapPoints); // For useLocalExtrema: true, just pass the points
-    // console.log(`[Heatmap] Data updated. Points: ${heatmapPoints.length}`);
-}
-
-
-// --- (The rest of your simulation.js functions: populateOrderGenerationProfileSelectorSim, toggleProfileSpecificControlsUI, startSimulation, pauseSimulation, createAgent, generateUniformPointInChd, generateOrder, calculateETA, assignOrders, updateAgentsMovementAndStatus, simulationStep, updateAgentStatusListUI, updatePendingOrdersListUI, updateSimulationStatsUI, initializeLiveCharts, updateLiveCharts, getCurrentSimulationParameters, getCurrentSimulationStats) ---
-// Ensure these are complete and correct from your previous working version.
-// The key change for the error is in initializeSimulationSection, and data collection in updateAgentsMovementAndStatus.
-
-// (Make sure to include the full content of all other functions from your previous simulation.js file here)
-// For example:
-export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
-    if (!orderGenerationProfileSelectEl) {
-        // console.warn("[Sim] Order generation profile select element not found.");
-        return;
-    }
-    const currentVal = orderGenerationProfileSelectEl.value;
-    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
-    orderGenerationProfileSelectEl.innerHTML = '';
-    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
-
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles();
-    profilesToUse.forEach(profile => {
-        const option = document.createElement('option');
-        option.value = `custom_${profile.name}`;
-        option.textContent = `Custom: ${profile.name}`;
-        orderGenerationProfileSelectEl.appendChild(option);
-    });
-
-    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
-        orderGenerationProfileSelectEl.value = currentVal;
-    } else {
-        orderGenerationProfileSelectEl.value = 'default_uniform';
-    }
-    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
-}
-
 function toggleProfileSpecificControlsUI() {
     const selectedProfile = getSimParameter('orderGenerationProfile');
-    uniformOrderRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_uniform');
-    defaultOrderFocusRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_focused');
-    defaultOrderSpreadContainerEl?.classList.toggle('hidden', true);
-}
-
-function startSimulation() {
-    if (isSimulationRunning) return;
-    if (currentSimulationTime === 0) {
-        resetSimulationState();
-        logMessage(`Simulation started. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
-    } else {
-        logMessage(`Simulation resumed. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
-    }
-    isSimulationRunning = true;
-    simulationIntervalId = setInterval(simulationStep, SIMULATION_STEP_INTERVAL_MS);
-    if (startSimBtnEl) startSimBtnEl.disabled = true;
-    if (pauseSimBtnEl) pauseSimBtnEl.disabled = false;
-    toggleSimConfigLock(true);
-}
-
-function pauseSimulation() {
-    if (!isSimulationRunning) return;
-    isSimulationRunning = false;
-    clearInterval(simulationIntervalId);
-    logMessage("Simulation paused.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-    if (startSimBtnEl) startSimBtnEl.disabled = false;
-    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+    // Ensure elements are cached before use, or guard access
+    if(uniformOrderRadiusContainerEl) uniformOrderRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_uniform');
+    if(defaultOrderFocusRadiusContainerEl) defaultOrderFocusRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_focused');
+    if(defaultOrderSpreadContainerEl) defaultOrderSpreadContainerEl.classList.toggle('hidden', true);
 }
 
 function createAgent() {
@@ -393,6 +147,229 @@ function createAgent() {
     }
 }
 
+function updateSimTimeDisplayLocal(time) { // Renamed to avoid conflict if uiElements has a similar one
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min"; // Update the stats display
+    const simTimeDisplaySpan = document.getElementById('simTimeDisplay'); // The main display
+    if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
+}
+
+
+function updateAgentStatusListUI() {
+    if (!agentStatusListEl) return;
+    agentStatusListEl.innerHTML = '';
+    if (agents.length === 0) { agentStatusListEl.innerHTML = '<p class="text-slate-500 italic">No agents yet.</p>'; return; }
+    agents.forEach(agent => {
+        const agentDiv = document.createElement('div');
+        let statusText = `Agent ${agent.id}: ${agent.status.replace(/_/g, ' ')}`;
+        if (agent.assignedOrderId !== null) statusText += ` (Order: ${agent.assignedOrderId})`;
+        if (agent.status === 'at_store') statusText += ` (${agent.timeSpentAtStore}/${getSimParameter('handlingTime')} min)`;
+        statusText += ` | Delivered: ${agent.deliveriesMade}`;
+        const utilization = agent.totalTime > 0 ? (agent.busyTime / agent.totalTime * 100).toFixed(1) : 0;
+        statusText += ` | Util: ${utilization}%`;
+        agentDiv.className = `p-1.5 rounded-md text-xs ${agent.status === 'available' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`;
+        agentDiv.textContent = statusText;
+        agentStatusListEl.appendChild(agentDiv);
+    });
+}
+
+function updatePendingOrdersListUI() {
+    if (!pendingOrdersListEl) return;
+    pendingOrdersListEl.innerHTML = '';
+    const activeOrders = orders.filter(o => o.status !== 'delivered');
+    if (activeOrders.length === 0) { pendingOrdersListEl.innerHTML = '<p class="text-slate-500 italic">No active orders.</p>'; return; }
+    activeOrders.forEach(order => {
+        const orderDiv = document.createElement('div');
+        let orderText = `Order ${order.id}: ${order.status.replace(/_/g, ' ')}`;
+        if (order.assignedAgentId !== null) orderText += ` (Agent ${order.assignedAgentId}, ETA ${order.etaMinutes ? order.etaMinutes.toFixed(1) : 'N/A'} min)`;
+        else orderText += ` (Placed: T+${order.timePlaced} min)`;
+        orderDiv.className = `p-1.5 rounded-md text-xs ${order.status === 'pending' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`;
+        orderDiv.textContent = orderText;
+        pendingOrdersListEl.appendChild(orderDiv);
+    });
+}
+
+function updateSimulationStatsUI() {
+    if (!statsTotalOrdersGeneratedEl) return;
+    statsTotalOrdersGeneratedEl.textContent = stats.totalOrdersGenerated;
+    statsTotalOrdersDeliveredEl.textContent = stats.totalOrdersDelivered;
+    const avgDeliveryTime = stats.totalOrdersDelivered > 0 ? (stats.sumDeliveryTimes / stats.totalOrdersDelivered) : NaN;
+    statsAvgDeliveryTimeEl.textContent = isNaN(avgDeliveryTime) ? "N/A" : avgDeliveryTime.toFixed(1) + " min";
+    statsMinDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.min(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
+    statsMaxDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.max(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
+    const stdDevDelTime = calculateStdDev(stats.allDeliveryTimes, avgDeliveryTime);
+    statsStdDevDeliveryTimeEl.textContent = (stats.allDeliveryTimes.length > 1 && !isNaN(stdDevDelTime)) ? stdDevDelTime.toFixed(1) + " min" : "N/A";
+    const avgOrderWaitTime = stats.countAssignedOrders > 0 ? (stats.sumOrderWaitTimes / stats.countAssignedOrders).toFixed(1) : "N/A";
+    statsAvgOrderWaitTimeEl.textContent = avgOrderWaitTime + (avgOrderWaitTime !== "N/A" ? " min" : "");
+    let totalAgentPossibleTime = 0;
+    let totalAgentActualBusyTime = 0;
+    agents.forEach(agent => {
+        totalAgentPossibleTime += agent.totalTime;
+        totalAgentActualBusyTime += agent.busyTime;
+    });
+    const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime * 100).toFixed(1) : "N/A";
+    statsAvgAgentUtilizationEl.textContent = avgAgentUtilization + (avgAgentUtilization !== "N/A" ? "%" : "");
+    statsTotalAgentTravelTimeEl.textContent = stats.totalAgentTravelTime.toFixed(0) + " min";
+    statsTotalAgentHandlingTimeEl.textContent = stats.totalAgentHandlingTime.toFixed(0) + " min";
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = currentSimulationTime + " min"; // Ensure this element is cached
+    const totalAgentLaborCost = (stats.totalAgentActiveTime / 60) * getSimParameter('agentCostPerHour');
+    const totalTravelCostVal = stats.totalDistanceTraveledByAgentsKm * getSimParameter('costPerKmTraveled');
+    const totalFixedDeliveryCostsVal = stats.totalOrdersDelivered * getSimParameter('fixedCostPerDelivery');
+    const overallTotalOperationalCostVal = totalAgentLaborCost + totalTravelCostVal + totalFixedDeliveryCostsVal;
+    const averageCostPerOrderVal = stats.totalOrdersDelivered > 0 ? (overallTotalOperationalCostVal / stats.totalOrdersDelivered) : NaN;
+    statsTotalAgentLaborCostEl.textContent = `₹${totalAgentLaborCost.toFixed(2)}`;
+    statsTotalTravelCostEl.textContent = `₹${totalTravelCostVal.toFixed(2)}`;
+    statsTotalFixedDeliveryCostsEl.textContent = `₹${totalFixedDeliveryCostsVal.toFixed(2)}`;
+    statsOverallTotalOperationalCostEl.textContent = `₹${overallTotalOperationalCostVal.toFixed(2)}`;
+    statsAverageCostPerOrderEl.textContent = isNaN(averageCostPerOrderVal) ? "N/A" : `₹${averageCostPerOrderVal.toFixed(2)}`;
+}
+
+function updateLiveCharts() {
+    if (isSimulationRunning || currentSimulationTime === 0) {
+        liveChartData.simTimeHistory.push(currentSimulationTime);
+        liveChartData.pendingOrdersHistory.push(orders.filter(o => o.status !== 'delivered').length);
+        liveChartData.activeAgentsHistory.push(agents.filter(a => a.status !== 'available').length);
+        const maxHistoryLength = 100;
+        if (liveChartData.simTimeHistory.length > maxHistoryLength) {
+            liveChartData.simTimeHistory.shift();
+            liveChartData.pendingOrdersHistory.shift();
+            liveChartData.activeAgentsHistory.shift();
+        }
+    }
+    if (getChartInstance('pendingOrders')) {
+      updateChartData('pendingOrders', liveChartData.simTimeHistory, [{ data: liveChartData.pendingOrdersHistory, label: 'Pending Orders', borderColor: 'rgb(255, 99, 132)', tension: 0.1, fill: false }]);
+    }
+    if (getChartInstance('activeAgents')) {
+      updateChartData('activeAgents', liveChartData.simTimeHistory, [{ data: liveChartData.activeAgentsHistory, label: 'Active Agents', borderColor: 'rgb(54, 162, 235)', tension: 0.1, fill: false }]);
+    }
+}
+
+
+function resetSimulationState() {
+    currentSimulationTime = 0;
+    orderIdCounter = 0;
+    agentIdCounter = 1;
+    isSimulationRunning = false;
+
+    agents.forEach(agent => { if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline); });
+    agents = [];
+    orders = [];
+    Object.values(agentMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); agentMarkers = {};
+    Object.values(orderMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); orderMarkers = {};
+
+    deliveredOrderDataForHeatmap = [];
+    if (deliveryTimeHeatmapLayer && simulationMap && simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+        simulationMap.removeLayer(deliveryTimeHeatmapLayer);
+    }
+    if (deliveryTimeHeatmapLayer) {
+        deliveryTimeHeatmapLayer.setData({max:1, data:[]});
+    }
+    if (toggleDeliveryTimeHeatmapCheckboxEl) {
+        toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+    }
+
+    for (let key in stats) {
+        if (Array.isArray(stats[key])) stats[key] = [];
+        else if (typeof stats[key] === 'number') stats[key] = 0;
+    }
+    for (let key in liveChartData) {
+        liveChartData[key] = [];
+    }
+    updateLiveCharts();
+
+    const numAgents = getSimParameter('numAgents');
+    for (let i = 0; i < numAgents; i++) {
+        createAgent(); // Defined above
+    }
+
+    updateSimTimeDisplayLocal(currentSimulationTime); // Use local version
+    updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor')); // From uiElements
+    updateAgentStatusListUI();
+    updatePendingOrdersListUI();
+    updateSimulationStatsUI();
+    if (simulationLogEl) simulationLogEl.innerHTML = '<p class="log-system"><em>[SYS] Simulation log initialized.</em></p>';
+    logMessage("Simulation state initialized/reset.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+
+    if (startSimBtnEl) startSimBtnEl.disabled = false;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+    toggleSimConfigLock(false); // From uiElements
+}
+
+// --- Event Handler Functions ---
+function startSimulation() {
+    if (isSimulationRunning) return;
+    if (currentSimulationTime === 0) {
+        resetSimulationState();
+        logMessage(`Simulation started. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
+    } else {
+        logMessage(`Simulation resumed. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
+    }
+    isSimulationRunning = true;
+    simulationIntervalId = setInterval(simulationStep, SIMULATION_STEP_INTERVAL_MS);
+    if (startSimBtnEl) startSimBtnEl.disabled = true;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = false;
+    toggleSimConfigLock(true);
+}
+
+function pauseSimulation() {
+    if (!isSimulationRunning) return;
+    isSimulationRunning = false;
+    clearInterval(simulationIntervalId);
+    logMessage("Simulation paused.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+    if (startSimBtnEl) startSimBtnEl.disabled = false;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+}
+
+function resetSimulation() { // This is the function that was causing the ReferenceError
+    if (isSimulationRunning) {
+        isSimulationRunning = false;
+        clearInterval(simulationIntervalId);
+    }
+    resetSimulationState(); // Calls the main state reset logic
+}
+
+function toggleDeliveryTimeHeatmapDisplay() {
+    if (!simulationMap) {
+        console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
+        return;
+    }
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        return;
+    }
+
+    if (toggleDeliveryTimeHeatmapCheckboxEl?.checked) {
+        updateDeliveryTimeHeatmapData();
+        if (!simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            deliveryTimeHeatmapLayer.addTo(simulationMap);
+            logMessage("Delivery Time Heatmap ON.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    } else {
+        if (simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            simulationMap.removeLayer(deliveryTimeHeatmapLayer);
+            logMessage("Delivery Time Heatmap OFF.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    }
+}
+
+// --- HEATMAP DATA FUNCTIONS ---
+function updateDeliveryTimeHeatmapData() {
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot update data.");
+        return;
+    }
+    if (deliveredOrderDataForHeatmap.length === 0) {
+        deliveryTimeHeatmapLayer.setData({ max: 1, data: [] });
+        return;
+    }
+    const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
+        lat: d.lat, lng: d.lng, value: d.value
+    }));
+    deliveryTimeHeatmapLayer.setData(heatmapPoints);
+}
+
+// --- CORE SIMULATION LOGIC (generateOrder, assignOrders, updateAgentsMovementAndStatus, simulationStep) ---
+// (These functions are substantial and should be placed here. Assuming they are correct from previous versions)
 function generateUniformPointInChd(numPoints, polygonCoords) {
     const points = [];
     if (numPoints <= 0) return points;
@@ -742,13 +719,13 @@ function updateAgentsMovementAndStatus() {
 function simulationStep() {
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
-    updateSimTimeDisplay(currentSimulationTime);
+    updateSimTimeDisplayLocal(currentSimulationTime); // Use local version
 
     if (getSimParameter('enableDynamicTraffic') && (currentSimulationTime % DYNAMIC_TRAFFIC_UPDATE_INTERVAL === 0 || currentSimulationTime === MINUTES_PER_SIMULATION_STEP)) {
         const factors = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
         setSimParameter('currentDynamicTrafficFactor', factors[Math.floor(Math.random() * factors.length)]);
         logMessage(`Dynamic traffic condition changed. New factor: ${getSimParameter('currentDynamicTrafficFactor').toFixed(1)}x`, "TRAFFIC", simulationLogEl, currentSimulationTime);
-        updateTrafficStatusDisplay(getSimParameter('currentDynamicTrafficFactor'));
+        updateTrafficStatusDisplay(getSimParameter('currentDynamicTrafficFactor')); // From uiElements
     }
 
     const orderGenProb = getSimParameter('currentOrderGenerationProbability');
@@ -765,75 +742,7 @@ function simulationStep() {
     orders = orders.filter(o => o.status !== 'delivered');
 }
 
-function updateAgentStatusListUI() {
-    if (!agentStatusListEl) return;
-    agentStatusListEl.innerHTML = '';
-    if (agents.length === 0) { agentStatusListEl.innerHTML = '<p class="text-slate-500 italic">No agents yet.</p>'; return; }
-    agents.forEach(agent => {
-        const agentDiv = document.createElement('div');
-        let statusText = `Agent ${agent.id}: ${agent.status.replace(/_/g, ' ')}`;
-        if (agent.assignedOrderId !== null) statusText += ` (Order: ${agent.assignedOrderId})`;
-        if (agent.status === 'at_store') statusText += ` (${agent.timeSpentAtStore}/${getSimParameter('handlingTime')} min)`;
-        statusText += ` | Delivered: ${agent.deliveriesMade}`;
-        const utilization = agent.totalTime > 0 ? (agent.busyTime / agent.totalTime * 100).toFixed(1) : 0;
-        statusText += ` | Util: ${utilization}%`;
-        agentDiv.className = `p-1.5 rounded-md text-xs ${agent.status === 'available' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`;
-        agentDiv.textContent = statusText;
-        agentStatusListEl.appendChild(agentDiv);
-    });
-}
-
-function updatePendingOrdersListUI() {
-    if (!pendingOrdersListEl) return;
-    pendingOrdersListEl.innerHTML = '';
-    const activeOrders = orders.filter(o => o.status !== 'delivered');
-    if (activeOrders.length === 0) { pendingOrdersListEl.innerHTML = '<p class="text-slate-500 italic">No active orders.</p>'; return; }
-    activeOrders.forEach(order => {
-        const orderDiv = document.createElement('div');
-        let orderText = `Order ${order.id}: ${order.status.replace(/_/g, ' ')}`;
-        if (order.assignedAgentId !== null) orderText += ` (Agent ${order.assignedAgentId}, ETA ${order.etaMinutes ? order.etaMinutes.toFixed(1) : 'N/A'} min)`;
-        else orderText += ` (Placed: T+${order.timePlaced} min)`;
-        orderDiv.className = `p-1.5 rounded-md text-xs ${order.status === 'pending' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`;
-        orderDiv.textContent = orderText;
-        pendingOrdersListEl.appendChild(orderDiv);
-    });
-}
-
-function updateSimulationStatsUI() {
-    if (!statsTotalOrdersGeneratedEl) return;
-    statsTotalOrdersGeneratedEl.textContent = stats.totalOrdersGenerated;
-    statsTotalOrdersDeliveredEl.textContent = stats.totalOrdersDelivered;
-    const avgDeliveryTime = stats.totalOrdersDelivered > 0 ? (stats.sumDeliveryTimes / stats.totalOrdersDelivered) : NaN;
-    statsAvgDeliveryTimeEl.textContent = isNaN(avgDeliveryTime) ? "N/A" : avgDeliveryTime.toFixed(1) + " min";
-    statsMinDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.min(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
-    statsMaxDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.max(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
-    const stdDevDelTime = calculateStdDev(stats.allDeliveryTimes, avgDeliveryTime);
-    statsStdDevDeliveryTimeEl.textContent = (stats.allDeliveryTimes.length > 1 && !isNaN(stdDevDelTime)) ? stdDevDelTime.toFixed(1) + " min" : "N/A";
-    const avgOrderWaitTime = stats.countAssignedOrders > 0 ? (stats.sumOrderWaitTimes / stats.countAssignedOrders).toFixed(1) : "N/A";
-    statsAvgOrderWaitTimeEl.textContent = avgOrderWaitTime + (avgOrderWaitTime !== "N/A" ? " min" : "");
-    let totalAgentPossibleTime = 0;
-    let totalAgentActualBusyTime = 0;
-    agents.forEach(agent => {
-        totalAgentPossibleTime += agent.totalTime;
-        totalAgentActualBusyTime += agent.busyTime;
-    });
-    const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime * 100).toFixed(1) : "N/A";
-    statsAvgAgentUtilizationEl.textContent = avgAgentUtilization + (avgAgentUtilization !== "N/A" ? "%" : "");
-    statsTotalAgentTravelTimeEl.textContent = stats.totalAgentTravelTime.toFixed(0) + " min";
-    statsTotalAgentHandlingTimeEl.textContent = stats.totalAgentHandlingTime.toFixed(0) + " min";
-    statsTotalSimTimeEl.textContent = currentSimulationTime + " min";
-    const totalAgentLaborCost = (stats.totalAgentActiveTime / 60) * getSimParameter('agentCostPerHour');
-    const totalTravelCostVal = stats.totalDistanceTraveledByAgentsKm * getSimParameter('costPerKmTraveled');
-    const totalFixedDeliveryCostsVal = stats.totalOrdersDelivered * getSimParameter('fixedCostPerDelivery');
-    const overallTotalOperationalCostVal = totalAgentLaborCost + totalTravelCostVal + totalFixedDeliveryCostsVal;
-    const averageCostPerOrderVal = stats.totalOrdersDelivered > 0 ? (overallTotalOperationalCostVal / stats.totalOrdersDelivered) : NaN;
-    statsTotalAgentLaborCostEl.textContent = `₹${totalAgentLaborCost.toFixed(2)}`;
-    statsTotalTravelCostEl.textContent = `₹${totalTravelCostVal.toFixed(2)}`;
-    statsTotalFixedDeliveryCostsEl.textContent = `₹${totalFixedDeliveryCostsVal.toFixed(2)}`;
-    statsOverallTotalOperationalCostEl.textContent = `₹${overallTotalOperationalCostVal.toFixed(2)}`;
-    statsAverageCostPerOrderEl.textContent = isNaN(averageCostPerOrderVal) ? "N/A" : `₹${averageCostPerOrderVal.toFixed(2)}`;
-}
-
+// --- CHART FUNCTIONS (already defined in the provided code) ---
 function initializeLiveCharts() {
     initializeChart('pendingOrdersChart', 'pendingOrders', {
         type: 'line',
@@ -847,29 +756,11 @@ function initializeLiveCharts() {
     });
 }
 
-function updateLiveCharts() {
-    if (isSimulationRunning || currentSimulationTime === 0) {
-        liveChartData.simTimeHistory.push(currentSimulationTime);
-        liveChartData.pendingOrdersHistory.push(orders.filter(o => o.status !== 'delivered').length);
-        liveChartData.activeAgentsHistory.push(agents.filter(a => a.status !== 'available').length);
-        const maxHistoryLength = 100;
-        if (liveChartData.simTimeHistory.length > maxHistoryLength) {
-            liveChartData.simTimeHistory.shift();
-            liveChartData.pendingOrdersHistory.shift();
-            liveChartData.activeAgentsHistory.shift();
-        }
-    }
-    if (getChartInstance('pendingOrders')) {
-      updateChartData('pendingOrders', liveChartData.simTimeHistory, [{ data: liveChartData.pendingOrdersHistory, label: 'Pending Orders', borderColor: 'rgb(255, 99, 132)', tension: 0.1, fill: false }]);
-    }
-    if (getChartInstance('activeAgents')) {
-      updateChartData('activeAgents', liveChartData.simTimeHistory, [{ data: liveChartData.activeAgentsHistory, label: 'Active Agents', borderColor: 'rgb(54, 162, 235)', tension: 0.1, fill: false }]);
-    }
-}
-
+// --- EXPORTED FUNCTIONS for other modules ---
 export function getCurrentSimulationParameters() {
     return { ...simParams };
 }
 export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap] };
 }
+
