@@ -36,8 +36,10 @@ let currentSimulationTime = 0;
 let orderIdCounter = 0;
 let agentIdCounter = 1;
 let isSimulationRunning = false;
+
+// --- Heatmap Specific State ---
 let deliveryTimeHeatmapLayer = null;
-let deliveredOrderDataForHeatmap = [];
+let deliveredOrderDataForHeatmap = []; // Stores {lat, lng, value: deliveryDuration}
 
 // --- Simulation Parameters (with defaults) ---
 let simParams = {
@@ -113,6 +115,7 @@ export function getSimParameter(key) {
 
 
 export function initializeSimulationSection() {
+    // Cache standard DOM elements
     agentStatusListEl = document.getElementById('agentStatusList');
     pendingOrdersListEl = document.getElementById('pendingOrdersList');
     simulationLogEl = document.getElementById('simulationLog');
@@ -148,15 +151,29 @@ export function initializeSimulationSection() {
             .addTo(simulationMap)
             .bindPopup('<b>Dark Store Chandigarh (Simulation)</b><br>Central Hub')
             .openPopup();
-        deliveryTimeHeatmapLayer = L.heatLayer([], {
-            radius: 25, maxOpacity: 0.7, scaleRadius: true, useLocalExtrema: true, valueField: 'value'
-        });
+
+        // Initialize heatmap layer
+        if (typeof L.heatLayer === 'function') {
+            deliveryTimeHeatmapLayer = L.heatLayer([], {
+                radius: 25,
+                maxOpacity: 0.7,
+                scaleRadius: true,
+                useLocalExtrema: true, // Easier for dynamic data, scales based on current points
+                valueField: 'value'
+            });
+            console.log("[Sim] L.heatLayer is available. Heatmap layer initialized.");
+        } else {
+            console.error("[Sim] L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or leaflet-heatmap script is missing.");
+            deliveryTimeHeatmapLayer = null; // Ensure it's null if not initialized
+        }
+
     } else {
         console.error("Simulation map failed to initialize!");
     }
 
     initializeLiveCharts();
 
+    // Event Listeners
     startSimBtnEl?.addEventListener('click', startSimulation);
     pauseSimBtnEl?.addEventListener('click', pauseSimulation);
     resetSimBtnEl?.addEventListener('click', resetSimulation);
@@ -182,50 +199,10 @@ export function initializeSimulationSection() {
         }
     });
 
-    populateOrderGenerationProfileSelectorSim(); // Call it here
+    populateOrderGenerationProfileSelectorSim();
     resetSimulationState();
     toggleSimConfigLock(false);
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
-}
-
-/**
- * Populates the order generation profile selector in the Simulation tab.
- * This function is EXPORTED so it can be called by demandProfiles.js when profiles are updated.
- * @param {Array} [customProfilesFromDemandModule] Optional array of custom profiles.
- */
-export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
-    if (!orderGenerationProfileSelectEl) {
-        console.warn("[Sim] Order generation profile select element not found.");
-        return;
-    }
-    const currentVal = orderGenerationProfileSelectEl.value;
-    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
-    orderGenerationProfileSelectEl.innerHTML = '';
-    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
-
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // Use passed profiles or fetch from demandProfiles module
-    profilesToUse.forEach(profile => {
-        const option = document.createElement('option');
-        option.value = `custom_${profile.name}`;
-        option.textContent = `Custom: ${profile.name}`;
-        orderGenerationProfileSelectEl.appendChild(option);
-    });
-
-    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
-        orderGenerationProfileSelectEl.value = currentVal;
-    } else {
-        orderGenerationProfileSelectEl.value = 'default_uniform';
-    }
-    // Update the simParam after repopulating and setting the value
-    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
-}
-
-
-function toggleProfileSpecificControlsUI() {
-    const selectedProfile = getSimParameter('orderGenerationProfile');
-    uniformOrderRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_uniform');
-    defaultOrderFocusRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_focused');
-    defaultOrderSpreadContainerEl?.classList.toggle('hidden', true);
 }
 
 function resetSimulationState() {
@@ -245,7 +222,7 @@ function resetSimulationState() {
         simulationMap.removeLayer(deliveryTimeHeatmapLayer);
     }
     if (deliveryTimeHeatmapLayer) {
-        deliveryTimeHeatmapLayer.setData({max:1, data:[]});
+        deliveryTimeHeatmapLayer.setData({max:1, data:[]}); // Clear data
     }
     if (toggleDeliveryTimeHeatmapCheckboxEl) {
         toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
@@ -278,6 +255,97 @@ function resetSimulationState() {
     toggleSimConfigLock(false);
 }
 
+// --- HEATMAP FUNCTIONS ---
+function toggleDeliveryTimeHeatmapDisplay() {
+    if (!simulationMap) {
+        console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
+        return;
+    }
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false; // Uncheck if layer is broken
+        return;
+    }
+
+    if (toggleDeliveryTimeHeatmapCheckboxEl?.checked) {
+        updateDeliveryTimeHeatmapData();
+        if (!simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            deliveryTimeHeatmapLayer.addTo(simulationMap);
+            logMessage("Delivery Time Heatmap ON.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    } else {
+        if (simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            simulationMap.removeLayer(deliveryTimeHeatmapLayer);
+            logMessage("Delivery Time Heatmap OFF.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    }
+}
+
+function updateDeliveryTimeHeatmapData() {
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot update data.");
+        return;
+    }
+    if (deliveredOrderDataForHeatmap.length === 0) {
+        deliveryTimeHeatmapLayer.setData({ max: 1, data: [] }); // Use a default max if no data
+        // console.log("[Heatmap] No data to display on heatmap.");
+        return;
+    }
+
+    const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
+        lat: d.lat,
+        lng: d.lng,
+        value: d.value
+    }));
+
+    // For useLocalExtrema: true, leaflet-heatmap handles min/max scaling automatically.
+    // If you were to use useLocalExtrema: false, you'd need to calculate and set 'max'.
+    // Example: const maxVal = Math.max(...heatmapPoints.map(p => p.value), 1);
+    // deliveryTimeHeatmapLayer.setData({ max: maxVal, data: heatmapPoints });
+    deliveryTimeHeatmapLayer.setData(heatmapPoints); // For useLocalExtrema: true, just pass the points
+    // console.log(`[Heatmap] Data updated. Points: ${heatmapPoints.length}`);
+}
+
+
+// --- (The rest of your simulation.js functions: populateOrderGenerationProfileSelectorSim, toggleProfileSpecificControlsUI, startSimulation, pauseSimulation, createAgent, generateUniformPointInChd, generateOrder, calculateETA, assignOrders, updateAgentsMovementAndStatus, simulationStep, updateAgentStatusListUI, updatePendingOrdersListUI, updateSimulationStatsUI, initializeLiveCharts, updateLiveCharts, getCurrentSimulationParameters, getCurrentSimulationStats) ---
+// Ensure these are complete and correct from your previous working version.
+// The key change for the error is in initializeSimulationSection, and data collection in updateAgentsMovementAndStatus.
+
+// (Make sure to include the full content of all other functions from your previous simulation.js file here)
+// For example:
+export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
+    if (!orderGenerationProfileSelectEl) {
+        // console.warn("[Sim] Order generation profile select element not found.");
+        return;
+    }
+    const currentVal = orderGenerationProfileSelectEl.value;
+    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
+    orderGenerationProfileSelectEl.innerHTML = '';
+    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
+
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles();
+    profilesToUse.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = `custom_${profile.name}`;
+        option.textContent = `Custom: ${profile.name}`;
+        orderGenerationProfileSelectEl.appendChild(option);
+    });
+
+    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
+        orderGenerationProfileSelectEl.value = currentVal;
+    } else {
+        orderGenerationProfileSelectEl.value = 'default_uniform';
+    }
+    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
+}
+
+function toggleProfileSpecificControlsUI() {
+    const selectedProfile = getSimParameter('orderGenerationProfile');
+    uniformOrderRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_uniform');
+    defaultOrderFocusRadiusContainerEl?.classList.toggle('hidden', selectedProfile !== 'default_focused');
+    defaultOrderSpreadContainerEl?.classList.toggle('hidden', true);
+}
+
 function startSimulation() {
     if (isSimulationRunning) return;
     if (currentSimulationTime === 0) {
@@ -300,14 +368,6 @@ function pauseSimulation() {
     logMessage("Simulation paused.", 'SYSTEM', simulationLogEl, currentSimulationTime);
     if (startSimBtnEl) startSimBtnEl.disabled = false;
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
-}
-
-function resetSimulation() {
-    if (isSimulationRunning) {
-        isSimulationRunning = false;
-        clearInterval(simulationIntervalId);
-    }
-    resetSimulationState();
 }
 
 function createAgent() {
@@ -644,7 +704,7 @@ function updateAgentsMovementAndStatus() {
                     stats.allDeliveryTimes.push(deliveryDuration);
                     logMessage(`Agent ${agent.id} DELIVERED Order ${agent.assignedOrderId}. Delivery time: ${deliveryDuration.toFixed(1)} min.`, 'ORDER_DELIVER', simulationLogEl, currentSimulationTime);
 
-                    deliveredOrderDataForHeatmap.push({ // Collect data for heatmap
+                    deliveredOrderDataForHeatmap.push({
                         lat: deliveredOrder.location.lat,
                         lng: deliveredOrder.location.lng,
                         value: deliveryDuration
@@ -703,38 +763,6 @@ function simulationStep() {
     updateSimulationStatsUI();
     updateLiveCharts();
     orders = orders.filter(o => o.status !== 'delivered');
-}
-
-function toggleDeliveryTimeHeatmapDisplay() {
-    if (!simulationMap || !deliveryTimeHeatmapLayer) return;
-    if (toggleDeliveryTimeHeatmapCheckboxEl?.checked) {
-        updateDeliveryTimeHeatmapData();
-        if (!simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
-            deliveryTimeHeatmapLayer.addTo(simulationMap);
-            logMessage("Delivery Time Heatmap ON.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-        }
-    } else {
-        if (simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
-            simulationMap.removeLayer(deliveryTimeHeatmapLayer);
-            logMessage("Delivery Time Heatmap OFF.", 'SYSTEM', simulationLogEl, currentSimulationTime);
-        }
-    }
-}
-
-function updateDeliveryTimeHeatmapData() {
-    if (!deliveryTimeHeatmapLayer) return;
-    if (deliveredOrderDataForHeatmap.length === 0) {
-        deliveryTimeHeatmapLayer.setData({ max: 1, data: [] });
-        return;
-    }
-    const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
-        lat: d.lat, lng: d.lng, value: d.value
-    }));
-    let maxVal = 1;
-    if(heatmapPoints.length > 0) {
-        maxVal = Math.max(...heatmapPoints.map(p => p.value));
-    }
-    deliveryTimeHeatmapLayer.setData({ max: maxVal, data: heatmapPoints });
 }
 
 function updateAgentStatusListUI() {
@@ -845,4 +873,3 @@ export function getCurrentSimulationParameters() {
 export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap] };
 }
-
