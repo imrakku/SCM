@@ -2,67 +2,80 @@
 body {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    background-color: #f1f5f9; /* slate-100 */
-    color: #1e293b; /* slate-800 */
+    background-color: #f1f5f9; /* slate-100 (Light gray background) */
+    color: #1e293b; /* slate-800 (Dark gray for primary text) */
     line-height: 1.6;
 }
 
 /* Header & Navigation Styles */
 header {
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: white; /* Clean white header */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Softer shadow */
 }
-h1.text-3xl {
+h1.text-3xl { /* Main title in header */
     color: #1d4ed8; /* Primary Deep Blue */
 }
 .nav-link {
-    color: #334155;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
+    color: #334155; /* slate-700 (Darker gray for readability) */
+    font-weight: 500; /* Medium weight for nav links */
+    padding: 0.5rem 0.75rem; /* Adjust padding for balance */
+    border-radius: 0.375rem; /* rounded-md */
     transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
 }
 .nav-link:hover {
-    color: #1d4ed8;
-    background-color: #eff6ff; /* blue-50 */
+    color: #1d4ed8; /* Primary Deep Blue on hover */
+    background-color: #eff6ff; /* blue-50 (Very light blue background on hover) */
 }
 .nav-active {
-    color: #1d4ed8;
-    font-weight: 700;
-    border-bottom-width: 2px;
+    color: #1d4ed8; /* Primary Deep Blue for active link */
+    font-weight: 700; /* Bold for active link */
+    border-bottom-width: 2px; /* Thinner, more subtle active indicator */
     border-color: #1d4ed8;
-    background-color: transparent;
+    background-color: transparent; /* Ensure no background conflicts with border */
 }
 
+
 /* Content Section Visibility */
-.content-section { display: none; }
-.content-section.active { display: block; }
+.content-section {
+    display: none;
+}
+.content-section.active {
+    display: block;
+}
 
 /* Card Styles */
 .card {
     background-color: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0; /* slate-200 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 2rem;
-    margin-bottom: 2rem;
+    border-radius: 0.75rem; /* rounded-xl */
+    border: 1px solid #e2e8f0; /* slate-200 (Subtle border) */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Softer, more modern shadow */
+    padding: 2rem; /* Adjusted padding */
+    margin-bottom: 2rem; /* Adjusted margin */
 }
-.card h2 {
-    color: #1e293b;
-    border-bottom-color: #60a5fa; /* blue-400 */
+.card h2 { /* Main headings within cards */
+    color: #1e293b; /* slate-800 */
+    border-bottom-color: #60a5fa; /* blue-400 (Lighter blue for accent border) */
 }
-.card h3 { color: #1d4ed8; }
-.card p, .card li { color: #334155; }
-
+.card h3 { /* Sub-headings within cards */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+.card p, .card li {
+    color: #334155; /* slate-700 (Slightly lighter text for paragraphs) */
+}
 .stat-card {
-    background-color: #f8fafc; /* slate-50 */
+    background-color: #f8fafc; /* slate-50 (Very light gray) */
     padding: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e2e8f0; /* slate-200 */
     box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
-.stat-card h4 { color: #475569; }
-.stat-card p.text-5xl { color: #2563eb; }
+.stat-card h4 {
+    color: #475569; /* slate-600 */
+}
+.stat-card p.text-5xl { /* Large stat numbers */
+    color: #2563eb; /* Primary Blue */
+}
+
 
 /* Map Container Styles */
 #simulationMap,
@@ -72,37 +85,37 @@ h1.text-3xl {
 #scenarioComparisonMap {
     height: 500px; /* Default height */
     min-height: 400px;
-    border-radius: 0.5rem;
-    background-color: #e2e8f0;
-    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #e2e8f0; /* slate-200 */
+    border: 1px solid #cbd5e1; /* slate-300 */
     width: 100%; /* Ensure maps take full width of their container */
 }
 #profileCreationMap { height: 300px; min-height: 250px; }
 
 /* Leaflet Popup Styles */
 .leaflet-popup-content-wrapper {
-    border-radius: 0.375rem;
+    border-radius: 0.375rem; /* rounded-md */
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Button Styles */
+/* Button Styles - More Professional & Consistent */
 .btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
+    padding: 0.625rem 1.25rem; /* Adjusted padding (10px 20px) */
+    border-radius: 0.375rem; /* rounded-md */
+    font-weight: 500; /* Medium weight */
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.1s ease-out, box-shadow 0.15s ease-in-out;
     cursor: pointer;
-    text-transform: none;
-    letter-spacing: normal;
+    text-transform: none; /* No uppercase for a more modern feel, or keep if preferred */
+    letter-spacing: normal; /* Reset letter spacing */
     line-height: 1.5;
-    border: 1px solid transparent;
+    border: 1px solid transparent; /* Base border */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow */
 }
 .btn:hover:not(:disabled) {
-    transform: translateY(-1px);
+    transform: translateY(-1px); /* Subtle lift */
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.07);
 }
 .btn:active:not(:disabled) {
@@ -275,24 +288,27 @@ input[type="range"]::-moz-range-thumb {
 /* Chart Container Styles - CRITICAL FOR CHART DIMENSIONS */
 .chart-container, .live-chart-container {
     position: relative; /* Important for Chart.js responsiveness */
-    margin: 1rem auto; /* Centering and spacing */
+    margin: 0.5rem 0; /* Reduced top/bottom margin, auto for left/right if needed */
     padding: 1rem;
     background-color: white;
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     border: 1px solid #e2e8f0; /* slate-200 */
-    /* Define a sensible height or aspect ratio for the containers */
-    /* Option 1: Fixed height (adjust as needed) */
-    height: 350px; 
-    /* Option 2: Aspect ratio (modern browsers) - Chart.js needs maintainAspectRatio: false for this to work well */
-    /* aspect-ratio: 16 / 9; */
-    /* Option 3: Let grid/flex define height - ensure parent grid has defined rows or item can stretch */
-    /* For grid layouts like in Workforce Opt, you might not need fixed height here if grid rows are sized */
+    /* Define a sensible height for the containers */
+    height: 300px; /* Default height for workforce opt charts */
+    /* The canvas itself will be constrained by this container */
 }
 
 .live-chart-container {
-    height: 300px; /* Slightly smaller for live view */
+    height: 280px; /* Slightly smaller for live view in simulation */
 }
+
+/* Ensure canvas elements inside the containers are responsive */
+.chart-container canvas, .live-chart-container canvas {
+    max-width: 100%; /* Ensure canvas does not overflow its container */
+    max-height: 100%;
+}
+
 
 .live-chart-container h5, .chart-container h4 {
     text-align: center; font-size: 0.875rem; color: #475569;
@@ -341,4 +357,24 @@ footer p.text-slate-300 { color: #cbd5e1; }
 /* Alert/Info boxes in section descriptions */
 div[role="alert"] { font-size: 0.9rem; }
 div[role="alert"] p.font-bold { font-size: 1rem; }
+div[role="alert"] details summary { font-weight: bold; } /* Make summary bold */
+div[role="alert"] details div { margin-top: 0.5rem; padding-left: 0.5rem; border-left: 2px solid currentColor; opacity: 0.9;}
 
+/* Ensure details summary arrow is consistent */
+details > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.25rem 0; /* Add some padding to summary for better clickability */
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
+details > summary::before {
+    content: '► '; /* Default closed state arrow */
+    font-size: 0.8em;
+    margin-right: 4px;
+    color: currentColor; /* Inherit color from parent for better theme matching */
+}
+details[open] > summary::before {
+    content: '▼ '; /* Open state arrow */
+}
