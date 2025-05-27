@@ -15,36 +15,23 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         /* Custom styles for <details> summary arrow */
-        details > summary {
-            list-style: none; /* Remove default arrow */
-            cursor: pointer;
-        }
-        details > summary::-webkit-details-marker {
-            display: none; /* Hide default arrow for Chrome/Safari */
-        }
-        details > summary::before {
-            content: '► '; /* Default closed state arrow */
-            font-size: 0.8em;
-            margin-right: 4px;
-        }
-        details[open] > summary::before {
-            content: '▼ '; /* Open state arrow */
-        }
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary::before { content: '► '; font-size: 0.8em; margin-right: 4px; }
+        details[open] > summary::before { content: '▼ '; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800">
-
-    <header class="bg-white shadow-xl sticky top-0 z-50">
+<body class="bg-slate-100 text-slate-800"> <header class="bg-white shadow-xl sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">Chandigarh Logistics Sim</h1>
                 <div class="flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
-                    <a href="#home" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Home</a>
-                    <a href="#clustering" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Clustering</a>
-                    <a href="#demandProfiles" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Demand Profiles</a>
-                    <a href="#simulation" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
-                    <a href="#workforceOptimization" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
-                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
+                    <a href="#home" class="nav-link px-3 py-2">Home</a>
+                    <a href="#clustering" class="nav-link px-3 py-2">Clustering</a>
+                    <a href="#demandProfiles" class="nav-link px-3 py-2">Demand Profiles</a>
+                    <a href="#simulation" class="nav-link px-3 py-2">Simulation</a>
+                    <a href="#workforceOptimization" class="nav-link px-3 py-2">Workforce Opt.</a>
+                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2">Scenario Analysis</a>
                 </div>
             </div>
         </nav>
@@ -110,7 +97,7 @@
                         </div>
                     </details>
                 </div>
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
+                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
                         <div class="input-group">
@@ -420,7 +407,7 @@
             <div class="card">
                 <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
                 <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
-                    <details>
+                     <details>
                         <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
                             <p class="text-base leading-relaxed">
@@ -444,7 +431,7 @@
                                 <li>Make sure you've run "Clustering" first to have dark stores available.</li>
                                 <li>Set your desired "Target Avg. Delivery Time".</li>
                                 <li>Choose a "Dark Store" to optimize for.</li>
-                                <li>Define the "Order Generation Radius" and "Orders per Iteration" for the test runs.</li>
+                                <li>Define the "Min/Max Orders per Iteration" for the test runs.</li>
                                 <li>Specify the "Min Agents" and "Max Agents" to test.</li>
                                 <li>Click "Run Workforce Optimization".</li>
                             </ul>
@@ -474,8 +461,12 @@
                             <input type="number" id="optOrderGenerationRadius" value="5" min="0.5" step="0.5" class="w-full">
                         </div>
                         <div class="input-group">
-                            <label for="optOrdersPerIteration">Orders per Iteration (Target):</label>
-                            <input type="number" id="optOrdersPerIteration" value="10" min="1" step="1" class="w-full">
+                            <label for="optMinOrdersPerIteration">Min Orders per Iteration:</label>
+                            <input type="number" id="optMinOrdersPerIteration" value="8" min="1" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optMaxOrdersPerIteration">Max Orders per Iteration:</label>
+                            <input type="number" id="optMaxOrdersPerIteration" value="12" min="1" step="1" class="w-full">
                         </div>
                         <div class="input-group">
                             <label for="optMinAgents">Min Agents to Test:</label>
@@ -508,7 +499,7 @@
                             <thead>
                                 <tr>
                                     <th>Agents</th>
-                                    <th>Generated Orders</th>
+                                    <th>Target Orders This Iter.</th> <th>Generated Orders</th>
                                     <th>Delivered Orders</th>
                                     <th>Avg. Delivery Time (min)</th>
                                     <th>% Orders within Target Time</th>
@@ -544,7 +535,8 @@
                         <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
                         <canvas id="avgOrderWaitTimeChart"></canvas>
                     </div>
-                    <div class="chart-container md:col-span-2"> <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
+                    <div class="chart-container md:col-span-2">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
                         <canvas id="ordersWithinSlaChart"></canvas>
                     </div>
                 </div>
