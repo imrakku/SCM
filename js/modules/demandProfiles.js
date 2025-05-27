@@ -2,7 +2,7 @@
 import { chandigarhSectors, chandigarhCenter } from '../data/chandigarhData.js';
 import { initializeMap, getMapInstance } from '../mapUtils.js';
 import { logMessage } from '../logger.js';
-// This import must match the export in simulation.js
+// This import should now work if simulation.js exports the function correctly.
 import { populateOrderGenerationProfileSelectorSim } from './simulation.js';
 
 
@@ -53,10 +53,7 @@ export function initializeDemandProfilesSection() {
 
     loadProfilesFromSessionStorage();
     updateSavedProfilesListUI();
-    
     // Call the imported function to update the selector in the simulation module
-    // This ensures that when this section is initialized (or re-initialized via navigation),
-    // the simulation tab's dropdown is aware of any custom profiles.
     if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
         populateOrderGenerationProfileSelectorSim(customDemandProfiles);
     } else {
