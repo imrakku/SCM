@@ -417,7 +417,7 @@
                             </p>
                             <p class="font-bold text-lg mt-3 mb-2">How it Works:</p>
                             <p class="text-base leading-relaxed">
-                                You set a target for average delivery time and select a demand profile (or use defaults). The tool runs simulations for different numbers of agents. For each agent count, it generates orders based on the chosen profile over a set simulation time and tracks key metrics.
+                                You set a target for average delivery time and select a demand profile (or use defaults). The tool then runs multiple quick simulations (you can set how many) for each different number of agents you want to test. For each agent count, it generates orders based on the chosen profile over a set simulation time and calculates the average performance across those runs.
                             </p>
                             <p class="text-base leading-relaxed mt-2">
                                 The "Best Scenario" is recommended by first ensuring a high percentage of orders are completed and meet your service level target. Then, it prioritizes the lowest cost per order. If costs are similar, it favors configurations where agents are well-utilized (not idle too often, nor overworked).
@@ -425,13 +425,13 @@
                              <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                              <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
                                 <li>Ensure "Clustering" has been run if you want to optimize for a specific clustered dark store.</li>
-                                <li>Set your "Target Avg. Delivery Time".</li>
-                                <li>Select the "Dark Store" for which the optimization is being run.</li>
-                                <li>Choose a "Demand Profile for Optimization". Default profiles generate orders uniformly or focused around the selected store using the "Order Generation Radius". Custom profiles use their own defined zones and rates.</li>
-                                <li>If using a default profile, set the "Order Generation Radius".</li>
-                                <li>If using a default profile, set the "Target Orders per Iteration" to guide how many orders should be generated for each agent count test.</li>
+                                <li>Set your desired "Target Avg. Delivery Time".</li>
+                                <li>Choose a "Dark Store" to optimize for.</li>
+                                <li>Select a "Demand Profile for Optimization". Default profiles generate orders uniformly or focused around the selected store using the "Order Generation Radius" and "Target Orders per Iteration". Custom profiles use their own defined zones and rates.</li>
+                                <li>If using a default profile, set the "Order Generation Radius" and "Target Orders per Iteration".</li>
                                 <li>Specify the "Min Agents" and "Max Agents" to test.</li>
-                                <li>Set "Max Sim Time per Iteration" (how long each test runs if the target orders aren't met sooner).</li>
+                                <li>Set the "Number of Simulation Runs per Agent Count" for more stable results.</li>
+                                <li>Set "Max Sim Time per Iteration" (how long each test run for a specific agent count can last).</li>
                                 <li>Click "Run Workforce Optimization".</li>
                             </ul>
                         </div>
@@ -472,7 +472,11 @@
                             <label for="optMaxAgents">Max Agents to Test:</label>
                             <input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full">
                         </div>
-                         <div class="input-group md:col-span-2">
+                        <div class="input-group">
+                            <label for="optNumRunsPerAgentCount">Number of Simulation Runs per Agent Count:</label>
+                            <input type="number" id="optNumRunsPerAgentCount" value="3" min="1" max="10" step="1" class="w-full">
+                        </div>
+                         <div class="input-group">
                             <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
                             <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
                         </div>
@@ -487,7 +491,7 @@
                 </div>
                 <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
                     <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-2xl font-semibold">Iteration Comparison Table</h4>
+                        <h4 class="text-2xl font-semibold">Iteration Comparison Table (Averaged Results)</h4>
                         <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary btn-sm">Export Table (CSV)</button>
                     </div>
                     <div class="comparison-table-container">
@@ -495,17 +499,17 @@
                             <thead>
                                 <tr>
                                     <th>Agents</th>
-                                    <th>Generated Orders</th>
-                                    <th>Delivered Orders</th>
+                                    <th>Avg. Generated Orders</th>
+                                    <th>Avg. Delivered Orders</th>
                                     <th>Avg. Delivery Time (min)</th>
-                                    <th>% Orders within Target Time</th>
-                                    <th>Min Delivery Time (min)</th>
-                                    <th>Max Delivery Time (min)</th>
-                                    <th>Std. Dev. Delivery Time (min)</th>
+                                    <th>Avg. % Orders within Target</th>
+                                    <th>Avg. Min Delivery Time (min)</th>
+                                    <th>Avg. Max Delivery Time (min)</th>
+                                    <th>Avg. Std. Dev. Delivery Time (min)</th>
                                     <th>Avg. Agent Utilization (%)</th>
                                     <th>Avg. Order Wait Time (min)</th>
-                                    <th>Undelivered Orders</th>
-                                    <th>Total Op. Cost (₹)</th>
+                                    <th>Avg. Undelivered Orders</th>
+                                    <th>Avg. Total Op. Cost (₹)</th>
                                     <th>Avg. Cost/Order (₹)</th>
                                 </tr>
                             </thead>
@@ -524,7 +528,7 @@
                         <canvas id="utilizationChart"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Total Delivered Orders</h4>
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Total Delivered Orders</h4>
                         <canvas id="totalDeliveredOrdersChart"></canvas>
                     </div>
                     <div class="chart-container">
@@ -532,7 +536,7 @@
                         <canvas id="avgOrderWaitTimeChart"></canvas>
                     </div>
                     <div class="chart-container md:col-span-2">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. % Orders within Target Time</h4>
                         <canvas id="ordersWithinSlaChart"></canvas>
                     </div>
                 </div>
