@@ -7,9 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.js"></script>
     <script src="https://d3js.org/d3-delaunay.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -415,7 +415,7 @@
                             </p>
                             <p class="font-bold text-lg mt-3 mb-2">How does it work now?</p>
                             <p class="text-base leading-relaxed">
-                                You set a target for average delivery time. The tool then runs many quick simulations for different numbers of agents (from a minimum to a maximum you define). For each simulated agent count, it tracks:
+                                You set a target for average delivery time and select a demand profile (or use defaults). The tool then runs many quick simulations for different numbers of agents (from a minimum to a maximum you define). For each simulated agent count, it tracks:
                             </p>
                             <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
                                 <li>Average delivery time.</li>
@@ -424,15 +424,16 @@
                                 <li>The average cost to deliver each order.</li>
                             </ul>
                             <p class="text-base leading-relaxed mt-2">
-                                The "Best Scenario" is chosen by first finding agent counts that meet a good service level (e.g., many orders delivered on time) and ensure a high rate of order completion. Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a configuration where agents are well-utilized (e.g., between 60-90%) to avoid overstaffing (low utilization, high idle costs) or overworking agents (very high utilization, risk of burnout).
+                                The "Best Scenario" is chosen by first finding agent counts that meet a good service level and ensure a high rate of order completion. Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a configuration where agents are well-utilized (e.g., between 60-90%) to avoid overstaffing or overworking agents.
                             </p>
                              <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                              <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Make sure you've run "Clustering" first to have dark stores available.</li>
+                                <li>Make sure you've run "Clustering" first to have dark stores available for selection.</li>
                                 <li>Set your desired "Target Avg. Delivery Time".</li>
                                 <li>Choose a "Dark Store" to optimize for.</li>
-                                <li>Define the "Min/Max Orders per Iteration" for the test runs.</li>
+                                <li>Select a "Demand Profile" to simulate order patterns. Default profiles are available, or use one you created in the "Demand Profiles" tab.</li>
                                 <li>Specify the "Min Agents" and "Max Agents" to test.</li>
+                                <li>Set "Max Sim Time per Iteration" to control how long each test run for a specific agent count can last.</li>
                                 <li>Click "Run Workforce Optimization".</li>
                             </ul>
                             <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
@@ -457,28 +458,26 @@
                             </select>
                         </div>
                         <div class="input-group">
-                            <label for="optOrderGenerationRadius">Order Generation Radius from Store (km):</label>
-                            <input type="number" id="optOrderGenerationRadius" value="5" min="0.5" step="0.5" class="w-full">
+                            <label for="optDemandProfileSelect">Select Demand Profile for Optimization:</label>
+                            <select id="optDemandProfileSelect" class="w-full">
+                                <option value="default_opt_uniform">Default: Uniform around Store</option>
+                                <option value="default_opt_focused">Default: Focused around Store</option>
+                                </select>
                         </div>
-                        <div class="input-group">
-                            <label for="optMinOrdersPerIteration">Min Orders per Iteration:</label>
-                            <input type="number" id="optMinOrdersPerIteration" value="8" min="1" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optMaxOrdersPerIteration">Max Orders per Iteration:</label>
-                            <input type="number" id="optMaxOrdersPerIteration" value="12" min="1" step="1" class="w-full">
+                         <div class="input-group" id="optOrderRadiusContainer"> <label for="optOrderGenerationRadius">Order Generation Radius (km - for default profiles):</label>
+                            <input type="number" id="optOrderGenerationRadius" value="3" min="0.5" step="0.5" class="w-full">
                         </div>
                         <div class="input-group">
                             <label for="optMinAgents">Min Agents to Test:</label>
-                            <input type="number" id="optMinAgents" value="1" min="1" max="25" step="1" class="w-full">
+                            <input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full">
                         </div>
                         <div class="input-group">
                             <label for="optMaxAgents">Max Agents to Test:</label>
-                            <input type="number" id="optMaxAgents" value="15" min="1" max="25" step="1" class="w-full">
+                            <input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full">
                         </div>
                          <div class="input-group md:col-span-2">
                             <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
-                            <input type="number" id="optMaxSimTimePerIteration" value="120" min="1" step="1" class="w-full">
+                            <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
                         </div>
                     </div>
                     <div class="mt-6 text-center">
@@ -499,7 +498,7 @@
                             <thead>
                                 <tr>
                                     <th>Agents</th>
-                                    <th>Target Orders This Iter.</th> <th>Generated Orders</th>
+                                    <th>Generated Orders</th>
                                     <th>Delivered Orders</th>
                                     <th>Avg. Delivery Time (min)</th>
                                     <th>% Orders within Target Time</th>
