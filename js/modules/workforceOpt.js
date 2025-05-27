@@ -19,7 +19,7 @@ let optDeliveryTimeChartInstance, optUtilizationChartInstance,
 
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optOrderGenerationRadiusInputEl,
-    optMinOrdersPerIterationInputEl, optMaxOrdersPerIterationInputEl, // Changed from single input
+    optMinOrdersPerIterationInputEl, optMaxOrdersPerIterationInputEl,
     optMinAgentsInputEl, optMaxAgentsInputEl,
     optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl,
     optimizationMapContainerEl, optimizationComparisonContainerEl, optimizationChartsContainerEl,
@@ -44,11 +44,12 @@ const COST_PER_ORDER_TOLERANCE = 0.10;
 
 
 export function initializeWorkforceOptimizationSection() {
+    // Cache DOM Elements
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
     optSelectDarkStoreEl = document.getElementById('optSelectDarkStore');
     optOrderGenerationRadiusInputEl = document.getElementById('optOrderGenerationRadius');
-    optMinOrdersPerIterationInputEl = document.getElementById('optMinOrdersPerIteration'); // New
-    optMaxOrdersPerIterationInputEl = document.getElementById('optMaxOrdersPerIteration'); // New
+    optMinOrdersPerIterationInputEl = document.getElementById('optMinOrdersPerIteration');
+    optMaxOrdersPerIterationInputEl = document.getElementById('optMaxOrdersPerIteration');
     optMinAgentsInputEl = document.getElementById('optMinAgents');
     optMaxAgentsInputEl = document.getElementById('optMaxAgents');
     optMaxSimTimePerIterationInputEl = document.getElementById('optMaxSimTimePerIteration');
@@ -120,6 +121,24 @@ async function runWorkforceOptimization() {
     if(optimizationRecommendationTextEl) optimizationRecommendationTextEl.innerHTML = '<p class="text-center p-4">Crunching numbers... Please wait.</p>';
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = true;
 
+    // --- Robust check for essential input elements ---
+    const requiredElements = {
+        optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optOrderGenerationRadiusInputEl,
+        optMinOrdersPerIterationInputEl, optMaxOrdersPerIterationInputEl,
+        optMinAgentsInputEl, optMaxAgentsInputEl, optMaxSimTimePerIterationInputEl
+    };
+
+    for (const elName in requiredElements) {
+        if (!requiredElements[elName]) {
+            const errorMessage = `Error: Input element for "${elName}" not found. Optimization cannot proceed. Check HTML IDs and JS caching.`;
+            console.error(errorMessage);
+            logMessage(errorMessage, 'ERROR', optimizationLogEl);
+            if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+            return;
+        }
+    }
+    // --- End of robust check ---
+
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
 
@@ -130,8 +149,8 @@ async function runWorkforceOptimization() {
     }
     
     const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value);
-    const minOrdersPerIteration = parseInt(optMinOrdersPerIterationInputEl.value); // New
-    const maxOrdersPerIteration = parseInt(optMaxOrdersPerIterationInputEl.value); // New
+    const minOrdersPerIteration = parseInt(optMinOrdersPerIterationInputEl.value);
+    const maxOrdersPerIteration = parseInt(optMaxOrdersPerIterationInputEl.value);
     let minAgentsToTest = parseInt(optMinAgentsInputEl.value);
     let maxAgentsToTest = parseInt(optMaxAgentsInputEl.value);
     const targetAvgDeliveryTime = parseInt(optTargetDeliveryTimeInputEl.value);
@@ -162,7 +181,7 @@ async function runWorkforceOptimization() {
     const baseMaxAgentSpeed = getSimParameter('agentMaxSpeed');
     const baseHandlingTime = getSimParameter('handlingTime');
     const baseTrafficFactor = getSimParameter('baseTrafficFactor');
-    const baseOrderGenProb = getSimParameter('currentOrderGenerationProbability'); // This will determine rate, volume is now variable
+    const baseOrderGenProb = getSimParameter('currentOrderGenerationProbability');
     const iterAgentCostPerHour = getSimParameter('agentCostPerHour');
     const iterCostPerKm = getSimParameter('costPerKmTraveled');
     const iterFixedCostPerDelivery = getSimParameter('fixedCostPerDelivery');
@@ -190,7 +209,6 @@ async function runWorkforceOptimization() {
     let bestIterationResult = null;
 
     for (let currentNumAgents = minAgentsToTest; currentNumAgents <= maxAgentsToTest; currentNumAgents++) {
-        // Determine target orders for this specific iteration run
         const targetOrdersForThisIter = Math.floor(Math.random() * (maxOrdersPerIteration - minOrdersPerIteration + 1)) + minOrdersPerIteration;
         logMessage(`Testing with ${currentNumAgents} agent(s) for approx. ${targetOrdersForThisIter} orders...`, 'ITERATION', optimizationLogEl);
         if (optimizationLogEl) optimizationLogEl.scrollTop = optimizationLogEl.scrollHeight;
@@ -203,7 +221,7 @@ async function runWorkforceOptimization() {
             totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
             ordersWithinSLA: 0,
             sumWaitTimes: 0, numAssigned: 0, totalAgentActiveTime: 0, totalAgentDistanceKm: 0,
-            targetOrdersThisIteration: targetOrdersForThisIter // Store for reference
+            targetOrdersThisIteration: targetOrdersForThisIter
         };
 
         for (let i = 0; i < currentNumAgents; i++) {
@@ -317,7 +335,7 @@ async function runWorkforceOptimization() {
 
         allOptimizationIterationsData.push({
             agents: currentNumAgents,
-            targetOrdersThisIteration: targetOrdersForThisIter, // Store this for the table
+            targetOrdersThisIteration: targetOrdersForThisIter,
             generatedOrders: iterStats.totalGenerated, 
             deliveredOrders: iterStats.totalDelivered,
             avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA,
@@ -569,7 +587,7 @@ function exportWorkforceOptResultsToCSV() {
     allOptimizationIterationsData.forEach(iter => {
         const row = [
             iter.agents,
-            iter.targetOrdersThisIteration, // New data point
+            iter.targetOrdersThisIteration,
             iter.generatedOrders,
             iter.deliveredOrders,
             iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A",
