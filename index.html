@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    </head>
+</head>
 <body class="bg-slate-100 text-slate-800">
 
     <header class="bg-white shadow-xl sticky top-0 z-50">
@@ -27,7 +27,7 @@
                     <a href="#simulation" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
                     <a href="#workforceOptimization" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
                     <a href="#scenarioAnalysis" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
-                    </div>
+                </div>
             </div>
         </nav>
     </header>
@@ -85,7 +85,6 @@
                     <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
                     <p class="text-base leading-relaxed">The map visualizes potential dark store locations based on your inputs. The statistics provide data on how well these locations cover the simulated demand, helping you understand service efficiency. These dark stores can then be used in the "Workforce Optimization" section.</p>
                 </div>
-
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
@@ -161,7 +160,6 @@
                     </ul>
                      <p class="text-sm mt-2 italic">Note: Profiles are currently saved for your current browser session only.</p>
                 </div>
-
                 <div class="grid md:grid-cols-2 gap-8">
                     <div>
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
@@ -210,7 +208,6 @@
                         <li>"Save Current Scenario Results" to compare different setups later.</li>
                     </ul>
                 </div>
-
                 <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
                     <div class="simulation-controls-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -378,9 +375,8 @@
                         <p><strong>Overall Total Operational Cost:</strong> <span id="statsOverallTotalOperationalCost">₹0.00</span></p>
                         <p><strong>Average Cost per Order:</strong> <span id="statsAverageCostPerOrder">N/A</span></p>
                     </div>
-                    <div class="text-center mt-6">
-                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
-                    </div>
+                    <div class="mt-6 flex justify-center space-x-3"> <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
+                        <button id="exportSimResultsBtn" class="btn btn-primary">Export Results (CSV)</button> </div>
                 </div>
             </div>
         </section>
@@ -404,7 +400,6 @@
                     <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
                     <p class="text-base leading-relaxed">A table comparing key metrics (delivery times, utilization, costs) for each number of agents tested. Charts will visualize these trends. The "Optimization Results (Best Scenario)" section will highlight the agent count that best met your target delivery time, along with its associated statistics and costs. This helps in making data-informed staffing decisions.</p>
                 </div>
-
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
                     <div class="grid md:grid-cols-2 gap-6">
@@ -542,7 +537,6 @@
                     <p class="text-base leading-relaxed">A detailed table that helps you understand how changing different inputs (like number of agents or order arrival rates) affects outcomes like average delivery time, agent utilization, and total operational costs. This is useful for making strategic decisions about your logistics setup.</p>
                      <p class="text-sm mt-2 italic">Note: Scenarios are saved in your browser's local storage, so they will persist even if you close and reopen your browser (unless you clear your browser data).</p>
                 </div>
-
                 <div class="grid md:grid-cols-3 gap-8">
                     <div class="md:col-span-1">
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
