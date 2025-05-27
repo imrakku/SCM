@@ -1,94 +1,175 @@
-/* === MODERN UI OVERHAUL === */
+/* === MODERN UI OVERHAUL with DARK THEME === */
+
+/* --- CSS Variables --- */
+:root {
+    /* Light Theme (Default) */
+    --color-bg-primary: #f9fafb; /* gray-50 */
+    --color-bg-secondary: #ffffff; /* white */
+    --color-bg-accent: #f0f9ff; /* blue-50 */
+    --color-bg-info-box: #eff6ff; /* blue-100 for alert boxes */
+    --color-bg-header: #ffffff;
+    --color-bg-footer: #0f172a; /* slate-900 */
+    --color-bg-log: #0f172a; /* slate-900 */
+    --color-bg-input: #ffffff;
+
+    --color-text-primary: #111827; /* gray-900 */
+    --color-text-secondary: #374151; /* gray-700 */
+    --color-text-muted: #6b7280; /* gray-500 */
+    --color-text-log: #d1d5db; /* gray-300 */
+    --color-text-footer: #9ca3af; /* gray-400 */
+    --color-text-input: #111827;
+
+    --color-border-primary: #e5e7eb; /* gray-200 */
+    --color-border-secondary: #d1d5db; /* gray-300 */
+    --color-border-accent: #60a5fa; /* blue-400 (for h2 underline) */
+    --color-border-info-box: #bae6fd; /* blue-200 */
+
+    --color-primary-action: #2563eb; /* blue-600 */
+    --color-primary-action-hover: #1d4ed8; /* blue-700 */
+    --color-primary-text-on-action: #ffffff;
+
+    --color-secondary-action: #475569; /* slate-600 */
+    --color-secondary-action-hover: #334155; /* slate-700 */
+    --color-secondary-text-on-action: #ffffff;
+    /* Alternative secondary for light theme */
+    --color-secondary-alt-bg: #e5e7eb; /* gray-200 */
+    --color-secondary-alt-border: #d1d5db; /* gray-300 */
+    --color-secondary-alt-text: #1f2937; /* gray-800 */
+    --color-secondary-alt-bg-hover: #d1d5db;
+    --color-secondary-alt-border-hover: #9ca3af;
+
+
+    --color-danger-action: #ef4444; /* red-500 */
+    --color-danger-action-hover: #dc2626; /* red-600 */
+
+    --color-link: #3b82f6; /* blue-500 */
+    --color-link-hover: #1d4ed8; /* blue-700 */
+    --color-link-nav: #4b5563; /* gray-600 */
+    --color-link-nav-hover: #2563eb;
+    --color-link-nav-active: #2563eb;
+    --color-link-nav-active-bg: #dbeafe; /* blue-100 */
+
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-header: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+    /* Specific Log Colors (can be themed too if desired) */
+    --color-log-info: #60a5fa;
+    --color-log-agent: #fbbf24;
+    --color-log-order: #34d399;
+    --color-log-system: #a78bfa;
+    --color-log-error: #f87171;
+    --color-log-traffic: #818cf8;
+    --color-log-cost: #f472b6;
+}
+
+body.dark-mode {
+    /* Dark Theme Overrides */
+    --color-bg-primary: #0f172a; /* slate-900 */
+    --color-bg-secondary: #1e293b; /* slate-800 (for cards) */
+    --color-bg-accent: #1e3a8a; /* blue-800 (darker blue accent) */
+    --color-bg-info-box: #1e293b; /* slate-800 for alert boxes */
+    --color-bg-header: #1e293b; /* slate-800 */
+    --color-bg-footer: #020617; /* slate-950 */
+    --color-bg-log: #020617; /* slate-950 */
+    --color-bg-input: #334155; /* slate-700 */
+
+    --color-text-primary: #f1f5f9; /* slate-100 */
+    --color-text-secondary: #cbd5e1; /* slate-300 */
+    --color-text-muted: #94a3b8; /* slate-400 */
+    --color-text-log: #cbd5e1; /* slate-300 */
+    --color-text-footer: #94a3b8; /* slate-400 */
+    --color-text-input: #f1f5f9;
+
+    --color-border-primary: #334155; /* slate-700 */
+    --color-border-secondary: #475569; /* slate-600 */
+    --color-border-accent: #3b82f6; /* blue-500 (for h2 underline) */
+    --color-border-info-box: #3b82f6; /* blue-500 */
+
+    --color-primary-action: #3b82f6; /* blue-500 */
+    --color-primary-action-hover: #60a5fa; /* blue-400 */
+    /* primary-text-on-action remains white */
+
+    --color-secondary-action: #4b5563; /* gray-600 */
+    --color-secondary-action-hover: #6b7280; /* gray-500 */
+    /* secondary-text-on-action remains white */
+    /* Alternative secondary for dark theme */
+    --color-secondary-alt-bg: #334155; /* slate-700 */
+    --color-secondary-alt-border: #475569; /* slate-600 */
+    --color-secondary-alt-text: #f1f5f9; /* slate-100 */
+    --color-secondary-alt-bg-hover: #475569;
+    --color-secondary-alt-border-hover: #64748b;
+
+
+    --color-link: #60a5fa; /* blue-400 */
+    --color-link-hover: #93c5fd; /* blue-300 */
+    --color-link-nav: #cbd5e1; /* slate-300 */
+    --color-link-nav-hover: #ffffff;
+    --color-link-nav-active: #ffffff;
+    --color-link-nav-active-bg: #2563eb; /* blue-600 */
+
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.2); /* Darker shadow for dark mode */
+    --shadow-header: 0 1px 3px 0 rgba(0, 0, 0, 0.25), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+}
+
 
 /* --- Base & Typography --- */
 body {
-    font-family: 'Inter', sans-serif;
-    scroll-behavior: smooth;
-    background-color: #f9fafb; /* gray-50 (Very light gray/off-white) */
-    color: #374151; /* gray-700 (Default text color) */
-    line-height: 1.65; /* Slightly more spacious line height */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-secondary);
 }
 
 /* --- Header & Navigation --- */
 header {
-    background-color: #ffffff; /* White header */
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05); /* Subtle shadow */
-    border-bottom: 1px solid #e5e7eb; /* gray-200 */
+    background-color: var(--color-bg-header);
+    box-shadow: var(--shadow-header);
+    border-bottom: 1px solid var(--color-border-primary);
 }
-h1.text-3xl { /* Main title in header */
-    color: #1e3a8a; /* blue-800 (Darker, more corporate blue) */
-    letter-spacing: -0.025em; /* Slightly tighter for modern headings */
-}
+h1.text-3xl { color: var(--color-primary-action-hover); } /* Using a prominent blue */
 .nav-link {
-    color: #4b5563; /* gray-600 */
-    font-weight: 500;
-    padding: 0.625rem 1rem; /* py-2.5 px-4 */
-    border-radius: 0.375rem; /* rounded-md */
-    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    color: var(--color-link-nav);
 }
 .nav-link:hover {
-    color: #2563eb; /* blue-600 */
-    background-color: #f0f9ff; /* blue-50 */
+    color: var(--color-link-nav-hover);
+    background-color: rgba(59, 130, 246, 0.1); /* Subtle primary accent bg */
 }
 .nav-active {
-    color: #2563eb; /* blue-600 */
-    font-weight: 600; /* Semibold */
-    background-color: #dbeafe; /* blue-100 */
-    box-shadow: inset 0 1px 1px rgba(0,0,0,0.05);
-    border-bottom-width: 0; /* Remove bottom border for tab-like active state */
+    color: var(--color-link-nav-active);
+    background-color: var(--color-link-nav-active-bg);
+    box-shadow: var(--shadow-sm);
+}
+#themeToggleBtn {
+    color: var(--color-text-muted);
+}
+#themeToggleBtn:hover {
+    background-color: var(--color-bg-accent);
+    color: var(--color-primary-action);
 }
 
-/* --- Content Sections --- */
-.content-section { display: none; }
-.content-section.active { display: block; }
 
 /* --- Card Styling --- */
 .card {
-    background-color: #ffffff;
-    border-radius: 0.75rem; /* rounded-xl */
-    border: 1px solid #e5e7eb; /* gray-200 */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); /* Softer, layered shadow */
-    padding: 2rem 2.5rem; /* More padding */
-    margin-bottom: 2.5rem;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-primary);
+    box-shadow: var(--shadow-card);
 }
 .card h2 {
-    font-size: 2rem; /* Slightly larger */
-    font-weight: 700; /* Bold */
-    color: #111827; /* gray-900 */
-    letter-spacing: -0.025em;
-    border-bottom: 1px solid #e5e7eb; /* gray-200 */
-    padding-bottom: 0.75rem;
-    margin-bottom: 1.5rem;
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-border-accent);
 }
-.card h3 {
-    font-size: 1.25rem; /* text-xl */
-    font-weight: 600;
-    color: #1e3a8a; /* blue-800 */
-    margin-bottom: 1rem;
-}
-.card p, .card li {
-    color: #4b5563; /* gray-600 */
-    font-size: 0.95rem; /* Slightly larger body text in cards */
-}
+.card h3 { color: var(--color-primary-action-hover); }
+.card p, .card li { color: var(--color-text-secondary); }
+
 .stat-card {
-    background-color: #f9fafb; /* gray-50 */
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid #e5e7eb; /* gray-200 */
-    box-shadow: none; /* Flatter stat cards */
+    background-color: var(--color-bg-primary); /* Slightly different from card bg */
+    border: 1px solid var(--color-border-secondary);
+    box-shadow: none;
 }
-.stat-card h4 {
-    color: #4b5563; /* gray-600 */
-    font-size: 0.875rem; /* text-sm */
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-.stat-card p.text-5xl {
-    color: #1d4ed8; /* blue-700 */
-    font-weight: 700; /* Bold */
-}
+.stat-card h4 { color: var(--color-text-muted); }
+.stat-card p.text-5xl { color: var(--color-primary-action); }
 
 /* --- Map Containers --- */
 #simulationMap,
@@ -96,250 +177,218 @@ h1.text-3xl { /* Main title in header */
 #optimizationMapViz,
 #profileCreationMap,
 #scenarioComparisonMap {
-    height: 480px; /* Standardized height */
-    min-height: 350px;
-    border-radius: 0.5rem;
-    background-color: #e5e7eb; /* gray-200 */
-    border: 1px solid #d1d5db; /* gray-300 */
-    width: 100%;
+    background-color: var(--color-border-primary); /* Lighter than main bg for contrast */
+    border: 1px solid var(--color-border-secondary);
 }
-#profileCreationMap { height: 320px; min-height: 280px; }
 
 /* --- Buttons --- */
-.btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
-    transition: all 0.15s ease-in-out;
-    cursor: pointer;
-    text-transform: none;
-    letter-spacing: normal;
-    line-height: 1.5;
-    border: 1px solid transparent;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-.btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.07);
-}
-.btn:active:not(:disabled) {
-    transform: translateY(0px);
-    box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.05);
-}
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .btn-primary {
-    background-color: #2563eb; /* blue-600 */
-    border-color: #2563eb;
-    color: white;
+    background-color: var(--color-primary-action);
+    border-color: var(--color-primary-action);
+    color: var(--color-primary-text-on-action);
 }
 .btn-primary:hover:not(:disabled) {
-    background-color: #1d4ed8; /* blue-700 */
-    border-color: #1d4ed8;
+    background-color: var(--color-primary-action-hover);
+    border-color: var(--color-primary-action-hover);
 }
-
-.btn-secondary { /* Light gray button with dark text */
-    background-color: #e5e7eb; /* gray-200 */
-    border-color: #d1d5db; /* gray-300 */
-    color: #1f2937; /* gray-800 */
+.btn-secondary { /* Updated to use alt secondary for better theme adaptability */
+    background-color: var(--color-secondary-alt-bg);
+    border-color: var(--color-secondary-alt-border);
+    color: var(--color-secondary-alt-text);
 }
 .btn-secondary:hover:not(:disabled) {
-    background-color: #d1d5db; /* gray-300 */
-    border-color: #9ca3af; /* gray-400 */
+    background-color: var(--color-secondary-alt-bg-hover);
+    border-color: var(--color-secondary-alt-border-hover);
 }
-
 .btn-danger {
-    background-color: #ef4444; /* red-500 */
-    border-color: #ef4444;
-    color: white;
+    background-color: var(--color-danger-action);
+    border-color: var(--color-danger-action);
+    color: var(--color-primary-text-on-action); /* Assuming white text on red */
 }
 .btn-danger:hover:not(:disabled) {
-    background-color: #dc2626; /* red-600 */
-    border-color: #dc2626;
+    background-color: var(--color-danger-action-hover);
+    border-color: var(--color-danger-action-hover);
 }
-.btn-sm { padding: 0.5rem 0.875rem; font-size: 0.875rem; }
 
 /* --- Inputs & Forms --- */
-.input-group label {
-    display: block;
-    font-weight: 500;
-    color: #374151; /* gray-700 */
-    margin-bottom: 0.375rem; /* mb-1.5 */
-    font-size: 0.875rem; /* text-sm */
-}
+.input-group label { color: var(--color-text-secondary); }
 .input-group input[type="number"],
 .input-group input[type="text"],
 .input-group select {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-    border: 1px solid #d1d5db; /* gray-300 */
-    background-color: #ffffff;
-    color: #111827; /* gray-900 */
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    border: 1px solid var(--color-border-secondary);
+    background-color: var(--color-bg-input);
+    color: var(--color-text-input);
 }
 .input-group input[type="number"]:focus,
 .input-group input[type="text"]:focus,
 .input-group select:focus {
-    border-color: #2563eb; /* blue-600 */
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Lighter, wider ring */
+    border-color: var(--color-primary-action);
+    box-shadow: 0 0 0 3px var(--color-primary-action-hover_25); /* Use a variable for ring color if defined */
 }
-.input-group input[type="checkbox"] {
-    width: 1.125rem; height: 1.125rem; /* Slightly larger */
-    margin-right: 0.5rem;
-    accent-color: #2563eb;
-    border-radius: 0.25rem;
-    border: 1px solid #9ca3af; /* gray-400 */
-}
-.checkbox-group label, .checkbox-label {
-     display: inline-flex; align-items: center; cursor: pointer;
-     font-weight: normal; color: #374151; /* gray-700 */
+body.dark-mode .input-group input[type="number"]:focus,
+body.dark-mode .input-group input[type="text"]:focus,
+body.dark-mode .input-group select:focus {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3); /* blue-400 with opacity */
 }
 
-/* --- Range Sliders --- */
-input[type="range"] {
-    height: 6px; /* Even slimmer */
-    background: #d1d5db; /* gray-300 */
-    border-radius: 3px;
+.input-group input[type="checkbox"] {
+    accent-color: var(--color-primary-action);
+    border: 1px solid var(--color-border-secondary);
+    background-color: var(--color-bg-input); /* Checkbox background */
 }
+.checkbox-group label, .checkbox-label { color: var(--color-text-secondary); }
+
+/* Range Sliders */
+input[type="range"] { background: var(--color-border-secondary); }
+input[type="range"]:hover { background: var(--color-text-muted); } /* Darker track on hover */
 input[type="range"]::-webkit-slider-thumb {
-    width: 18px; height: 18px;
-    background: #2563eb;
-    border: 2px solid white; /* Thinner border */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    background: var(--color-primary-action);
+    border: 2px solid var(--color-bg-secondary); /* Thumb border matches card/modal bg */
 }
 input[type="range"]::-moz-range-thumb {
-    width: 18px; height: 18px; background: #2563eb; border: 2px solid white;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    background: var(--color-primary-action);
+    border: 2px solid var(--color-bg-secondary);
 }
-.control-label span { /* Value display for sliders */
-    color: #1e3a8a; /* blue-800 */
-    font-weight: 600;
-}
+.control-label span { color: var(--color-primary-action-hover); }
+
 
 /* --- Collapsible Details/Summary (User Explanations) --- */
-div[role="alert"] { /* The colored box containing the explanation */
-    font-size: 0.9rem;
-    padding: 1rem;
-    border-radius: 0.5rem; /* rounded-lg */
-    margin-bottom: 1.5rem;
+div[role="alert"] {
+    background-color: var(--color-bg-info-box);
+    border-left: 4px solid var(--color-border-info-box);
+    color: var(--color-text-primary); /* Ensure text inside has good contrast */
 }
 div[role="alert"] details summary {
-    font-weight: 600; /* Semibold for summary */
-    font-size: 1rem; /* text-base */
-    color: inherit; /* Inherit color from parent alert box */
-    padding: 0.25rem 0;
-    outline: none;
+    color: var(--color-primary-action-hover); /* Make summary text stand out */
 }
 div[role="alert"] details summary:hover {
-    opacity: 0.8;
+    color: var(--color-primary-action);
 }
 div[role="alert"] details summary::before {
-    content: '► ';
-    font-size: 0.75em;
-    margin-right: 0.375rem;
-    transition: transform 0.2s ease-in-out;
+    color: var(--color-primary-action-hover); /* Arrow color */
 }
-div[role="alert"] details[open] > summary::before {
-    transform: rotate(90deg);
+div[role="alert"] details div {
+    border-left: 2px solid var(--color-border-secondary);
+    color: var(--color-text-secondary); /* Content text color */
 }
-div[role="alert"] details div { /* Content inside details */
-    margin-top: 0.75rem;
-    padding-left: 1.25rem; /* Indent content */
-    border-left: 2px solid rgba(0,0,0,0.1); /* Subtle left border */
-    font-size: 0.9rem;
-    color: inherit; /* Inherit from parent alert box */
-    opacity: 0.9;
-}
-div[role="alert"] details ul {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-
-/* Specific alert box colors (adjust as needed) */
-.bg-blue-50.border-blue-500 { border-left-width: 4px; }
-.bg-sky-50.border-sky-500 { border-left-width: 4px; }
-.bg-indigo-50.border-indigo-500 { border-left-width: 4px; }
-.bg-teal-50.border-teal-500 { border-left-width: 4px; }
-.bg-purple-50.border-purple-500 { border-left-width: 4px; }
+/* Specific alert box theming */
+body.dark-mode .bg-blue-50.border-blue-500 { background-color: var(--color-bg-info-box); border-left-color: var(--color-border-info-box); color: var(--color-text-primary); }
+body.dark-mode .bg-blue-50.border-blue-500 summary { color: var(--color-link); }
+body.dark-mode .bg-sky-50.border-sky-500 { background-color: var(--color-bg-info-box); border-left-color: #06b6d4; color: var(--color-text-primary); } /* cyan-500 */
+body.dark-mode .bg-sky-50.border-sky-500 summary { color: #06b6d4; }
+body.dark-mode .bg-indigo-50.border-indigo-500 { background-color: var(--color-bg-info-box); border-left-color: #6366f1; color: var(--color-text-primary); } /* indigo-500 */
+body.dark-mode .bg-indigo-50.border-indigo-500 summary { color: #6366f1; }
+body.dark-mode .bg-teal-50.border-teal-500 { background-color: var(--color-bg-info-box); border-left-color: #14b8a6; color: var(--color-text-primary); } /* teal-500 */
+body.dark-mode .bg-teal-50.border-teal-500 summary { color: #14b8a6; }
+body.dark-mode .bg-purple-50.border-purple-500 { background-color: var(--color-bg-info-box); border-left-color: #a855f7; color: var(--color-text-primary); } /* purple-500 */
+body.dark-mode .bg-purple-50.border-purple-500 summary { color: #a855f7; }
 
 
 /* --- Chart Containers --- */
 .chart-container, .live-chart-container {
-    position: relative;
-    margin: 0.5rem 0;
-    padding: 1rem;
-    background-color: #ffffff;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.03); /* Very subtle shadow */
-    border: 1px solid #e5e7eb; /* gray-200 */
-    height: 320px; /* Consistent height */
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-primary);
 }
-.live-chart-container { height: 280px; }
-.chart-container canvas, .live-chart-container canvas { max-width: 100%; max-height: 100%; }
 .live-chart-container h5, .chart-container h4 {
-    text-align: center; font-size: 0.875rem; color: #4b5563; /* gray-600 */
-    margin-bottom: 0.75rem; font-weight: 500; /* Medium weight */
+    color: var(--color-text-muted);
 }
-.chart-container h4 { font-size: 1rem; color: #111827; /* gray-900 */ }
-
+.chart-container h4 { color: var(--color-text-primary); }
 
 /* --- Tables --- */
 .comparison-table-container {
-    border: 1px solid #e5e7eb; /* gray-200 */
-    border-radius: 0.5rem;
-    box-shadow: none;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-primary);
 }
 .comparison-table th {
-    background-color: #f9fafb; /* gray-50 */
-    color: #374151; /* gray-700 */
-    font-weight: 500; /* Medium */
-    border-bottom: 2px solid #e5e7eb; /* gray-200 */
-    border-right: 1px solid #e5e7eb;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-border-primary);
+    border-right: 1px solid var(--color-border-primary);
 }
 .comparison-table td {
-    border: 1px solid #f3f4f6; /* gray-100 */
-    color: #4b5563; /* gray-600 */
+    border: 1px solid var(--color-border-primary);
+    color: var(--color-text-secondary);
 }
-.comparison-table tbody tr:nth-child(even) { background-color: #ffffff; }
-.comparison-table tbody tr:hover { background-color: #f0f9ff; /* blue-50 */ }
+.comparison-table tbody tr:nth-child(even) {
+    background-color: var(--color-bg-secondary); /* Use secondary for even rows if different from primary */
+}
+body.light-mode .comparison-table tbody tr:nth-child(even) {
+    background-color: #f9fafb; /* gray-50 for light mode even rows */
+}
+.comparison-table tbody tr:hover {
+    background-color: var(--color-bg-accent);
+}
 
 
 /* --- Log & List Containers --- */
 .log-container, .sector-select-container,
 #savedScenariosListContainer, #savedProfilesListContainer {
-    border: 1px solid #e5e7eb; /* gray-200 */
-    border-radius: 0.375rem; /* rounded-md */
+    border: 1px solid var(--color-border-secondary);
+    background-color: var(--color-bg-primary); /* Light background for these containers */
 }
-.simulation-log {
-    background-color: #111827; /* gray-900 */
-    color: #d1d5db; /* gray-300 */
-    font-size: 0.8rem; /* Slightly smaller for dense logs */
+body.dark-mode .log-container,
+body.dark-mode .sector-select-container,
+body.dark-mode #savedScenariosListContainer,
+body.dark-mode #savedProfilesListContainer {
+    background-color: #1f2937; /* slate-800, slightly lighter than main dark bg */
 }
-.log-message em { color: #9ca3af; /* gray-400 */ }
-.log-info { color: #60a5fa; } /* blue-400 */
-.log-agent { color: #fcd34d; } /* amber-300 */
-.log-order { color: #4ade80; } /* green-400 */
-.log-system { color: #a78bfa; } /* violet-400 */
-.log-error { color: #fb7185; font-weight: 600;} /* rose-400 */
-.log-system-bold { color: #a78bfa; font-weight: 600;}
-.log-traffic { color: #818cf8; } /* indigo-400 */
-.log-cost { color: #f472b6; } /* pink-400 */
 
+.simulation-log {
+    background-color: var(--color-bg-log);
+    color: var(--color-text-log);
+}
+.log-message em { color: var(--color-text-muted); } /* Muted for prefixes */
+.log-info { color: var(--color-log-info); }
+.log-agent { color: var(--color-log-agent); }
+.log-order { color: var(--color-log-order); }
+.log-system { color: var(--color-log-system); }
+.log-error { color: var(--color-log-error); }
+.log-system-bold { color: var(--color-log-system); }
+.log-traffic { color: var(--color-log-traffic); }
+.log-cost { color: var(--color-log-cost); }
 
 /* --- Footer --- */
 footer {
-    background-color: #111827; /* gray-900 */
-    color: #9ca3af; /* gray-400 */
-    padding-top: 3rem; padding-bottom: 3rem;
+    background-color: var(--color-bg-footer);
+    color: var(--color-text-footer);
 }
-footer p.text-slate-300 { color: #d1d5db; /* gray-300 */ }
-#sectorCoordinatesContainer { background-color: #1f2937; /* gray-800 */ }
-#sectorCoordinatesList { color: #9ca3af; /* gray-400 */ }
+body.light-mode footer p.text-slate-300 { color: #cbd5e1; } /* Keep specific if needed */
+body.dark-mode footer p.text-slate-300 { color: var(--color-text-secondary); }
 
+#sectorCoordinatesContainer {
+    background-color: var(--color-bg-log); /* Consistent with other dark panels */
+}
+#sectorCoordinatesList {
+    color: var(--color-text-log);
+}
+
+/* Ensure Leaflet map tiles have a background in dark mode if tiles fail to load */
+body.dark-mode .leaflet-tile-pane .leaflet-tile {
+    /* background-color: #374151; /* gray-700 */ /* Optional: if tiles are transparent */
+}
+body.dark-mode .leaflet-control-attribution {
+    background: rgba(30, 41, 59, 0.8) !important; /* slate-800 with opacity */
+    color: #cbd5e1 !important; /* slate-300 */
+}
+body.dark-mode .leaflet-control-attribution a {
+    color: #93c5fd !important; /* blue-300 */
+}
+
+/* Modal in Dark Mode */
+body.dark-mode .modal-content {
+    background-color: var(--color-bg-secondary); /* e.g., slate-800 */
+    border: 1px solid var(--color-border-primary); /* e.g., slate-700 */
+}
+body.dark-mode .modal-header {
+    border-bottom: 1px solid var(--color-border-primary);
+}
+body.dark-mode .modal-header h2 {
+    color: var(--color-primary-action); /* Brighter blue for dark mode title */
+}
+body.dark-mode .close-button {
+    color: var(--color-text-muted);
+}
+body.dark-mode .close-button:hover,
+body.dark-mode .close-button:focus {
+    color: var(--color-text-primary);
+}
