@@ -46,7 +46,7 @@
                     <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
                     <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
                     <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs.</li>
-                     <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently.</li>
+                     <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization.</li>
                      <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
                 </ol>
                 <p class="mb-8 text-lg leading-relaxed text-slate-600">
@@ -205,7 +205,7 @@
                         <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
                         <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
                         <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
-                        <li>"Save Current Scenario Results" to compare different setups later.</li>
+                        <li>"Save Current Scenario Results" to compare different setups later. You can also "Export Results (CSV)" for analysis in tools like Excel.</li>
                     </ul>
                 </div>
                 <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
@@ -375,8 +375,10 @@
                         <p><strong>Overall Total Operational Cost:</strong> <span id="statsOverallTotalOperationalCost">₹0.00</span></p>
                         <p><strong>Average Cost per Order:</strong> <span id="statsAverageCostPerOrder">N/A</span></p>
                     </div>
-                    <div class="mt-6 flex justify-center space-x-3"> <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
-                        <button id="exportSimResultsBtn" class="btn btn-primary">Export Results (CSV)</button> </div>
+                    <div class="mt-6 flex justify-center space-x-3">
+                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
+                        <button id="exportSimResultsBtn" class="btn btn-primary">Export Results (CSV)</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -386,20 +388,37 @@
                 <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
                 <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
                     <p class="font-bold text-lg mb-2">What is this section for?</p>
-                    <p class="text-base leading-relaxed">This tool helps you estimate a good number of delivery agents to employ. It runs several short simulations, each with a different number of agents, for a specific dark store and order demand around it. The goal is to find a balance between meeting delivery time targets and managing operational costs.</p>
-                    <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                    <p class="text-base leading-relaxed">
+                        This tool helps you find a smart balance for your delivery team size. Instead of just picking a number of agents, it analyzes how different team sizes impact delivery speed, customer service (getting orders on time), agent workload (utilization), and overall costs.
+                    </p>
+                    <p class="font-bold text-lg mt-3 mb-2">How does it work now?</p>
+                    <p class="text-base leading-relaxed">
+                        You set a target for average delivery time. The tool then runs many quick simulations for different numbers of agents (from a minimum to a maximum you define). For each simulated agent count, it tracks:
+                    </p>
                     <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                        <li>First, ensure you've run the "Clustering" analysis to identify dark stores.</li>
-                        <li>Set your "Target Avg. Delivery Time" (e.g., 15 minutes).</li>
-                        <li>Select a "Dark Store" from the dropdown (populated from the Clustering results).</li>
-                        <li>Define the "Order Generation Radius" around this store and the "Orders per Iteration" (how many orders to simulate for each agent count).</li>
-                        <li>Set the "Min Agents" and "Max Agents" to test (e.g., test from 1 agent up to 15 agents).</li>
-                        <li>The "Max Sim Time per Iteration" prevents a single test from running too long if orders aren't getting delivered.</li>
-                        <li>Click "Run Workforce Optimization". The system will simulate each agent count and display results.</li>
+                        <li>Average delivery time.</li>
+                        <li>The percentage of orders delivered *within* your target average delivery time (Service Level).</li>
+                        <li>How busy the agents are (Average Agent Utilization).</li>
+                        <li>The average cost to deliver each order.</li>
+                    </ul>
+                    <p class="text-base leading-relaxed mt-2">
+                        The "Best Scenario" is chosen by first finding agent counts that meet a good service level (e.g., many orders delivered on time). Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a setup where agents are well-utilized (not overworked or too idle).
+                    </p>
+                     <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
+                     <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
+                        <li>Make sure you've run "Clustering" first to have dark stores available.</li>
+                        <li>Set your desired "Target Avg. Delivery Time".</li>
+                        <li>Choose a "Dark Store" to optimize for.</li>
+                        <li>Define the "Order Generation Radius" and "Orders per Iteration" for the test runs.</li>
+                        <li>Specify the "Min Agents" and "Max Agents" to test.</li>
+                        <li>Click "Run Workforce Optimization".</li>
                     </ul>
                     <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                    <p class="text-base leading-relaxed">A table comparing key metrics (delivery times, utilization, costs) for each number of agents tested. Charts will visualize these trends. The "Optimization Results (Best Scenario)" section will highlight the agent count that best met your target delivery time, along with its associated statistics and costs. This helps in making data-informed staffing decisions.</p>
+                    <p class="text-base leading-relaxed">
+                        You'll get a detailed comparison table and charts showing how performance changes with different numbers of agents. The "Optimization Results" will highlight a recommended agent count based on balancing service, cost, and utilization, along with an explanation. This gives you a more robust, data-backed suggestion for staffing.
+                    </p>
                 </div>
+
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
                     <div class="grid md:grid-cols-2 gap-6">
@@ -439,7 +458,7 @@
                     </div>
                 </div>
                 <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden">
-                     <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Best Agent Count)</h4>
+                     <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Optimal Configuration)</h4>
                     <div id="optimizationMapViz" class="w-full"></div>
                 </div>
                 <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
@@ -452,7 +471,7 @@
                                     <th>Generated Orders</th>
                                     <th>Delivered Orders</th>
                                     <th>Avg. Delivery Time (min)</th>
-                                    <th>Min Delivery Time (min)</th>
+                                    <th>% Orders within Target Time</th> <th>Min Delivery Time (min)</th>
                                     <th>Max Delivery Time (min)</th>
                                     <th>Std. Dev. Delivery Time (min)</th>
                                     <th>Avg. Agent Utilization (%)</th>
@@ -484,16 +503,20 @@
                         <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
                         <canvas id="avgOrderWaitTimeChart"></canvas>
                     </div>
+                    <div class="chart-container md:col-span-2"> <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
+                        <canvas id="ordersWithinSlaChart"></canvas>
+                    </div>
                 </div>
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Optimization Results (Best Scenario)</h4>
+                    <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
+                    <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
+                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization.</p>
+                    </div>
                     <div class="optimization-results-grid">
-                        <p><strong >Optimal Agents Found:</strong> <span id="optResultAgents">N/A</span></p>
+                        <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
                         <p><strong >Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
                         <p><strong >Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
-                        <p><strong >Min Delivery Time:</strong> <span id="optResultMinDelTime">N/A</span></p>
-                        <p><strong >Max Delivery Time:</strong> <span id="optResultMaxDelTime">N/A</span></p>
-                        <p><strong >Std. Dev. Delivery Time:</strong> <span id="optResultStdDevDelTime">N/A</span></p>
+                        <p><strong >% Orders within Target:</strong> <span id="optResultSlaMet">N/A</span></p>
                         <p><strong >Avg. Agent Utilization:</strong> <span id="optResultAvgUtilization">N/A</span></p>
                         <p><strong >Avg. Order Wait Time:</strong> <span id="optResultAvgWaitTime">N/A</span></p>
                         <p><strong >Undelivered Orders:</strong> <span id="optResultUndelivered">N/A</span></p>
@@ -506,7 +529,7 @@
                         <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
                     </div>
                     <div class="mt-4">
-                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Optimal Scenario):</h5>
+                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Recommended Scenario):</h5>
                         <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
                         </ul>
                         <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
