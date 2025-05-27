@@ -55,7 +55,7 @@
                         <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
                         <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
                         <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs.</li>
-                         <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization.</li>
+                         <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization, using realistic demand patterns.</li>
                          <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
                     </ol>
                 </details>
@@ -413,35 +413,27 @@
                         <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
                             <p class="text-base leading-relaxed">
-                                This tool helps you find a smart balance for your delivery team size. Instead of just picking a number of agents, it analyzes how different team sizes impact delivery speed, customer service (getting orders on time), agent workload (utilization), and overall costs.
+                                This tool helps you find a smart balance for your delivery team size. It analyzes how different team sizes impact delivery speed, customer service (getting orders on time), agent workload (utilization), and overall costs, using realistic demand patterns.
                             </p>
-                            <p class="font-bold text-lg mt-3 mb-2">How does it work now?</p>
+                            <p class="font-bold text-lg mt-3 mb-2">How it Works:</p>
                             <p class="text-base leading-relaxed">
-                                You set a target for average delivery time and select a demand profile (or use defaults). The tool then runs many quick simulations for different numbers of agents (from a minimum to a maximum you define). For each simulated agent count, it tracks:
+                                You set a target for average delivery time and select a demand profile (or use defaults). The tool runs simulations for different numbers of agents. For each agent count, it generates orders based on the chosen profile over a set simulation time and tracks key metrics.
                             </p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Average delivery time.</li>
-                                <li>The percentage of orders delivered *within* your target average delivery time (Service Level).</li>
-                                <li>How busy the agents are (Average Agent Utilization).</li>
-                                <li>The average cost to deliver each order.</li>
-                            </ul>
                             <p class="text-base leading-relaxed mt-2">
-                                The "Best Scenario" is chosen by first finding agent counts that meet a good service level (e.g., many orders delivered on time) and ensure a high rate of order completion. Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a configuration where agents are well-utilized (e.g., between 60-90%) to avoid overstaffing (low utilization, high idle costs) or overworking agents (very high utilization, risk of burnout).
+                                The "Best Scenario" is recommended by first ensuring a high percentage of orders are completed and meet your service level target. Then, it prioritizes the lowest cost per order. If costs are similar, it favors configurations where agents are well-utilized (not idle too often, nor overworked).
                             </p>
                              <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                              <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Make sure you've run "Clustering" first to have dark stores available for selection.</li>
-                                <li>Set your desired "Target Avg. Delivery Time".</li>
-                                <li>Choose a "Dark Store" to optimize for.</li>
-                                <li>Select a "Demand Profile" to simulate order patterns. Default profiles are available, or use one you created in the "Demand Profiles" tab.</li>
+                                <li>Ensure "Clustering" has been run if you want to optimize for a specific clustered dark store.</li>
+                                <li>Set your "Target Avg. Delivery Time".</li>
+                                <li>Select the "Dark Store" for which the optimization is being run.</li>
+                                <li>Choose a "Demand Profile for Optimization". Default profiles generate orders uniformly or focused around the selected store using the "Order Generation Radius". Custom profiles use their own defined zones and rates.</li>
+                                <li>If using a default profile, set the "Order Generation Radius".</li>
+                                <li>If using a default profile, set the "Target Orders per Iteration" to guide how many orders should be generated for each agent count test.</li>
                                 <li>Specify the "Min Agents" and "Max Agents" to test.</li>
-                                <li>Set "Max Sim Time per Iteration" to control how long each test run for a specific agent count can last.</li>
+                                <li>Set "Max Sim Time per Iteration" (how long each test runs if the target orders aren't met sooner).</li>
                                 <li>Click "Run Workforce Optimization".</li>
                             </ul>
-                            <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                            <p class="text-base leading-relaxed">
-                                You'll get a detailed comparison table and charts showing how performance changes with different numbers of agents. The "Optimization Recommendation" section will highlight a recommended agent count based on balancing service, cost, and utilization, along with an explanation. You can also "Export Optimization Results (CSV)" for further analysis.
-                            </p>
                         </div>
                     </details>
                 </div>
@@ -468,6 +460,9 @@
                         </div>
                          <div class="input-group" id="optOrderRadiusContainer"> <label for="optOrderGenerationRadius">Order Generation Radius (km - for default profiles):</label>
                             <input type="number" id="optOrderGenerationRadius" value="3" min="0.5" step="0.5" class="w-full">
+                        </div>
+                        <div class="input-group" id="optTargetOrdersContainer"> <label for="optTargetOrdersPerIteration">Target Orders per Iteration (for default profiles):</label>
+                            <input type="number" id="optTargetOrdersPerIteration" value="20" min="5" step="1" class="w-full">
                         </div>
                         <div class="input-group">
                             <label for="optMinAgents">Min Agents to Test:</label>
