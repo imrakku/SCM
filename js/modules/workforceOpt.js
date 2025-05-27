@@ -12,15 +12,15 @@ let optDarkStoreMarkersLayer;
 let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 
-// Chart Instances (scoped to this module)
-// These will be initialized in initializeOptimizationChartsLocal
+// Chart Instances
 let optDeliveryTimeChartInstance, optUtilizationChartInstance,
     optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
     optOrdersWithinSlaChartInstance;
 
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optOrderGenerationRadiusInputEl,
-    optOrdersPerIterationInputEl, optMinAgentsInputEl, optMaxAgentsInputEl,
+    optMinOrdersPerIterationInputEl, optMaxOrdersPerIterationInputEl, // Changed from single input
+    optMinAgentsInputEl, optMaxAgentsInputEl,
     optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl,
     optimizationMapContainerEl, optimizationComparisonContainerEl, optimizationChartsContainerEl,
     optimizationResultsContainerEl, optimizationComparisonTableBodyEl,
@@ -47,7 +47,8 @@ export function initializeWorkforceOptimizationSection() {
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
     optSelectDarkStoreEl = document.getElementById('optSelectDarkStore');
     optOrderGenerationRadiusInputEl = document.getElementById('optOrderGenerationRadius');
-    optOrdersPerIterationInputEl = document.getElementById('optOrdersPerIteration');
+    optMinOrdersPerIterationInputEl = document.getElementById('optMinOrdersPerIteration'); // New
+    optMaxOrdersPerIterationInputEl = document.getElementById('optMaxOrdersPerIteration'); // New
     optMinAgentsInputEl = document.getElementById('optMinAgents');
     optMaxAgentsInputEl = document.getElementById('optMaxAgents');
     optMaxSimTimePerIterationInputEl = document.getElementById('optMaxSimTimePerIteration');
@@ -83,7 +84,7 @@ export function initializeWorkforceOptimizationSection() {
     exportWorkforceOptResultsBtnEl?.addEventListener('click', exportWorkforceOptResultsToCSV);
 
     populateDarkStoreSelectorForOpt();
-    initializeOptimizationChartsLocal(); // Initialize charts with new options
+    initializeOptimizationChartsLocal();
 }
 
 export function populateDarkStoreSelectorForOpt(clusteredStores) {
@@ -100,14 +101,14 @@ export function populateDarkStoreSelectorForOpt(clusteredStores) {
             optSelectDarkStoreEl.appendChild(option);
         });
         optSelectDarkStoreEl.disabled = false;
-        runOptimizationBtnEl.disabled = false;
+        if(runOptimizationBtnEl) runOptimizationBtnEl.disabled = false;
     } else {
         const option = document.createElement('option');
         option.value = "";
         option.textContent = "-- Run Clustering First to Select a Store --";
         optSelectDarkStoreEl.appendChild(option);
         optSelectDarkStoreEl.disabled = true;
-        runOptimizationBtnEl.disabled = true;
+        if(runOptimizationBtnEl) runOptimizationBtnEl.disabled = true;
     }
 }
 
@@ -129,14 +130,19 @@ async function runWorkforceOptimization() {
     }
     
     const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value);
+    const minOrdersPerIteration = parseInt(optMinOrdersPerIterationInputEl.value); // New
+    const maxOrdersPerIteration = parseInt(optMaxOrdersPerIterationInputEl.value); // New
     let minAgentsToTest = parseInt(optMinAgentsInputEl.value);
     let maxAgentsToTest = parseInt(optMaxAgentsInputEl.value);
     const targetAvgDeliveryTime = parseInt(optTargetDeliveryTimeInputEl.value);
-    const numOrdersToSimCap = parseInt(optOrdersPerIterationInputEl.value);
     const maxSimTimePerIteration = parseInt(optMaxSimTimePerIterationInputEl.value);
 
-    if (isNaN(orderRadiusKm) || orderRadiusKm <= 0 || isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <=0 || isNaN(numOrdersToSimCap) || numOrdersToSimCap <=0 || isNaN(maxSimTimePerIteration) || maxSimTimePerIteration <=0) {
-        logMessage("Error: Please ensure all optimization parameters are valid positive numbers.", 'ERROR', optimizationLogEl);
+    if (isNaN(orderRadiusKm) || orderRadiusKm <= 0 || 
+        isNaN(minOrdersPerIteration) || minOrdersPerIteration <= 0 ||
+        isNaN(maxOrdersPerIteration) || maxOrdersPerIteration < minOrdersPerIteration ||
+        isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <=0 || 
+        isNaN(maxSimTimePerIteration) || maxSimTimePerIteration <=0) {
+        logMessage("Error: Please ensure all optimization parameters are valid positive numbers, and Max Orders >= Min Orders.", 'ERROR', optimizationLogEl);
         if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
         return;
     }
@@ -149,14 +155,14 @@ async function runWorkforceOptimization() {
     runOptimizationBtnEl.textContent = "Optimizing...";
     if (optimizationLogEl) optimizationLogEl.innerHTML = "";
     logMessage(`Starting workforce optimization for Dark Store: ${selectedDarkStore.name}`, 'SYSTEM', optimizationLogEl);
-    logMessage(`Target Avg Delivery Time: ${targetAvgDeliveryTime} min. Orders per iteration: ${numOrdersToSimCap}.`, 'SYSTEM', optimizationLogEl);
+    logMessage(`Target Avg Delivery Time: ${targetAvgDeliveryTime} min. Orders per iteration range: ${minOrdersPerIteration}-${maxOrdersPerIteration}.`, 'SYSTEM', optimizationLogEl);
     logMessage(`Testing agents from ${minAgentsToTest} to ${maxAgentsToTest}.`, 'SYSTEM', optimizationLogEl);
 
     const baseMinAgentSpeed = getSimParameter('agentMinSpeed');
     const baseMaxAgentSpeed = getSimParameter('agentMaxSpeed');
     const baseHandlingTime = getSimParameter('handlingTime');
     const baseTrafficFactor = getSimParameter('baseTrafficFactor');
-    const baseOrderGenProb = getSimParameter('currentOrderGenerationProbability');
+    const baseOrderGenProb = getSimParameter('currentOrderGenerationProbability'); // This will determine rate, volume is now variable
     const iterAgentCostPerHour = getSimParameter('agentCostPerHour');
     const iterCostPerKm = getSimParameter('costPerKmTraveled');
     const iterFixedCostPerDelivery = getSimParameter('fixedCostPerDelivery');
@@ -184,7 +190,9 @@ async function runWorkforceOptimization() {
     let bestIterationResult = null;
 
     for (let currentNumAgents = minAgentsToTest; currentNumAgents <= maxAgentsToTest; currentNumAgents++) {
-        logMessage(`Testing with ${currentNumAgents} agent(s)...`, 'ITERATION', optimizationLogEl);
+        // Determine target orders for this specific iteration run
+        const targetOrdersForThisIter = Math.floor(Math.random() * (maxOrdersPerIteration - minOrdersPerIteration + 1)) + minOrdersPerIteration;
+        logMessage(`Testing with ${currentNumAgents} agent(s) for approx. ${targetOrdersForThisIter} orders...`, 'ITERATION', optimizationLogEl);
         if (optimizationLogEl) optimizationLogEl.scrollTop = optimizationLogEl.scrollHeight;
 
         let iterSimTime = 0;
@@ -194,7 +202,8 @@ async function runWorkforceOptimization() {
         let iterStats = {
             totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
             ordersWithinSLA: 0,
-            sumWaitTimes: 0, numAssigned: 0, totalAgentActiveTime: 0, totalAgentDistanceKm: 0
+            sumWaitTimes: 0, numAssigned: 0, totalAgentActiveTime: 0, totalAgentDistanceKm: 0,
+            targetOrdersThisIteration: targetOrdersForThisIter // Store for reference
         };
 
         for (let i = 0; i < currentNumAgents; i++) {
@@ -206,11 +215,11 @@ async function runWorkforceOptimization() {
             });
         }
 
-        while (iterSimTime < maxSimTimePerIteration && (iterStats.totalGenerated < numOrdersToSimCap || iterOrders.some(o => o.status !== 'delivered'))) {
+        while (iterSimTime < maxSimTimePerIteration && (iterStats.totalGenerated < targetOrdersForThisIter || iterOrders.some(o => o.status !== 'delivered'))) {
             iterSimTime++;
             iterAgents.forEach(agent => agent.totalTime++);
 
-            if (iterStats.totalGenerated < numOrdersToSimCap && Math.random() < baseOrderGenProb) {
+            if (iterStats.totalGenerated < targetOrdersForThisIter && Math.random() < baseOrderGenProb) {
                 iterStats.totalGenerated++;
                 const orderId = iterOrderIdCounter++;
                 const radiusDeg = orderRadiusKm / 111;
@@ -286,7 +295,7 @@ async function runWorkforceOptimization() {
                     }
                 }
             });
-            if (iterStats.totalGenerated >= numOrdersToSimCap && iterOrders.every(o => o.status === 'delivered')) break;
+            if (iterStats.totalGenerated >= targetOrdersForThisIter && iterOrders.every(o => o.status === 'delivered')) break;
         }
 
         const avgDelTime = iterStats.totalDelivered > 0 ? (iterStats.sumDeliveryTimes / iterStats.totalDelivered) : null;
@@ -307,7 +316,10 @@ async function runWorkforceOptimization() {
         const stdDevDelTime = iterStats.deliveryTimes.length > 1 && avgDelTime !== null ? calculateStdDev(iterStats.deliveryTimes, avgDelTime) : null;
 
         allOptimizationIterationsData.push({
-            agents: currentNumAgents, generatedOrders: iterStats.totalGenerated, deliveredOrders: iterStats.totalDelivered,
+            agents: currentNumAgents,
+            targetOrdersThisIteration: targetOrdersForThisIter, // Store this for the table
+            generatedOrders: iterStats.totalGenerated, 
+            deliveredOrders: iterStats.totalDelivered,
             avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA,
             minDeliveryTime: minDelTime, maxDeliveryTime: maxDelTime, stdDevDeliveryTime: stdDevDelTime,
             avgAgentUtilization: avgUtil, avgOrderWaitTime: avgWait,
@@ -316,7 +328,7 @@ async function runWorkforceOptimization() {
             orderLocations: iterOrders.filter(o => o.status === 'delivered').map(o => ({ lat: o.location.lat, lng: o.location.lng, count: 1 })),
             totalLaborCost: laborCost, totalTravelCost: travelCost, totalFixedDelCosts: fixedDelCosts,
         });
-        logMessage(`  Agents: ${currentNumAgents}, AvgDel: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
+        logMessage(`  Agents: ${currentNumAgents} (Target Orders: ${targetOrdersForThisIter}), AvgDel: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
         await new Promise(resolve => setTimeout(resolve, 10));
     }
 
@@ -341,6 +353,7 @@ async function runWorkforceOptimization() {
 
     if (qualifiedByCompletionAndSLA.length > 0) {
         qualifiedByCompletionAndSLA.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
+        
         const lowestCostPerOrder = qualifiedByCompletionAndSLA[0].avgCostPerOrder ?? Infinity;
         const similarCostIterations = qualifiedByCompletionAndSLA.filter(
             iter => (iter.avgCostPerOrder ?? Infinity) <= lowestCostPerOrder * (1 + COST_PER_ORDER_TOLERANCE)
@@ -379,7 +392,7 @@ async function runWorkforceOptimization() {
             } else {
                 recommendationReason += ` Selected best cost option. Agent utilization is within an acceptable range.`;
             }
-        } else {
+        } else { 
             bestIterationResult = qualifiedByCompletionAndSLA[0];
         }
     } else if (allOptimizationIterationsData.length > 0) {
@@ -484,6 +497,7 @@ function populateOptimizationComparisonTable(iterationData) {
     iterationData.forEach(iter => {
         const row = optimizationComparisonTableBodyEl.insertRow();
         row.insertCell().textContent = iter.agents;
+        row.insertCell().textContent = iter.targetOrdersThisIteration; // New Column Data
         row.insertCell().textContent = iter.generatedOrders;
         row.insertCell().textContent = iter.deliveredOrders;
         row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
@@ -545,7 +559,7 @@ function exportWorkforceOptResultsToCSV() {
 
     let csvContent = "data:text/csv;charset=utf-8,";
     const headers = [
-        "Agents", "Generated Orders", "Delivered Orders", "Avg Delivery Time (min)",
+        "Agents", "Target Orders This Iteration", "Generated Orders", "Delivered Orders", "Avg Delivery Time (min)",
         "% Orders within Target Time", "Min Delivery Time (min)", "Max Delivery Time (min)",
         "Std Dev Delivery Time (min)", "Avg Agent Utilization (%)", "Avg Order Wait Time (min)",
         "Undelivered Orders", "Total Op Cost (₹)", "Avg Cost/Order (₹)"
@@ -555,6 +569,7 @@ function exportWorkforceOptResultsToCSV() {
     allOptimizationIterationsData.forEach(iter => {
         const row = [
             iter.agents,
+            iter.targetOrdersThisIteration, // New data point
             iter.generatedOrders,
             iter.deliveredOrders,
             iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A",
@@ -568,7 +583,6 @@ function exportWorkforceOptResultsToCSV() {
             iter.totalOpCost !== null ? iter.totalOpCost.toFixed(2) : "N/A",
             iter.avgCostPerOrder !== null ? iter.avgCostPerOrder.toFixed(2) : "N/A"
         ];
-        // Quote all fields and escape double quotes within fields
         csvContent += row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",") + "\r\n";
     });
 
