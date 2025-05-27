@@ -1,21 +1,21 @@
 // js/main.js
 import { setupNavigation } from './navigation.js';
 import { initializeSliders, populateSectorCoordinatesList, toggleSectorCoordinates } from './uiElements.js';
-import { initializeThemeSwitcher } from './themeSwitcher.js'; // <-- ADD THIS IMPORT
+// Note: Section-specific initializations are now called by showSection in navigation.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    initializeThemeSwitcher(); // <-- CALL THIS FIRST to set theme before other initializations
-    
-    initializeSliders(); 
+    // Initialize general UI elements that are always present
+    initializeSliders(); // This will set up all sliders and their initial param values
     populateSectorCoordinatesList();
-    const toggleBtn = document.getElementById('toggleSectorCoordsBtn');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', toggleSectorCoordinates);
-    }
+    document.getElementById('toggleSectorCoordsBtn')?.addEventListener('click', toggleSectorCoordinates);
 
     const currentYearEl = document.getElementById('currentYear');
     if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
 
+    // Setup navigation, which will also handle initial section display and
+    // trigger section-specific initializations (like maps) as needed.
     setupNavigation();
-    console.log("Chandigarh Logistics Sim Initialized (with Theme Switcher)");
+
+    // Any other global setup can go here.
+    console.log("Chandigarh Logistics Sim Initialized");
 });
