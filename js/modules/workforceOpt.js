@@ -4,7 +4,7 @@ import { initializeMap, getMapInstance, getDistanceKm, isPointInPolygon, darkSto
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
 import { globalClusteredDarkStores } from './clustering.js';
-import { getSimParameter } from './simulation.js'; // For base sim params
+import { getSimParameter, orderGenerationProbabilities as mainSimOrderProbs } from './simulation.js'; // For base sim params
 import { getCustomDemandProfiles } from './demandProfiles.js'; // To get custom profiles for the dropdown
 
 // Module-specific state
@@ -22,12 +22,13 @@ let optDeliveryTimeChartInstance, optUtilizationChartInstance,
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
     optDemandProfileSelectEl, // New: Dropdown for demand profiles
     optOrderGenerationRadiusInputEl, // Kept for default profiles
+    optTargetOrdersPerIterationInputEl, // For default profiles
     optMinAgentsInputEl, optMaxAgentsInputEl,
     optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl,
     optimizationMapContainerEl, optimizationComparisonContainerEl, optimizationChartsContainerEl,
     optimizationResultsContainerEl, optimizationComparisonTableBodyEl,
     optimizationRecommendationTextEl, exportWorkforceOptResultsBtnEl,
-    optOrderRadiusContainerEl; // To show/hide radius input
+    optOrderRadiusContainerEl, optTargetOrdersContainerEl; // Divs to toggle
 
 // Result display elements
 let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDelTimeEl,
@@ -47,12 +48,13 @@ const COST_PER_ORDER_TOLERANCE = 0.10;
 
 
 export function initializeWorkforceOptimizationSection() {
-    // Cache DOM Elements
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
     optSelectDarkStoreEl = document.getElementById('optSelectDarkStore');
-    optDemandProfileSelectEl = document.getElementById('optDemandProfileSelect'); // New
-    optOrderGenerationRadiusInputEl = document.getElementById('optOrderGenerationRadius'); // Kept
-    optOrderRadiusContainerEl = document.getElementById('optOrderRadiusContainer'); // Container for radius input
+    optDemandProfileSelectEl = document.getElementById('optDemandProfileSelect');
+    optOrderGenerationRadiusInputEl = document.getElementById('optOrderGenerationRadius');
+    optOrderRadiusContainerEl = document.getElementById('optOrderRadiusContainer');
+    optTargetOrdersPerIterationInputEl = document.getElementById('optTargetOrdersPerIteration');
+    optTargetOrdersContainerEl = document.getElementById('optTargetOrdersContainer');
 
     optMinAgentsInputEl = document.getElementById('optMinAgents');
     optMaxAgentsInputEl = document.getElementById('optMaxAgents');
@@ -87,20 +89,21 @@ export function initializeWorkforceOptimizationSection() {
 
     runOptimizationBtnEl?.addEventListener('click', runWorkforceOptimization);
     exportWorkforceOptResultsBtnEl?.addEventListener('click', exportWorkforceOptResultsToCSV);
-    optDemandProfileSelectEl?.addEventListener('change', toggleOptOrderRadiusInput);
-
+    optDemandProfileSelectEl?.addEventListener('change', toggleOptProfileSpecificInputs);
 
     populateDarkStoreSelectorForOpt();
-    populateDemandProfileSelectorForOpt(); // New function call
+    populateDemandProfileSelectorForOpt();
     initializeOptimizationChartsLocal();
-    toggleOptOrderRadiusInput(); // Initial state for radius input
+    toggleOptProfileSpecificInputs(); // Initial state for inputs
 }
 
-function toggleOptOrderRadiusInput() {
-    if (!optDemandProfileSelectEl || !optOrderRadiusContainerEl) return;
+function toggleOptProfileSpecificInputs() {
+    if (!optDemandProfileSelectEl || !optOrderRadiusContainerEl || !optTargetOrdersContainerEl) return;
     const selectedProfile = optDemandProfileSelectEl.value;
-    // Show radius input only for default profiles that use it
-    optOrderRadiusContainerEl.classList.toggle('hidden', !selectedProfile.startsWith('default_opt_'));
+    const showDefaultInputs = selectedProfile.startsWith('default_opt_');
+    
+    optOrderRadiusContainerEl.classList.toggle('hidden', !showDefaultInputs);
+    optTargetOrdersContainerEl.classList.toggle('hidden', !showDefaultInputs);
 }
 
 
@@ -129,19 +132,14 @@ export function populateDarkStoreSelectorForOpt(clusteredStores) {
     }
 }
 
-/**
- * Populates the demand profile selector in the Workforce Optimization tab.
- */
 function populateDemandProfileSelectorForOpt() {
     if (!optDemandProfileSelectEl) return;
-
     const currentVal = optDemandProfileSelectEl.value;
-    // Preserve default options already in HTML, clear only custom ones
     const defaultOptions = Array.from(optDemandProfileSelectEl.options).filter(opt => opt.value.startsWith('default_opt_'));
     optDemandProfileSelectEl.innerHTML = '';
     defaultOptions.forEach(opt => optDemandProfileSelectEl.appendChild(opt.cloneNode(true)));
 
-    const customProfiles = getCustomDemandProfiles(); // Fetch from demandProfiles module
+    const customProfiles = getCustomDemandProfiles();
     customProfiles.forEach(profile => {
         const option = document.createElement('option');
         option.value = `custom_${profile.name}`;
@@ -152,11 +150,10 @@ function populateDemandProfileSelectorForOpt() {
     if (Array.from(optDemandProfileSelectEl.options).some(opt => opt.value === currentVal)) {
         optDemandProfileSelectEl.value = currentVal;
     } else {
-        optDemandProfileSelectEl.value = 'default_opt_uniform'; // Default if previous selection is gone
+        optDemandProfileSelectEl.value = 'default_opt_uniform';
     }
-    toggleOptOrderRadiusInput(); // Update visibility of radius input based on selection
+    toggleOptProfileSpecificInputs();
 }
-
 
 async function runWorkforceOptimization() {
     allOptimizationIterationsData = [];
@@ -169,12 +166,10 @@ async function runWorkforceOptimization() {
     const requiredElements = {
         optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optDemandProfileSelectEl,
         optMinAgentsInputEl, optMaxAgentsInputEl, optMaxSimTimePerIterationInputEl
-        // optOrderGenerationRadiusInputEl is only needed if a default profile is selected
     };
-
     for (const elKey in requiredElements) {
         if (!requiredElements[elKey]) {
-            const errorMessage = `Error: Input element for "${elKey}" not found. Optimization cannot proceed. Check HTML IDs and JS caching.`;
+            const errorMessage = `Error: Input element for "${elKey}" not found. Optimization cannot proceed.`;
             console.error(errorMessage);
             if(optimizationLogEl) logMessage(errorMessage, 'ERROR', optimizationLogEl);
             if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
@@ -184,7 +179,6 @@ async function runWorkforceOptimization() {
 
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
-
     if (isNaN(selectedDarkStoreId) || !selectedDarkStore) {
         logMessage("Error: Please select a valid dark store.", 'ERROR', optimizationLogEl);
         if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
@@ -192,14 +186,15 @@ async function runWorkforceOptimization() {
     }
     
     const selectedDemandProfileId = optDemandProfileSelectEl.value;
-    const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value); // Used for default profiles
+    const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value); // Used only for default_opt_ profiles
+    const targetOrdersPerIterationDefault = parseInt(optTargetOrdersPerIterationInputEl.value); // Used only for default_opt_ profiles
 
     let minAgentsToTest = parseInt(optMinAgentsInputEl.value);
     let maxAgentsToTest = parseInt(optMaxAgentsInputEl.value);
     const targetAvgDeliveryTime = parseInt(optTargetDeliveryTimeInputEl.value);
     const maxSimTimePerIteration = parseInt(optMaxSimTimePerIterationInputEl.value);
 
-    if ( (selectedDemandProfileId.startsWith('default_opt_') && (isNaN(orderRadiusKm) || orderRadiusKm <= 0)) || 
+    if ( (selectedDemandProfileId.startsWith('default_opt_') && (isNaN(orderRadiusKm) || orderRadiusKm <= 0 || isNaN(targetOrdersPerIterationDefault) || targetOrdersPerIterationDefault <=0)) || 
         isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <=0 || 
         isNaN(maxSimTimePerIteration) || maxSimTimePerIteration <=0) {
         logMessage("Error: Please ensure all optimization parameters are valid positive numbers.", 'ERROR', optimizationLogEl);
@@ -215,14 +210,13 @@ async function runWorkforceOptimization() {
     runOptimizationBtnEl.textContent = "Optimizing...";
     if (optimizationLogEl) optimizationLogEl.innerHTML = "";
     logMessage(`Starting workforce optimization for Dark Store: ${selectedDarkStore.name}`, 'SYSTEM', optimizationLogEl);
-    logMessage(`Target Avg Delivery Time: ${targetAvgDeliveryTime} min. Using Demand Profile: ${selectedDemandProfileId}.`, 'SYSTEM', optimizationLogEl);
+    logMessage(`Target Avg Delivery Time: ${targetAvgDeliveryTime} min. Demand Profile: ${selectedDemandProfileId}.`, 'SYSTEM', optimizationLogEl);
     logMessage(`Testing agents from ${minAgentsToTest} to ${maxAgentsToTest}. Max sim time per iter: ${maxSimTimePerIteration} min.`, 'SYSTEM', optimizationLogEl);
 
     const baseMinAgentSpeed = getSimParameter('agentMinSpeed');
     const baseMaxAgentSpeed = getSimParameter('agentMaxSpeed');
     const baseHandlingTime = getSimParameter('handlingTime');
     const baseTrafficFactor = getSimParameter('baseTrafficFactor');
-    // Order generation probability will be implicitly handled by the demand profile's order rates and timings
     const iterAgentCostPerHour = getSimParameter('agentCostPerHour');
     const iterCostPerKm = getSimParameter('costPerKmTraveled');
     const iterFixedCostPerDelivery = getSimParameter('fixedCostPerDelivery');
@@ -273,35 +267,25 @@ async function runWorkforceOptimization() {
             });
         }
 
-        // --- Order Generation Loop based on Demand Profile ---
-        let currentOrderGenerationInterval = 0; // Assuming demand profiles might work on intervals
-
+        // Order Generation Loop
         while (iterSimTime < maxSimTimePerIteration) {
-            iterSimTime++; // Each step is 1 minute for optimization runs
+            iterSimTime++;
             iterAgents.forEach(agent => agent.totalTime++);
 
-            // Order Generation Logic
-            let ordersThisStep = 0;
+            let ordersToGenerateThisStep = 0;
             if (selectedDemandProfileId.startsWith('custom_')) {
                 const profileName = selectedDemandProfileId.substring('custom_'.length);
                 const customProfile = customProfiles.find(p => p.name === profileName);
                 if (customProfile && customProfile.zones) {
                     customProfile.zones.forEach(zone => {
                         if (iterSimTime >= zone.startTime && iterSimTime <= (zone.endTime || Infinity)) {
-                            // For simplicity, let's assume min/max orders are per some interval (e.g., 60 min)
-                            // And we generate a fraction of that per simulation minute.
-                            // This needs a more robust way to handle order rates from profiles.
-                            // A simple approach: if a random check passes, generate one order from this zone.
-                            // The probability could be derived from (minOrders+maxOrders)/2 / (interval length)
-                            // For now, let's use a simpler random chance based on an assumed interval for the profile orders.
-                            const ordersToAttempt = Math.floor(Math.random() * (zone.maxOrders - zone.minOrders + 1)) + zone.minOrders;
-                            const effectiveOrderProbThisStep = (ordersToAttempt / 60); // Assuming min/max is per hour
-
-                            if (Math.random() < effectiveOrderProbThisStep) {
-                                iterStats.totalGenerated++;
-                                const orderId = iterOrderIdCounter++;
+                            // Simplified: assume min/max orders are per hour, distribute per minute
+                            const ordersPerHour = (zone.minOrders + zone.maxOrders) / 2;
+                            const probPerMinute = ordersPerHour / 60;
+                            if (Math.random() < probPerMinute) {
+                                ordersToGenerateThisStep++; // Generate one order from this zone type
+                                // ... (determine orderLocation based on zone.type as in main simulation)
                                 let orderLocation;
-                                // ... (logic to determine orderLocation based on zone.type as in main simulation's generateOrder)
                                 if (zone.type === 'uniform') {
                                     const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
                                     orderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...selectedDarkStore };
@@ -318,47 +302,45 @@ async function runWorkforceOptimization() {
                                      orderLocation = { lat: selectedDarkStore.lat + (Math.random() - 0.5) * 2 * (orderRadiusKm / 111), lng: selectedDarkStore.lng + (Math.random() - 0.5) * 2 * (orderRadiusKm / 111)};
                                      if (!isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) orderLocation = {...selectedDarkStore};
                                 }
-                                iterOrders.push({ id: orderId, location: orderLocation, status: 'pending', timePlaced: iterSimTime });
+                                if (orderLocation) {
+                                    iterOrders.push({ id: iterOrderIdCounter++, location: orderLocation, status: 'pending', timePlaced: iterSimTime });
+                                    iterStats.totalGenerated++;
+                                }
                             }
                         }
                     });
                 }
-            } else { // Default profiles for optimization
-                // Generate orders around the selected dark store based on orderRadiusKm
-                // A simple probability check per step for default profiles
-                const DEFAULT_OPT_ORDER_PROB = 0.1; // Can be adjusted
-                if (Math.random() < DEFAULT_OPT_ORDER_PROB) {
-                     iterStats.totalGenerated++;
+            } else { // Default optimization profiles
+                // Generate orders until targetOrdersPerIterationDefault is met or sim time ends
+                const probForDefault = (targetOrdersPerIterationDefault / maxSimTimePerIteration); // Average probability per minute
+                if (iterStats.totalGenerated < targetOrdersPerIterationDefault && Math.random() < probForDefault) {
+                    iterStats.totalGenerated++;
                     const orderId = iterOrderIdCounter++;
                     const radiusDeg = orderRadiusKm / 111;
                     let orderLocation, attempts = 0;
                     do {
                         const angle = Math.random() * 2 * Math.PI;
-                        const distance = Math.sqrt(Math.random()) * radiusDeg; // Uniform in circle
+                        const distance = Math.sqrt(Math.random()) * radiusDeg;
                         orderLocation = { lat: selectedDarkStore.lat + distance * Math.sin(angle), lng: selectedDarkStore.lng + distance * Math.cos(angle) };
                         attempts++;
                     } while (!isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
-                     if (attempts >= 100 && !isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) {
-                        orderLocation = { ...selectedDarkStore }; // Fallback
+                    if (attempts >= 100 && !isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) {
+                        orderLocation = { ...selectedDarkStore };
                     }
                     iterOrders.push({ id: orderId, location: orderLocation, status: 'pending', timePlaced: iterSimTime });
                 }
             }
-            // --- End Order Generation ---
-
-
-            // Order Assignment (simplified for optimization)
+            
+            // Order Assignment & Agent Movement (simplified as before)
             iterOrders.filter(o => o.status === 'pending').forEach(order => {
-                let bestIterAgent = null; let shortestIterETA = Infinity;
+                 let bestIterAgent = null; let shortestIterETA = Infinity;
                 iterAgents.filter(a => a.status === 'available').forEach(agent => {
-                    // Simplified ETA: time to store (0 if agent at store) + handling + time to customer
                     let timeToStore = 0;
                     if(agent.location.lat !== selectedDarkStore.lat || agent.location.lng !== selectedDarkStore.lng) {
                         timeToStore = (getDistanceKm(agent.location, selectedDarkStore) / (agent.speedKmph * baseTrafficFactor)) * 60;
                     }
                     const timeToCustomer = (getDistanceKm(selectedDarkStore, order.location) / (agent.speedKmph * baseTrafficFactor)) * 60;
                     const eta = timeToStore + baseHandlingTime + timeToCustomer;
-
                     if (eta < shortestIterETA) { shortestIterETA = eta; bestIterAgent = agent; }
                 });
                 if (bestIterAgent) {
@@ -367,70 +349,58 @@ async function runWorkforceOptimization() {
                     iterStats.sumWaitTimes += (order.assignmentTime - order.timePlaced);
                     iterStats.numAssigned++;
                     bestIterAgent.assignedOrderId = order.id; 
-                    // Agent goes to store (if not already there), then to customer
                     bestIterAgent.status = (bestIterAgent.location.lat === selectedDarkStore.lat && bestIterAgent.location.lng === selectedDarkStore.lng) ? 'at_store' : 'to_store';
-                    bestIterAgent.routePath = [bestIterAgent.location, selectedDarkStore, order.location]; // Simplified path
+                    bestIterAgent.routePath = [bestIterAgent.location, selectedDarkStore, order.location];
                     bestIterAgent.currentLegIndex = 0; bestIterAgent.legProgress = 0; bestIterAgent.timeSpentAtStore = 0;
                 }
             });
-
-            // Agent Movement & Delivery (simplified)
             iterAgents.forEach(agent => {
                 if (agent.status === 'available') return;
                 agent.busyTime++; iterStats.totalAgentActiveTime++;
-
                 if (agent.status === 'to_store') {
                     const legDist = getDistanceKm(agent.location, selectedDarkStore);
                     const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1;
                     agent.distanceTraveled += distCovered; iterStats.totalAgentDistanceKm += distCovered;
-                    if (legDist <= distCovered) { // Arrived at store
-                        agent.location = {...selectedDarkStore};
-                        agent.status = 'at_store';
-                        agent.timeSpentAtStore = 0;
-                    } else { // Move towards store (simplified)
-                        // For this simplified opt, we don't need to update exact lat/lng per step
-                    }
-                }
-                else if (agent.status === 'at_store') {
+                     if (legDist <= distCovered) { agent.location = {...selectedDarkStore}; agent.status = 'at_store'; agent.timeSpentAtStore = 0;}
+                } else if (agent.status === 'at_store') {
                     agent.timeSpentAtStore++;
                     if (agent.timeSpentAtStore >= baseHandlingTime) {
                         agent.status = 'to_customer'; agent.timeSpentAtStore = 0;
-                        // Route path already set to [store, customerLocation] effectively
-                        agent.routePath = [selectedDarkStore, iterOrders.find(o=>o.id === agent.assignedOrderId).location];
-                        agent.currentLegIndex = 0; agent.legProgress = 0; // Start journey to customer
+                        const currentOrder = iterOrders.find(o=>o.id === agent.assignedOrderId);
+                        if (currentOrder) agent.routePath = [selectedDarkStore, currentOrder.location]; else agent.status = 'available'; // Safety
+                        agent.currentLegIndex = 0; agent.legProgress = 0;
                     }
-                }
-                else if (agent.status === 'to_customer') {
-                    const customerLocation = agent.routePath[1]; // Second point is customer
+                } else if (agent.status === 'to_customer') {
+                    const customerLocation = agent.routePath[1];
                     const legDist = getDistanceKm(agent.location, customerLocation);
-                    const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1;
-                    agent.distanceTraveled += distCovered; iterStats.totalAgentDistanceKm += distCovered;
-
-                    if (legDist <= distCovered) { // Arrived at customer
+                    if (legDist === 0) { agent.legProgress = 1; }
+                    else {
+                        const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1;
+                        agent.distanceTraveled += distCovered; iterStats.totalAgentDistanceKm += distCovered;
+                        agent.legProgress += (distCovered / legDist);
+                    }
+                    if (agent.legProgress >= 1) {
                         agent.location = {...customerLocation};
                         const deliveredOrder = iterOrders.find(o => o.id === agent.assignedOrderId);
                         if (deliveredOrder) {
-                            deliveredOrder.status = 'delivered';
-                            deliveredOrder.deliveryTime = iterSimTime;
+                            deliveredOrder.status = 'delivered'; deliveredOrder.deliveryTime = iterSimTime;
                             iterStats.totalDelivered++;
                             const deliveryDuration = iterSimTime - deliveredOrder.timePlaced;
-                            iterStats.sumDeliveryTimes += deliveryDuration;
-                            iterStats.deliveryTimes.push(deliveryDuration);
-                            if (deliveryDuration <= targetAvgDeliveryTime) {
-                                iterStats.ordersWithinSLA++;
-                            }
+                            iterStats.sumDeliveryTimes += deliveryDuration; iterStats.deliveryTimes.push(deliveryDuration);
+                            if (deliveryDuration <= targetAvgDeliveryTime) iterStats.ordersWithinSLA++;
                         }
                         agent.status = 'available'; agent.assignedOrderId = null; agent.legProgress = 0;
-                    } else {
-                        // Move towards customer (simplified)
                     }
                 }
             });
-             // Check if all generated orders for this iteration are delivered
-            if (iterStats.totalGenerated > 0 && iterStats.totalGenerated === iterStats.totalDelivered) {
-                if (iterOrders.every(o => o.status === 'delivered')) break; // All done for this iteration
+            if (iterOrders.length > 0 && iterOrders.every(o => o.status === 'delivered')) {
+                // If all generated orders are delivered, we can potentially break early for this iteration
+                // but ensure enough orders were generated if using default profile target
+                if (selectedDemandProfileId.startsWith('custom_') || iterStats.totalGenerated >= targetOrdersPerIterationDefault) {
+                    break; 
+                }
             }
-        } // End of single iteration while loop (sim time or all orders delivered)
+        } // End of single iteration while loop
 
         const avgDelTime = iterStats.totalDelivered > 0 ? (iterStats.sumDeliveryTimes / iterStats.totalDelivered) : null;
         const percentOrdersSLA = iterStats.totalDelivered > 0 ? (iterStats.ordersWithinSLA / iterStats.totalDelivered) * 100 : 0;
@@ -451,7 +421,6 @@ async function runWorkforceOptimization() {
 
         allOptimizationIterationsData.push({
             agents: currentNumAgents,
-            targetOrdersThisIteration: iterStats.targetOrdersThisIteration, // Store this for the table
             generatedOrders: iterStats.totalGenerated, 
             deliveredOrders: iterStats.totalDelivered,
             avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA,
@@ -462,9 +431,9 @@ async function runWorkforceOptimization() {
             orderLocations: iterOrders.filter(o => o.status === 'delivered').map(o => ({ lat: o.location.lat, lng: o.location.lng, count: 1 })),
             totalLaborCost: laborCost, totalTravelCost: travelCost, totalFixedDelCosts: fixedDelCosts,
         });
-        logMessage(`  Agents: ${currentNumAgents} (Target Orders: ${iterStats.targetOrdersThisIteration}), AvgDel: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
+        logMessage(`  Agents: ${currentNumAgents}, Gen: ${iterStats.totalGenerated}, AvgDel: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
         await new Promise(resolve => setTimeout(resolve, 10));
-    }
+    } // End of agent count loop
 
     // --- Refined Logic to Determine Best Iteration ---
     let qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(
@@ -632,7 +601,7 @@ function populateOptimizationComparisonTable(iterationData) {
     iterationData.forEach(iter => {
         const row = optimizationComparisonTableBodyEl.insertRow();
         row.insertCell().textContent = iter.agents;
-        row.insertCell().textContent = iter.targetOrdersThisIteration;
+        row.insertCell().textContent = iter.targetOrdersThisIteration; // Updated to show the target for that run
         row.insertCell().textContent = iter.generatedOrders;
         row.insertCell().textContent = iter.deliveredOrders;
         row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
@@ -704,7 +673,7 @@ function exportWorkforceOptResultsToCSV() {
     allOptimizationIterationsData.forEach(iter => {
         const row = [
             iter.agents,
-            iter.targetOrdersThisIteration,
+            iter.targetOrdersThisIteration, // Include this in the export
             iter.generatedOrders,
             iter.deliveredOrders,
             iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A",
@@ -731,4 +700,3 @@ function exportWorkforceOptResultsToCSV() {
     document.body.removeChild(link);
     logMessage("Workforce optimization results exported to CSV.", 'SYSTEM', optimizationLogEl);
 }
-
