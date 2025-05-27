@@ -13,9 +13,10 @@ let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 
 // Chart Instances (scoped to this module)
+// These will be initialized in initializeOptimizationChartsLocal
 let optDeliveryTimeChartInstance, optUtilizationChartInstance,
     optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
-    optOrdersWithinSlaChartInstance; // New chart instance
+    optOrdersWithinSlaChartInstance;
 
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optOrderGenerationRadiusInputEl,
@@ -23,7 +24,7 @@ let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optOrderGenerationRadius
     optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl,
     optimizationMapContainerEl, optimizationComparisonContainerEl, optimizationChartsContainerEl,
     optimizationResultsContainerEl, optimizationComparisonTableBodyEl,
-    optimizationRecommendationTextEl, exportWorkforceOptResultsBtnEl; // Added export button
+    optimizationRecommendationTextEl, exportWorkforceOptResultsBtnEl;
 
 // Result display elements
 let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDelTimeEl,
@@ -31,19 +32,18 @@ let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDe
     optResultAvgWaitTimeEl, optResultUndeliveredEl, optDarkStoreDistancesEl, optOverallAvgDistanceEl,
     optResultTotalAgentLaborCostEl, optResultTotalTravelCostEl, optResultTotalFixedDeliveryCostsEl,
     optResultOverallTotalOperationalCostEl, optResultAverageCostPerOrderEl,
-    optResultSlaMetEl; // For displaying % SLA met
+    optResultSlaMetEl;
 
 
 // --- Constants for Enhanced Logic ---
-const MIN_DELIVERY_COMPLETION_RATE = 0.80; // At least 80% of generated orders must be delivered
-const TARGET_SLA_PERCENTAGE = 0.75;      // At least 75% of delivered orders within target time
-const IDEAL_AGENT_UTILIZATION_MIN = 60;  // Target minimum agent utilization (e.g., 60%)
-const IDEAL_AGENT_UTILIZATION_MAX = 90;  // Target maximum agent utilization (e.g., 90%)
-const COST_PER_ORDER_TOLERANCE = 0.10; // 10% tolerance for considering similar costs
+const MIN_DELIVERY_COMPLETION_RATE = 0.80;
+const TARGET_SLA_PERCENTAGE = 0.75;
+const IDEAL_AGENT_UTILIZATION_MIN = 60;
+const IDEAL_AGENT_UTILIZATION_MAX = 90;
+const COST_PER_ORDER_TOLERANCE = 0.10;
 
 
 export function initializeWorkforceOptimizationSection() {
-    // Cache DOM Elements
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
     optSelectDarkStoreEl = document.getElementById('optSelectDarkStore');
     optOrderGenerationRadiusInputEl = document.getElementById('optOrderGenerationRadius');
@@ -59,12 +59,12 @@ export function initializeWorkforceOptimizationSection() {
     optimizationResultsContainerEl = document.getElementById('optimizationResultsContainer');
     optimizationComparisonTableBodyEl = document.getElementById('optimizationComparisonTable')?.getElementsByTagName('tbody')[0];
     optimizationRecommendationTextEl = document.getElementById('optimizationRecommendationText');
-    exportWorkforceOptResultsBtnEl = document.getElementById('exportWorkforceOptResultsBtn'); // New export button
+    exportWorkforceOptResultsBtnEl = document.getElementById('exportWorkforceOptResultsBtn');
 
     optResultAgentsEl = document.getElementById('optResultAgents');
     optResultAvgTimeEl = document.getElementById('optResultAvgTime');
     optResultTargetTimeEl = document.getElementById('optResultTargetTime');
-    optResultSlaMetEl = document.getElementById('optResultSlaMet'); // New element
+    optResultSlaMetEl = document.getElementById('optResultSlaMet');
     optResultMinDelTimeEl = document.getElementById('optResultMinDelTime');
     optResultMaxDelTimeEl = document.getElementById('optResultMaxDelTime');
     optResultStdDevDelTimeEl = document.getElementById('optResultStdDevDelTime');
@@ -80,10 +80,10 @@ export function initializeWorkforceOptimizationSection() {
     optResultAverageCostPerOrderEl = document.getElementById('optResultAverageCostPerOrder');
 
     runOptimizationBtnEl?.addEventListener('click', runWorkforceOptimization);
-    exportWorkforceOptResultsBtnEl?.addEventListener('click', exportWorkforceOptResultsToCSV); // Add listener
+    exportWorkforceOptResultsBtnEl?.addEventListener('click', exportWorkforceOptResultsToCSV);
 
     populateDarkStoreSelectorForOpt();
-    initializeOptimizationChartsLocal();
+    initializeOptimizationChartsLocal(); // Initialize charts with new options
 }
 
 export function populateDarkStoreSelectorForOpt(clusteredStores) {
@@ -119,7 +119,6 @@ async function runWorkforceOptimization() {
     if(optimizationRecommendationTextEl) optimizationRecommendationTextEl.innerHTML = '<p class="text-center p-4">Crunching numbers... Please wait.</p>';
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = true;
 
-
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
 
@@ -145,7 +144,6 @@ async function runWorkforceOptimization() {
     if (isNaN(maxAgentsToTest) || maxAgentsToTest < minAgentsToTest || maxAgentsToTest > 50) maxAgentsToTest = Math.min(Math.max(minAgentsToTest, 10), 50);
     optMinAgentsInputEl.value = minAgentsToTest;
     optMaxAgentsInputEl.value = maxAgentsToTest;
-
 
     runOptimizationBtnEl.disabled = true;
     runOptimizationBtnEl.textContent = "Optimizing...";
@@ -322,7 +320,6 @@ async function runWorkforceOptimization() {
         await new Promise(resolve => setTimeout(resolve, 10));
     }
 
-    // --- Refined Logic to Determine Best Iteration ---
     let qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(
         iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE
     );
@@ -330,12 +327,10 @@ async function runWorkforceOptimization() {
     let recommendationReason = "";
 
     if (qualifiedByCompletionAndSLA.length === 0) {
-        // Fallback 1: Met completion rate but not SLA
         qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE);
         if (qualifiedByCompletionAndSLA.length > 0) {
             recommendationReason = `No iterations met the target SLA of ${TARGET_SLA_PERCENTAGE * 100}%. Recommendation is based on highest completion rate, then lowest cost per order. Consider increasing agent count or adjusting target delivery time.`;
         } else {
-            // Fallback 2: No one met completion rate, use all data
             qualifiedByCompletionAndSLA = [...allOptimizationIterationsData];
             recommendationReason = "No iterations met minimum completion rate or SLA. Showing best attempt based on cost per order among all iterations. Results may not be reliable.";
         }
@@ -346,41 +341,34 @@ async function runWorkforceOptimization() {
 
     if (qualifiedByCompletionAndSLA.length > 0) {
         qualifiedByCompletionAndSLA.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
-        
         const lowestCostPerOrder = qualifiedByCompletionAndSLA[0].avgCostPerOrder ?? Infinity;
-        // Find iterations within a tolerance of the best cost
         const similarCostIterations = qualifiedByCompletionAndSLA.filter(
             iter => (iter.avgCostPerOrder ?? Infinity) <= lowestCostPerOrder * (1 + COST_PER_ORDER_TOLERANCE)
         );
 
-        // From these, prioritize those within ideal utilization range
         let bestUtilIterations = similarCostIterations.filter(
             iter => (iter.avgAgentUtilization ?? 0) >= IDEAL_AGENT_UTILIZATION_MIN &&
                     (iter.avgAgentUtilization ?? 0) <= IDEAL_AGENT_UTILIZATION_MAX
         );
 
         if (bestUtilIterations.length > 0) {
-            // Among these, pick the one with highest utilization (or fewest agents for tie-break)
             bestUtilIterations.sort((a,b) => {
-                if (Math.abs((b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0)) > 1.0) { // If util differs by more than 1%
-                    return (b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0); // Prefer higher utilization
+                if (Math.abs((b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0)) > 1.0) {
+                    return (b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0);
                 }
-                return a.agents - b.agents; // Then prefer fewer agents
+                return a.agents - b.agents;
             });
             bestIterationResult = bestUtilIterations[0];
             recommendationReason += ` Preferred configuration within ideal utilization range (${IDEAL_AGENT_UTILIZATION_MIN}-${IDEAL_AGENT_UTILIZATION_MAX}%).`;
         } else if (similarCostIterations.length > 0) {
-            // If none in ideal range, pick the one from similar cost with utilization closest to IDEAL_AGENT_UTILIZATION_MIN
-            // (to avoid very low utilization if possible), or simply the one with the lowest cost.
             similarCostIterations.sort((a,b) => {
                 const aIsBelowMin = (a.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN;
                 const bIsBelowMin = (b.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN;
-                if (aIsBelowMin && !bIsBelowMin) return 1; // b is better (not below min)
-                if (!aIsBelowMin && bIsBelowMin) return -1; // a is better
-                if (aIsBelowMin && bIsBelowMin) { // if both are below, prefer closer to min
+                if (aIsBelowMin && !bIsBelowMin) return 1;
+                if (!aIsBelowMin && bIsBelowMin) return -1;
+                if (aIsBelowMin && bIsBelowMin) {
                     return Math.abs((a.avgAgentUtilization ?? 0) - IDEAL_AGENT_UTILIZATION_MIN) - Math.abs((b.avgAgentUtilization ?? 0) - IDEAL_AGENT_UTILIZATION_MIN);
                 }
-                // If both are above max, or one is above max and other is not (covered by initial sort), default to cost
                 return (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity);
             });
             bestIterationResult = similarCostIterations[0];
@@ -391,15 +379,13 @@ async function runWorkforceOptimization() {
             } else {
                 recommendationReason += ` Selected best cost option. Agent utilization is within an acceptable range.`;
             }
-        } else { // Should not happen if qualifiedByCompletionAndSLA had items
-            bestIterationResult = qualifiedByCompletionAndSLA[0]; // Fallback to first item of qualified (already sorted by cost)
+        } else {
+            bestIterationResult = qualifiedByCompletionAndSLA[0];
         }
-
-    } else if (allOptimizationIterationsData.length > 0) { // Absolute fallback if nothing is qualified at all
+    } else if (allOptimizationIterationsData.length > 0) {
         allOptimizationIterationsData.sort((a,b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
         bestIterationResult = allOptimizationIterationsData[0];
     }
-
 
     displayOptimizationResults(bestIterationResult, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
@@ -408,7 +394,6 @@ async function runWorkforceOptimization() {
     if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden');
     if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden');
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = false;
-
 
     let finalRecommendationMessage = "No suitable configuration found based on current criteria and simulation runs. Please review the iteration table and charts for insights, or adjust parameters and re-run.";
     if (bestIterationResult) {
@@ -515,11 +500,15 @@ function populateOptimizationComparisonTable(iterationData) {
 }
 
 function initializeOptimizationChartsLocal() {
-    optDeliveryTimeChartInstance = initializeChart('deliveryTimeChart', 'deliveryTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'}}, x: {title: {display: true, text: 'Number of Agents'}}} } });
-    optUtilizationChartInstance = initializeChart('utilizationChart', 'utilizationOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max:100, title: {display: true, text: 'Utilization (%)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
-    optTotalDeliveredOrdersChartInstance = initializeChart('totalDeliveredOrdersChart', 'totalDeliveredOrdersOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title:{display:true, text:'Number of Orders'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
-    optAvgOrderWaitTimeChartInstance = initializeChart('avgOrderWaitTimeChart', 'avgOrderWaitTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title:{display:true, text:'Time (minutes)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
-    optOrdersWithinSlaChartInstance = initializeChart('ordersWithinSlaChart', 'ordersWithinSlaOptimization', {type: 'line', data: {labels: [], datasets: []}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, max: 100, title: {display: true, text: '% Orders in Target Time'}}, x:{title: {display:true, text: 'Number of Agents'}}}}});
+    const commonChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+    };
+    optDeliveryTimeChartInstance = initializeChart('deliveryTimeChart', 'deliveryTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'}}, x: {title: {display: true, text: 'Number of Agents'}}} } });
+    optUtilizationChartInstance = initializeChart('utilizationChart', 'utilizationOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, max:100, title: {display: true, text: 'Utilization (%)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optTotalDeliveredOrdersChartInstance = initializeChart('totalDeliveredOrdersChart', 'totalDeliveredOrdersOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Number of Orders'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optAvgOrderWaitTimeChartInstance = initializeChart('avgOrderWaitTimeChart', 'avgOrderWaitTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Time (minutes)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optOrdersWithinSlaChartInstance = initializeChart('ordersWithinSlaChart', 'ordersWithinSlaOptimization', {type: 'line', data: {labels: [], datasets: []}, options: { ...commonChartOptions, scales: {y: {beginAtZero: true, max: 100, title: {display: true, text: '% Orders in Target Time'}}, x:{title: {display:true, text: 'Number of Agents'}}}}});
 }
 
 function renderOptimizationChartsLocal(iterationData, targetTime) {
@@ -579,7 +568,8 @@ function exportWorkforceOptResultsToCSV() {
             iter.totalOpCost !== null ? iter.totalOpCost.toFixed(2) : "N/A",
             iter.avgCostPerOrder !== null ? iter.avgCostPerOrder.toFixed(2) : "N/A"
         ];
-        csvContent += row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",") + "\r\n"; // Quote all fields and escape double quotes
+        // Quote all fields and escape double quotes within fields
+        csvContent += row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",") + "\r\n";
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -592,4 +582,3 @@ function exportWorkforceOptResultsToCSV() {
     document.body.removeChild(link);
     logMessage("Workforce optimization results exported to CSV.", 'SYSTEM', optimizationLogEl);
 }
-
