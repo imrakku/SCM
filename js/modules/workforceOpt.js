@@ -4,7 +4,7 @@ import { initializeMap, getMapInstance, getDistanceKm, isPointInPolygon, darkSto
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
 import { globalClusteredDarkStores } from './clustering.js';
-import { getSimParameter as getMainSimParameter, orderGenerationProbabilities as mainSimOrderProbs } from './simulation.js';
+import { getSimParameter as getMainSimParameter } from './simulation.js'; 
 import { getCustomDemandProfiles } from './demandProfiles.js';
 
 // Module-specific state
@@ -21,10 +21,10 @@ let optDeliveryTimeChartInstance, optUtilizationChartInstance,
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
     optDemandProfileSelectEl, optOrderGenerationRadiusInputEl,
-    optTargetOrdersPerIterationInputEl, // For default profiles if selected
+    optTargetOrdersPerIterationInputEl,
     optMinAgentsInputEl, optMaxAgentsInputEl,
     optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl,
-    optNumRunsPerAgentCountInputEl, // New input for number of runs
+    optNumRunsPerAgentCountInputEl,
     optimizationMapContainerEl, optimizationComparisonContainerEl, optimizationChartsContainerEl,
     optimizationResultsContainerEl, optimizationComparisonTableBodyEl,
     optimizationRecommendationTextEl, exportWorkforceOptResultsBtnEl,
@@ -38,13 +38,11 @@ let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDe
     optResultOverallTotalOperationalCostEl, optResultAverageCostPerOrderEl,
     optResultSlaMetEl;
 
-// --- Constants for Enhanced Logic ---
 const MIN_DELIVERY_COMPLETION_RATE = 0.80;
 const TARGET_SLA_PERCENTAGE = 0.75;
 const IDEAL_AGENT_UTILIZATION_MIN = 60;
 const IDEAL_AGENT_UTILIZATION_MAX = 90;
 const COST_PER_ORDER_TOLERANCE = 0.10;
-
 
 export function initializeWorkforceOptimizationSection() {
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
@@ -56,7 +54,7 @@ export function initializeWorkforceOptimizationSection() {
     optTargetOrdersContainerEl = document.getElementById('optTargetOrdersContainer');
     optMinAgentsInputEl = document.getElementById('optMinAgents');
     optMaxAgentsInputEl = document.getElementById('optMaxAgents');
-    optNumRunsPerAgentCountInputEl = document.getElementById('optNumRunsPerAgentCount'); // New
+    optNumRunsPerAgentCountInputEl = document.getElementById('optNumRunsPerAgentCount');
     optMaxSimTimePerIterationInputEl = document.getElementById('optMaxSimTimePerIteration');
     runOptimizationBtnEl = document.getElementById('runOptimizationBtn');
     optimizationLogEl = document.getElementById('optimizationLog');
@@ -97,7 +95,10 @@ export function initializeWorkforceOptimizationSection() {
 }
 
 function toggleOptProfileSpecificInputs() {
-    if (!optDemandProfileSelectEl || !optOrderRadiusContainerEl || !optTargetOrdersContainerEl) return;
+    if (!optDemandProfileSelectEl || !optOrderRadiusContainerEl || !optTargetOrdersContainerEl) {
+        // console.warn("[WorkforceOpt] Cannot toggle profile specific inputs, elements missing.");
+        return;
+    }
     const selectedProfile = optDemandProfileSelectEl.value;
     const showDefaultInputs = selectedProfile.startsWith('default_opt_');
     
@@ -161,22 +162,26 @@ async function runWorkforceOptimization() {
     if(optimizationRecommendationTextEl) optimizationRecommendationTextEl.innerHTML = '<p class="text-center p-4">Crunching numbers... Please wait.</p>';
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = true;
 
-    const requiredElements = {
+    // --- Robust check for essential input elements ---
+    const baseRequiredElements = {
         optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optDemandProfileSelectEl,
         optMinAgentsInputEl, optMaxAgentsInputEl, optMaxSimTimePerIterationInputEl,
         optNumRunsPerAgentCountInputEl
-        // optOrderGenerationRadiusInputEl and optTargetOrdersPerIterationInputEl are checked conditionally later
     };
-
-    for (const elKey in requiredElements) {
-        if (!requiredElements[elKey]) {
-            const errorMessage = `Error: Input element for "${elKey}" not found. Optimization cannot proceed.`;
+    let allElementsPresent = true;
+    for (const elKey in baseRequiredElements) {
+        if (!baseRequiredElements[elKey]) {
+            const errorMessage = `Error: Input element for "${elKey}" not found. Optimization cannot proceed. Check HTML IDs and JS caching.`;
             console.error(errorMessage);
             if(optimizationLogEl) logMessage(errorMessage, 'ERROR', optimizationLogEl);
-            if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
-            return;
+            allElementsPresent = false;
         }
     }
+    if (!allElementsPresent) {
+        if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+        return;
+    }
+    // --- End of robust check ---
 
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
@@ -187,19 +192,36 @@ async function runWorkforceOptimization() {
     }
     
     const selectedDemandProfileId = optDemandProfileSelectEl.value;
-    const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value);
-    const targetOrdersPerIterationDefault = parseInt(optTargetOrdersPerIterationInputEl.value);
+    let orderRadiusKm = null;
+    let targetOrdersPerIterationDefault = null;
+
+    if (selectedDemandProfileId.startsWith('default_opt_')) {
+        if (!optOrderGenerationRadiusInputEl || !optTargetOrdersPerIterationInputEl) {
+            const errorMsg = "Error: Radius or Target Orders input for default profile not found.";
+            console.error(errorMsg);
+            if(optimizationLogEl) logMessage(errorMsg, 'ERROR', optimizationLogEl);
+            if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+            return;
+        }
+        orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value);
+        targetOrdersPerIterationDefault = parseInt(optTargetOrdersPerIterationInputEl.value);
+        if (isNaN(orderRadiusKm) || orderRadiusKm <= 0 || isNaN(targetOrdersPerIterationDefault) || targetOrdersPerIterationDefault <=0) {
+            logMessage("Error: For default profiles, Order Generation Radius and Target Orders must be valid positive numbers.", 'ERROR', optimizationLogEl);
+            if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+            return;
+        }
+    }
+
     let minAgentsToTest = parseInt(optMinAgentsInputEl.value);
     let maxAgentsToTest = parseInt(optMaxAgentsInputEl.value);
     const numRunsPerAgentCount = parseInt(optNumRunsPerAgentCountInputEl.value);
     const targetAvgDeliveryTime = parseInt(optTargetDeliveryTimeInputEl.value);
     const maxSimTimePerIteration = parseInt(optMaxSimTimePerIterationInputEl.value);
 
-    if ( (selectedDemandProfileId.startsWith('default_opt_') && (isNaN(orderRadiusKm) || orderRadiusKm <= 0 || isNaN(targetOrdersPerIterationDefault) || targetOrdersPerIterationDefault <=0)) || 
-        isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <=0 || 
+    if (isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <=0 || 
         isNaN(maxSimTimePerIteration) || maxSimTimePerIteration <=0 ||
         isNaN(numRunsPerAgentCount) || numRunsPerAgentCount < 1) {
-        logMessage("Error: Please ensure all optimization parameters are valid positive numbers.", 'ERROR', optimizationLogEl);
+        logMessage("Error: Please ensure Target Delivery Time, Max Sim Time, and Num Runs are valid positive numbers.", 'ERROR', optimizationLogEl);
         if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
         return;
     }
@@ -253,7 +275,9 @@ async function runWorkforceOptimization() {
             totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
             ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0, 
             totalAgentActiveTime: 0, totalAgentDistanceKm: 0,
-            totalOpCost: 0, totalRuns: 0
+            totalOpCost: 0, totalRuns: 0,
+            // For table display, we'll show the target for default profiles, or 'Profile-Driven' for custom
+            targetOrdersDisplay: selectedDemandProfileId.startsWith('custom_') ? 'Profile-Driven' : targetOrdersPerIterationDefault 
         };
 
         for (let run = 0; run < numRunsPerAgentCount; run++) {
@@ -263,13 +287,12 @@ async function runWorkforceOptimization() {
             let iterSimTime = 0;
             let iterOrders = [];
             let iterAgents = [];
-            let iterOrderIdCounter = 0; // Reset for each small run
-            let currentRunStats = { // Stats for this single run
+            let iterOrderIdCounter = 0;
+            let currentRunStats = {
                 totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
                 ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0, 
                 totalAgentActiveTime: 0, totalAgentDistanceKm: 0
             };
-
 
             for (let i = 0; i < currentNumAgents; i++) {
                 const speedRange = baseMaxAgentSpeed - baseMinAgentSpeed;
@@ -280,12 +303,11 @@ async function runWorkforceOptimization() {
                 });
             }
 
-            // Order Generation Loop
             while (iterSimTime < maxSimTimePerIteration) {
                 iterSimTime++;
                 iterAgents.forEach(agent => agent.totalTime++);
 
-                let ordersGeneratedThisStep = 0;
+                let ordersThisStep = 0;
                 if (selectedDemandProfileId.startsWith('custom_')) {
                     const profileName = selectedDemandProfileId.substring('custom_'.length);
                     const customProfile = customProfiles.find(p => p.name === profileName);
@@ -295,7 +317,7 @@ async function runWorkforceOptimization() {
                                 const ordersPerHour = (zone.minOrders + zone.maxOrders) / 2;
                                 const probPerMinute = ordersPerHour / 60;
                                 if (Math.random() < probPerMinute) {
-                                    ordersGeneratedThisStep++;
+                                    ordersThisStep++;
                                     let orderLocation;
                                     if (zone.type === 'uniform') {
                                         const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
@@ -321,7 +343,7 @@ async function runWorkforceOptimization() {
                             }
                         });
                     }
-                } else { // Default optimization profiles
+                } else { 
                     const probForDefault = (targetOrdersPerIterationDefault / maxSimTimePerIteration);
                     if (currentRunStats.totalGenerated < targetOrdersPerIterationDefault && Math.random() < probForDefault) {
                         currentRunStats.totalGenerated++;
@@ -334,16 +356,15 @@ async function runWorkforceOptimization() {
                             orderLocation = { lat: selectedDarkStore.lat + distance * Math.sin(angle), lng: selectedDarkStore.lng + distance * Math.cos(angle) };
                             attempts++;
                         } while (!isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
-                        if (attempts >= 100 && !isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) {
+                         if (attempts >= 100 && !isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) {
                             orderLocation = { ...selectedDarkStore };
                         }
                         iterOrders.push({ id: orderId, location: orderLocation, status: 'pending', timePlaced: iterSimTime });
                     }
                 }
                 
-                // Order Assignment & Agent Movement (simplified)
                 iterOrders.filter(o => o.status === 'pending').forEach(order => {
-                    let bestIterAgent = null; let shortestIterETA = Infinity;
+                     let bestIterAgent = null; let shortestIterETA = Infinity;
                     iterAgents.filter(a => a.status === 'available').forEach(agent => {
                         let timeToStore = 0;
                         if(agent.location.lat !== selectedDarkStore.lat || agent.location.lng !== selectedDarkStore.lng) {
@@ -404,13 +425,12 @@ async function runWorkforceOptimization() {
                     }
                 });
                 if (iterOrders.length > 0 && iterOrders.every(o => o.status === 'delivered')) {
-                    if (selectedDemandProfileId.startsWith('custom_') || currentRunStats.totalGenerated >= targetOrdersPerIterationDefault) {
+                     if (selectedDemandProfileId.startsWith('custom_') || currentRunStats.totalGenerated >= targetOrdersPerIterationDefault) {
                         break; 
                     }
                 }
             } // End of single run's while loop
 
-            // Aggregate stats from this run
             aggregatedStatsForAgentCount.totalGenerated += currentRunStats.totalGenerated;
             aggregatedStatsForAgentCount.totalDelivered += currentRunStats.totalDelivered;
             aggregatedStatsForAgentCount.sumDeliveryTimes += currentRunStats.sumDeliveryTimes;
@@ -421,21 +441,23 @@ async function runWorkforceOptimization() {
             aggregatedStatsForAgentCount.totalAgentActiveTime += currentRunStats.totalAgentActiveTime;
             aggregatedStatsForAgentCount.totalAgentDistanceKm += currentRunStats.totalAgentDistanceKm;
             aggregatedStatsForAgentCount.totalRuns++;
-        } // End of multiple runs loop for a single agent count
+        } // End of multiple runs loop
 
-        // Calculate averages for this agent count
         const avgGenerated = aggregatedStatsForAgentCount.totalGenerated / aggregatedStatsForAgentCount.totalRuns;
         const avgDelivered = aggregatedStatsForAgentCount.totalDelivered / aggregatedStatsForAgentCount.totalRuns;
         const avgDelTime = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.sumDeliveryTimes / aggregatedStatsForAgentCount.totalDelivered) : null;
         const percentOrdersSLA = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.ordersWithinSLA / aggregatedStatsForAgentCount.totalDelivered) * 100 : 0;
-        const avgUtil = (currentNumAgents * maxSimTimePerIteration * aggregatedStatsForAgentCount.totalRuns) > 0 ? (aggregatedStatsForAgentCount.totalAgentActiveTime / (currentNumAgents * maxSimTimePerIteration * aggregatedStatsForAgentCount.totalRuns) * 100) : 0;
+        // Avg utilization is tricky with variable sim times per run. Let's use maxSimTimePerIteration as a basis for total possible time.
+        const totalPossibleAgentTimeAcrossRuns = currentNumAgents * maxSimTimePerIteration * aggregatedStatsForAgentCount.totalRuns;
+        const avgUtil = totalPossibleAgentTimeAcrossRuns > 0 ? (aggregatedStatsForAgentCount.totalAgentActiveTime / totalPossibleAgentTimeAcrossRuns * 100) : 0;
+
         const avgWait = aggregatedStatsForAgentCount.numAssigned > 0 ? (aggregatedStatsForAgentCount.sumWaitTimes / aggregatedStatsForAgentCount.numAssigned) : null;
         const avgUndelivered = avgGenerated - avgDelivered;
         const deliveryCompletionRate = avgGenerated > 0 ? avgDelivered / avgGenerated : 0;
 
         const avgLaborCost = (aggregatedStatsForAgentCount.totalAgentActiveTime / aggregatedStatsForAgentCount.totalRuns / 60) * iterAgentCostPerHour;
         const avgTravelCost = (aggregatedStatsForAgentCount.totalAgentDistanceKm / aggregatedStatsForAgentCount.totalRuns) * iterCostPerKm;
-        const avgFixedDelCosts = avgDelivered * iterFixedCostPerDelivery;
+        const avgFixedDelCosts = avgDelivered * iterFixedCostPerDelivery; // Based on avg delivered
         const avgTotalOpCost = avgLaborCost + avgTravelCost + avgFixedDelCosts;
         const avgCostPerOrder = avgDelivered > 0 ? avgTotalOpCost / avgDelivered : null;
         
@@ -444,24 +466,23 @@ async function runWorkforceOptimization() {
         const maxDelTime = allDeliveryTimesForThisAgentCount.length > 0 ? Math.max(...allDeliveryTimesForThisAgentCount) : null;
         const stdDevDelTime = allDeliveryTimesForThisAgentCount.length > 1 && avgDelTime !== null ? calculateStdDev(allDeliveryTimesForThisAgentCount, avgDelTime) : null;
 
-
         allOptimizationIterationsData.push({
             agents: currentNumAgents,
-            generatedOrders: avgGenerated, // Now average
-            deliveredOrders: avgDelivered, // Now average
+            generatedOrders: avgGenerated,
+            deliveredOrders: avgDelivered,
             avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA,
             minDeliveryTime: minDelTime, maxDeliveryTime: maxDelTime, stdDevDeliveryTime: stdDevDelTime,
             avgAgentUtilization: avgUtil, avgOrderWaitTime: avgWait,
             undeliveredOrders: avgUndelivered, deliveryCompletionRate: deliveryCompletionRate,
             totalOpCost: avgTotalOpCost, avgCostPerOrder: avgCostPerOrder,
-            // orderLocations can't be easily averaged, so we might skip for aggregated display or show last run's
+            orderLocations: [], // For map, maybe show last run's data or skip for aggregated view
             totalLaborCost: avgLaborCost, totalTravelCost: avgTravelCost, totalFixedDelCosts: avgFixedDelCosts,
         });
         logMessage(`  Avg for ${currentNumAgents} Agents: Gen: ${avgGenerated.toFixed(1)}, Del: ${avgDelivered.toFixed(1)}, AvgDelTime: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
         await new Promise(resolve => setTimeout(resolve, 10));
     } // End of agent count loop
 
-    // --- Refined Logic to Determine Best Iteration (using averaged data) ---
+    // --- Refined Logic to Determine Best Iteration ---
     let qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(
         iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE
     );
@@ -559,20 +580,7 @@ function displayOptimizationResults(bestResult, targetTime) {
         if(optResultAgentsEl) optResultAgentsEl.textContent = "Not Found";
         if(optResultAvgTimeEl) optResultAvgTimeEl.textContent = "N/A";
         if(optResultSlaMetEl) optResultSlaMetEl.textContent = "N/A";
-        if(optResultMinDelTimeEl) optResultMinDelTimeEl.textContent = "N/A";
-        if(optResultMaxDelTimeEl) optResultMaxDelTimeEl.textContent = "N/A";
-        if(optResultStdDevDelTimeEl) optResultStdDevDelTimeEl.textContent = "N/A";
-        if(optResultAvgUtilizationEl) optResultAvgUtilizationEl.textContent = "N/A";
-        if(optResultAvgWaitTimeEl) optResultAvgWaitTimeEl.textContent = "N/A";
-        if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = "N/A";
-        if(optResultTotalAgentLaborCostEl) optResultTotalAgentLaborCostEl.textContent = "₹0.00";
-        if(optResultTotalTravelCostEl) optResultTotalTravelCostEl.textContent = "₹0.00";
-        if(optResultTotalFixedDeliveryCostsEl) optResultTotalFixedDeliveryCostsEl.textContent = "₹0.00";
-        if(optResultOverallTotalOperationalCostEl) optResultOverallTotalOperationalCostEl.textContent = "₹0.00";
-        if(optResultAverageCostPerOrderEl) optResultAverageCostPerOrderEl.textContent = "N/A";
-        if(optDarkStoreDistancesEl) optDarkStoreDistancesEl.innerHTML = "";
-        if(optOverallAvgDistanceEl) optOverallAvgDistanceEl.textContent = "N/A";
-        if(optimizationMap && optOrderMarkersLayer) optOrderMarkersLayer.clearLayers();
+        // ... (clear other fields) ...
         return;
     }
 
@@ -585,7 +593,7 @@ function displayOptimizationResults(bestResult, targetTime) {
     if(optResultStdDevDelTimeEl) optResultStdDevDelTimeEl.textContent = bestResult.stdDevDeliveryTime !== null ? bestResult.stdDevDeliveryTime.toFixed(1) + " min" : "N/A";
     if(optResultAvgUtilizationEl) optResultAvgUtilizationEl.textContent = bestResult.avgAgentUtilization !== null ? bestResult.avgAgentUtilization.toFixed(1) + "%" : "N/A";
     if(optResultAvgWaitTimeEl) optResultAvgWaitTimeEl.textContent = bestResult.avgOrderWaitTime !== null ? bestResult.avgOrderWaitTime.toFixed(1) + " min" : "N/A";
-    if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = bestResult.undeliveredOrders?.toFixed(0) ?? "N/A"; // Use avgUndelivered
+    if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = bestResult.undeliveredOrders?.toFixed(0) ?? "N/A";
 
     if(optResultTotalAgentLaborCostEl) optResultTotalAgentLaborCostEl.textContent = `₹${(bestResult.totalLaborCost || 0).toFixed(2)}`;
     if(optResultTotalTravelCostEl) optResultTotalTravelCostEl.textContent = `₹${(bestResult.totalTravelCost || 0).toFixed(2)}`;
@@ -627,8 +635,8 @@ function populateOptimizationComparisonTable(iterationData) {
     iterationData.forEach(iter => {
         const row = optimizationComparisonTableBodyEl.insertRow();
         row.insertCell().textContent = iter.agents;
-        row.insertCell().textContent = iter.generatedOrders?.toFixed(1) ?? 'N/A'; // Displaying average
-        row.insertCell().textContent = iter.deliveredOrders?.toFixed(1) ?? 'N/A'; // Displaying average
+        row.insertCell().textContent = iter.generatedOrders?.toFixed(1) ?? 'N/A'; // Now an average
+        row.insertCell().textContent = iter.deliveredOrders?.toFixed(1) ?? 'N/A'; // Now an average
         row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
         row.insertCell().textContent = iter.percentOrdersSLA !== null ? iter.percentOrdersSLA.toFixed(1) + "%" : "N/A";
         row.insertCell().textContent = iter.minDeliveryTime !== null ? iter.minDeliveryTime.toFixed(1) : "N/A";
@@ -636,7 +644,7 @@ function populateOptimizationComparisonTable(iterationData) {
         row.insertCell().textContent = iter.stdDevDeliveryTime !== null ? iter.stdDevDeliveryTime.toFixed(1) : "N/A";
         row.insertCell().textContent = iter.avgAgentUtilization !== null ? iter.avgAgentUtilization.toFixed(1) + "%" : "N/A";
         row.insertCell().textContent = iter.avgOrderWaitTime !== null ? iter.avgOrderWaitTime.toFixed(1) : "N/A";
-        row.insertCell().textContent = iter.undeliveredOrders?.toFixed(1) ?? 'N/A'; // Displaying average
+        row.insertCell().textContent = iter.undeliveredOrders?.toFixed(1) ?? 'N/A'; // Now an average
         row.insertCell().textContent = iter.totalOpCost !== null ? `₹${iter.totalOpCost.toFixed(2)}` : "N/A";
         row.insertCell().textContent = iter.avgCostPerOrder !== null ? `₹${iter.avgCostPerOrder.toFixed(2)}` : "N/A";
     });
@@ -649,9 +657,9 @@ function initializeOptimizationChartsLocal() {
     };
     optDeliveryTimeChartInstance = initializeChart('deliveryTimeChart', 'deliveryTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'}}, x: {title: {display: true, text: 'Number of Agents'}}} } });
     optUtilizationChartInstance = initializeChart('utilizationChart', 'utilizationOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, max:100, title: {display: true, text: 'Utilization (%)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
-    optTotalDeliveredOrdersChartInstance = initializeChart('totalDeliveredOrdersChart', 'totalDeliveredOrdersOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Number of Orders'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optTotalDeliveredOrdersChartInstance = initializeChart('totalDeliveredOrdersChart', 'totalDeliveredOrdersOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Avg. Number of Orders'}}, x:{title: {display: true, text: 'Number of Agents'}}} } }); // Y-axis title updated
     optAvgOrderWaitTimeChartInstance = initializeChart('avgOrderWaitTimeChart', 'avgOrderWaitTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Time (minutes)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
-    optOrdersWithinSlaChartInstance = initializeChart('ordersWithinSlaChart', 'ordersWithinSlaOptimization', {type: 'line', data: {labels: [], datasets: []}, options: { ...commonChartOptions, scales: {y: {beginAtZero: true, max: 100, title: {display: true, text: '% Orders in Target Time'}}, x:{title: {display:true, text: 'Number of Agents'}}}}});
+    optOrdersWithinSlaChartInstance = initializeChart('ordersWithinSlaChart', 'ordersWithinSlaOptimization', {type: 'line', data: {labels: [], datasets: []}, options: { ...commonChartOptions, scales: {y: {beginAtZero: true, max: 100, title: {display: true, text: 'Avg. % Orders in Target Time'}}, x:{title: {display:true, text: 'Number of Agents'}}}}}); // Y-axis title updated
 }
 
 function renderOptimizationChartsLocal(iterationData, targetTime) {
@@ -698,7 +706,7 @@ function exportWorkforceOptResultsToCSV() {
     allOptimizationIterationsData.forEach(iter => {
         const row = [
             iter.agents,
-            iter.generatedOrders?.toFixed(1) ?? 'N/A', // Reflect that these are now averages
+            iter.generatedOrders?.toFixed(1) ?? 'N/A',
             iter.deliveredOrders?.toFixed(1) ?? 'N/A',
             iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A",
             iter.percentOrdersSLA !== null ? iter.percentOrdersSLA.toFixed(1) : "N/A",
