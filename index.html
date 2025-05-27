@@ -14,62 +14,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Styles for the modal (if you still have it, otherwise remove) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .modal-header { padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h2 { font-size: 1.5rem; font-weight: 700; color: #1d4ed8; }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; background: none; border: none; cursor: pointer; }
-        .close-button:hover, .close-button:focus { color: black; text-decoration: none; cursor: pointer; }
-
         /* Custom styles for <details> summary arrow */
-        details > summary { list-style: none; cursor: pointer; }
-        details > summary::-webkit-details-marker { display: none; }
-        details > summary::before { content: '► '; font-size: 0.8em; margin-right: 4px; }
-        details[open] > summary::before { content: '▼ '; }
-
-        /* Basic styling for theme toggle button - can be enhanced */
-        #themeToggleBtn {
-            background: none;
-            border: 1px solid transparent; /* Consistent with nav links */
-            padding: 0.5rem;
-            border-radius: 0.375rem; /* rounded-md */
+        details > summary {
+            list-style: none; /* Remove default arrow */
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #4b5563; /* gray-600 */
-            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
         }
-        #themeToggleBtn:hover {
-            background-color: #f0f9ff; /* blue-50 */
-            color: #2563eb; /* blue-600 */
+        details > summary::-webkit-details-marker {
+            display: none; /* Hide default arrow for Chrome/Safari */
         }
-        #themeToggleBtn svg {
-            width: 1.25rem; /* 20px */
-            height: 1.25rem; /* 20px */
+        details > summary::before {
+            content: '► '; /* Default closed state arrow */
+            font-size: 0.8em;
+            margin-right: 4px;
+        }
+        details[open] > summary::before {
+            content: '▼ '; /* Open state arrow */
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800"> <header class="bg-white shadow-xl sticky top-0 z-50">
+<body class="bg-slate-100 text-slate-800">
+
+    <header class="bg-white shadow-xl sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">Chandigarh Logistics Sim</h1>
                 <div class="flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
-                    <a href="#home" class="nav-link px-3 py-2">Home</a>
-                    <a href="#clustering" class="nav-link px-3 py-2">Clustering</a>
-                    <a href="#demandProfiles" class="nav-link px-3 py-2">Demand Profiles</a>
-                    <a href="#simulation" class="nav-link px-3 py-2">Simulation</a>
-                    <a href="#workforceOptimization" class="nav-link px-3 py-2">Workforce Opt.</a>
-                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2">Scenario Analysis</a>
-                    <button id="themeToggleBtn" title="Toggle dark/light theme" class="ml-2 sm:ml-4">
-                        <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                        </svg>
-                        <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 hidden">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                        </svg>
-                    </button>
+                    <a href="#home" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Home</a>
+                    <a href="#clustering" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Clustering</a>
+                    <a href="#demandProfiles" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Demand Profiles</a>
+                    <a href="#simulation" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
+                    <a href="#workforceOptimization" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
+                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
                 </div>
             </div>
         </nav>
@@ -135,7 +110,7 @@
                         </div>
                     </details>
                 </div>
-                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
+                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
                         <div class="input-group">
@@ -445,7 +420,7 @@
             <div class="card">
                 <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
                 <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
+                    <details>
                         <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
                             <p class="text-base leading-relaxed">
@@ -675,5 +650,5 @@
     </footer>
 
     <script type="module" src="js/main.js"></script>
-    <script type="module" src="js/themeSwitcher.js"></script> </body>
+</body>
 </html>
