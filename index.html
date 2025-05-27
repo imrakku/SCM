@@ -402,7 +402,7 @@
                         <li>The average cost to deliver each order.</li>
                     </ul>
                     <p class="text-base leading-relaxed mt-2">
-                        The "Best Scenario" is chosen by first finding agent counts that meet a good service level (e.g., many orders delivered on time). Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a setup where agents are well-utilized (not overworked or too idle).
+                        The "Best Scenario" is chosen by first finding agent counts that meet a good service level (e.g., many orders delivered on time) and ensure a high rate of order completion. Then, from those good options, it picks the one with the lowest average cost per order. If costs are similar, it prefers a configuration where agents are well-utilized (e.g., between 60-90%) to avoid overstaffing (low utilization, high idle costs) or overworking agents (very high utilization, risk of burnout).
                     </p>
                      <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                      <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
@@ -415,7 +415,7 @@
                     </ul>
                     <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
                     <p class="text-base leading-relaxed">
-                        You'll get a detailed comparison table and charts showing how performance changes with different numbers of agents. The "Optimization Results" will highlight a recommended agent count based on balancing service, cost, and utilization, along with an explanation. This gives you a more robust, data-backed suggestion for staffing.
+                        You'll get a detailed comparison table and charts showing how performance changes with different numbers of agents. The "Optimization Recommendation" section will highlight a recommended agent count based on balancing service, cost, and utilization, along with an explanation. You can also "Export Optimization Results (CSV)" for further analysis.
                     </p>
                 </div>
 
@@ -462,7 +462,10 @@
                     <div id="optimizationMapViz" class="w-full"></div>
                 </div>
                 <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Iteration Comparison Table</h4>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-2xl font-semibold">Iteration Comparison Table</h4>
+                        <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary btn-sm">Export Table (CSV)</button>
+                    </div>
                     <div class="comparison-table-container">
                         <table id="optimizationComparisonTable" class="comparison-table">
                             <thead>
@@ -471,7 +474,8 @@
                                     <th>Generated Orders</th>
                                     <th>Delivered Orders</th>
                                     <th>Avg. Delivery Time (min)</th>
-                                    <th>% Orders within Target Time</th> <th>Min Delivery Time (min)</th>
+                                    <th>% Orders within Target Time</th>
+                                    <th>Min Delivery Time (min)</th>
                                     <th>Max Delivery Time (min)</th>
                                     <th>Std. Dev. Delivery Time (min)</th>
                                     <th>Avg. Agent Utilization (%)</th>
@@ -503,7 +507,8 @@
                         <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
                         <canvas id="avgOrderWaitTimeChart"></canvas>
                     </div>
-                    <div class="chart-container md:col-span-2"> <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
+                    <div class="chart-container md:col-span-2">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. % Orders within Target Time</h4>
                         <canvas id="ordersWithinSlaChart"></canvas>
                     </div>
                 </div>
