@@ -1,646 +1,1117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chandigarh Logistics Sim - Enhanced</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://d3js.org/d3-delaunay.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* Custom styles for <details> summary arrow */
-        details > summary { list-style: none; cursor: pointer; }
-        details > summary::-webkit-details-marker { display: none; }
-        details > summary::before { content: '► '; font-size: 0.8em; margin-right: 4px; }
-        details[open] > summary::before { content: '▼ '; }
-    </style>
-</head>
-<body class="bg-slate-100 text-slate-800">
+// js/modules/simulation.js
+import {
+    chandigarhGeoJsonPolygon,
+    chandigarhSectors,
+    defaultDarkStoreLocationSim,
+    SIMULATION_STEP_INTERVAL_MS,
+    MINUTES_PER_SIMULATION_STEP,
+    DYNAMIC_TRAFFIC_UPDATE_INTERVAL
+} from '../data/chandigarhData.js';
+import {
+    initializeMap,
+    getMapInstance,
+    getDistanceKm,
+    isPointInPolygon,
+    createAgentIcon,
+    createOrderIcon,
+    darkStoreIcon,
+    generateWaypoints
+} from '../mapUtils.js';
+import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
+import { logMessage } from '../logger.js';
+import { getCustomDemandProfiles } from './demandProfiles.js';
+import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
+import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 
-    <header class="bg-white shadow-xl sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">Chandigarh Logistics Sim</h1>
-                <div class="flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
-                    <a href="#home" class="nav-link px-3 py-2">Home</a>
-                    <a href="#clustering" class="nav-link px-3 py-2">Clustering</a>
-                    <a href="#demandProfiles" class="nav-link px-3 py-2">Demand Profiles</a>
-                    <a href="#simulation" class="nav-link px-3 py-2">Simulation</a>
-                    <a href="#workforceOptimization" class="nav-link px-3 py-2">Workforce Opt.</a>
-                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2">Scenario Analysis</a>
-                </div>
-            </div>
-        </nav>
-    </header>
 
-    <main class="container mx-auto p-4 md:p-8 mt-8">
-        <section id="home" class="content-section active">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Welcome to the Chandigarh Logistics Simulator!</h2>
-                <p class="mb-4 text-lg leading-relaxed text-slate-600">
-                    This tool is designed to help understand and optimize last-mile delivery operations within Chandigarh. It allows you to explore different aspects of logistics planning, from identifying ideal locations for small warehouses (dark stores) to simulating daily delivery activities and figuring out the best number of delivery agents.
-                </p>
-                <details class="mb-6 text-lg text-slate-600">
-                    <summary class="font-semibold text-blue-600 hover:text-blue-700">Learn more about the modules...</summary>
-                    <p class="mt-2 mb-2 leading-relaxed">
-                        Navigate through the tabs above to access different modules:
-                    </p>
-                    <ol class="list-decimal list-inside space-y-3 leading-relaxed">
-                        <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
-                        <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
-                        <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs.</li>
-                         <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization, using realistic demand patterns.</li>
-                         <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
-                    </ol>
-                </details>
-                <p class="mb-8 text-lg leading-relaxed text-slate-600">
-                    The goal is to provide data-driven insights for better resource allocation, faster deliveries, and improved customer satisfaction. This project was developed by Rakshit Monga as part of studies at the Indian Institute of Management Sirmaur.
-                </p>
-                <div class="bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-8 rounded-xl border border-blue-200 shadow-lg">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-800">Project Lead</h3>
-                    <ul class="list-none space-y-1.5 text-slate-700 text-lg">
-                        <li class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6 mr-3 text-blue-600">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                            </svg>
-                            Rakshit Monga
-                        </li>
-                    </ul>
-                    <p class="mt-4 text-sm text-slate-500 italic">Indian Institute of Management Sirmaur</p>
-                </div>
-            </div>
-        </section>
+// --- Simulation State Variables ---
+let simulationMap;
+let simDarkStoreMarker;
+let agents = [];
+let orders = [];
+let allGeneratedOrdersThisRun = [];
+let agentMarkers = {};
+let orderMarkers = {};
+let simulationIntervalId;
+let currentSimulationTime = 0;
+let orderIdCounter = 0;
+let agentIdCounter = 1;
+let isSimulationRunning = false;
+let deliveryTimeHeatmapLayer = null;
+let deliveredOrderDataForHeatmap = [];
 
-        <section id="clustering" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Dark Store Placement</h2>
-                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
-                    <details>
-                        <summary class="font-bold text-lg text-blue-700 hover:text-blue-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section helps you identify potentially optimal locations for "dark stores" (small, local warehouses for quick delivery) within Chandigarh. It does this by simulating customer order locations and then grouping them to find central points for these stores.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Set the number of general "Background Orders" spread across the city.</li>
-                                <li>Set the number of "Hotspot Orders" concentrated in specific busy areas.</li>
-                                <li>Specify how many "Number of Dark Stores" you want the system to identify.</li>
-                                <li>Click "Regenerate Clustering Data". The map will show simulated orders (dots), identified dark store locations (red markers), and their approximate service areas (Voronoi cells).</li>
-                                <li>You can toggle "Show Order-to-Store Connections" to see which orders are assigned to which store.</li>
-                                <li>Review the statistics below the map for insights into order distribution and distances.</li>
-                            </ul>
-                            <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                            <p class="text-base leading-relaxed">The map visualizes potential dark store locations based on your inputs. The statistics provide data on how well these locations cover the simulated demand, helping you understand service efficiency. These dark stores can then be used in the "Workforce Optimization" section.</p>
-                        </div>
-                    </details>
-                </div>
-                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <div class="input-group">
-                            <label for="numBackgroundOrders">Background Orders:</label>
-                            <input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="numHotspotOrders">Hotspot Orders:</label>
-                            <input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="numDarkStoresForClustering">Number of Dark Stores:</label>
-                            <input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full">
-                        </div>
-                    </div>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8 mb-10">
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Total Orders Simulated</h4>
-                        <p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p>
-                    </div>
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Dark Stores Identified</h4>
-                        <p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p>
-                    </div>
-                </div>
-                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200">
-                    <div id="clusteringMapViz" class="w-full"></div>
-                </div>
-                 <div class="mb-4 text-center">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections
-                    </label>
-                </div>
-                <p class="text-md text-slate-500 mb-6 italic text-center">
-                    Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).
-                </p>
-                 <div class="text-center">
-                    <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
-                 </div>
-                 <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm bg-slate-100 p-6 rounded-lg border border-slate-200 shadow-inner">
-                    <p class="italic text-slate-500 md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
-                 </div>
-                 <div id="overallClusteringStats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                     <p><strong class="text-blue-700">Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Min Distance:</strong> <span id="overallMinClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Max Distance:</strong> <span id="overallMaxClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Std. Dev. Distance:</strong> <span id="overallStdDevClusterDistance" class="font-semibold">N/A</span></p>
-                 </div>
-            </div>
-        </section>
+// --- Fatigue Constants ---
+const FATIGUE_CONSECUTIVE_DELIVERIES_THRESHOLD = 5; // Deliveries before fatigue might start
+const FATIGUE_CONTINUOUSLY_ACTIVE_THRESHOLD_MIN = 90; // Minutes of continuous non-idle work
+const FATIGUE_REDUCTION_STEP = 0.1; // Reduce speed factor by 10%
+const MIN_FATIGUE_FACTOR = 0.6;     // Agent speed won't drop below 60% of base
+const FATIGUE_RECOVERY_IDLE_TIME_MIN = 20; // Minutes of idle time for some recovery
+const FATIGUE_RECOVERY_STEP = 0.05; // Recover 5% of speed factor
 
-        <section id="demandProfiles" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
-                <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-700 p-4 mb-6 rounded-md shadow" role="alert">
-                    <details>
-                        <summary class="font-bold text-lg text-sky-700 hover:text-sky-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section allows you to create and save different "demand profiles" – patterns of how customer orders might arise across Chandigarh. For example, you could create a profile for "Evening Rush in Sector 17" or "Weekend Orders City-Wide."</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Give your profile a unique "Profile Name".</li>
-                                <li>Click "Add Zone" to define areas and times for order generation. For each zone, you can specify:
-                                    <ul class="list-disc list-inside ml-6 text-sm">
-                                        <li><strong>Zone Type:</strong> Uniform (city-wide), Hotspot (around a point), Sector-based, or Route-based.</li>
-                                        <li><strong>Min/Max Orders:</strong> How many orders to generate in this zone during its active time.</li>
-                                        <li><strong>Start/End Time:</strong> When this zone is active during the simulation (in simulation minutes).</li>
-                                        <li>For Hotspots/Routes, you can click on the small map to define centers or points.</li>
-                                    </ul>
-                                </li>
-                                <li>Click "Save Profile". It will appear in the "Saved Profiles" list on the right.</li>
-                                <li>These custom profiles can then be selected in the "Simulation" tab to see how your logistics network performs under different demand conditions.</li>
-                            </ul>
-                            <p class="text-sm mt-2 italic">Note: Profiles are currently saved for your current browser session only.</p>
-                        </div>
-                    </details>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
-                        <div class="input-group">
-                            <label for="profileNameInput">Profile Name:</label>
-                            <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
-                        </div>
-                        <div id="profileZonesContainer" class="space-y-4 mb-4">
-                        </div>
-                        <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
-                        <div class="flex space-x-2">
-                            <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
-                            <button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button>
-                        </div>
-                         <div id="profileCreationMapContainer" class="mt-6 hidden">
-                            <h4 class="text-lg font-semibold text-center mb-2 text-slate-600">Set Hotspot/Route Point</h4>
-                            <div id="profileCreationMap"></div>
-                            <p class="text-sm text-center text-slate-500 mt-2">Click on map to set hotspot center or route points.</p>
-                            <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Profiles</h3>
-                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200">
-                            <ul id="savedProfilesList" class="list-none space-y-2">
-                                <li class="italic text-slate-500">No custom profiles saved yet.</li>
-                            </ul>
-                        </div>
-                         <p class="text-sm text-slate-500 mt-4 italic">Note: Profiles are stored for the current session only using browser's session storage.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+// --- Simulation Parameters (with defaults) ---
+let simParams = {
+    numAgents: 5,
+    agentMinSpeed: 20,
+    agentMaxSpeed: 30,
+    handlingTime: 5,
+    orderGenerationProfile: 'default_uniform',
+    uniformOrderRadiusKm: 5,
+    defaultFocusRadiusKm: 3,
+    orderLocationSpreadFactor: 0.05,
+    routeWaypoints: 1,
+    baseTrafficFactor: 1.0,
+    enableDynamicTraffic: false,
+    currentDynamicTrafficFactor: 1.0,
+    agentCostPerHour: 150,
+    costPerKmTraveled: 5,
+    fixedCostPerDelivery: 10,
+    currentOrderGenerationProbability: 0.40,
+};
 
-        <section id="simulation" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Interactive Delivery Simulation</h2>
-                <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
-                        <summary class="font-bold text-lg text-indigo-700 hover:text-indigo-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This is the heart of the simulator! Here, you can run a live simulation of delivery operations. You'll see orders appear on the map, delivery agents pick them up from a central dark store, and deliver them to customers.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
-                                <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
-                                <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
-                                <li>"Save Current Scenario Results" to compare different setups later. You can also "Export Results (CSV)" for analysis in tools like Excel.</li>
-                            </ul>
-                        </div>
-                    </details>
-                </div>
-                <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
-                    <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
-                    <div class="simulation-controls-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                            <div class="control-label">
-                                <label for="numAgentsSlider" class="block text-md font-medium text-slate-700">Number of Agents:</label>
-                                <span id="numAgentsValue" class="font-bold text-xl text-blue-700">5</span>
-                            </div>
-                            <input type="range" id="numAgentsSlider" min="1" max="10" value="5" class="mt-2">
-                        </div>
-                        <div>
-                             <div class="control-label">
-                                <label for="orderFrequencySlider" class="block text-md font-medium text-slate-700">Order Arrival Rate:</label>
-                                <span id="orderFrequencyValue" class="font-bold text-xl text-blue-700">Medium</span>
-                            </div>
-                            <input type="range" id="orderFrequencySlider" min="1" max="5" value="3" class="mt-2">
-                            <div class="text-sm text-slate-500 flex justify-between mt-1 px-1"><span>Slower</span><span></span><span>Faster</span></div>
-                        </div>
-                        <div>
-                            <div class="control-label">
-                                <label for="agentMinSpeedSlider" class="block text-md font-medium text-slate-700">Min Agent Speed (km/h):</label>
-                                <span id="agentMinSpeedValue" class="font-bold text-xl text-blue-700">20</span>
-                            </div>
-                            <input type="range" id="agentMinSpeedSlider" min="10" max="30" value="20" step="1" class="mt-2">
-                        </div>
-                        <div>
-                            <div class="control-label">
-                                <label for="agentMaxSpeedSlider" class="block text-md font-medium text-slate-700">Max Agent Speed (km/h):</label>
-                                <span id="agentMaxSpeedValue" class="font-bold text-xl text-blue-700">30</span>
-                            </div>
-                            <input type="range" id="agentMaxSpeedSlider" min="20" max="50" value="30" step="1" class="mt-2">
-                        </div>
-                        <div>
-                            <div class="control-label">
-                                <label for="handlingTimeSlider" class="block text-md font-medium text-slate-700">Store Handling Time (min):</label>
-                                <span id="handlingTimeValue" class="font-bold text-xl text-blue-700">5</span>
-                            </div>
-                            <input type="range" id="handlingTimeSlider" min="1" max="15" value="5" step="1" class="mt-2">
-                        </div>
-                        <div class="input-group"> <label for="orderGenerationProfileSelect" class="block text-md font-medium text-slate-700">Order Generation Profile:</label>
-                            <select id="orderGenerationProfileSelect" class="mt-1">
-                                <option value="default_uniform" selected>Default: Uniform City-Wide</option>
-                                <option value="default_focused">Default: Focused Around Dark Store</option>
-                            </select>
-                        </div>
-                        <div id="uniformOrderRadiusContainer" class="input-group hidden">
-                            <div class="control-label">
-                                <label for="uniformOrderRadiusKmSlider" class="block text-md font-medium text-slate-700">Uniform Order Radius (km):</label>
-                                <span id="uniformOrderRadiusKmValue" class="font-bold text-xl text-blue-700">5</span>
-                            </div>
-                            <input type="range" id="uniformOrderRadiusKmSlider" min="1" max="10" value="5" step="0.5" class="mt-2">
-                        </div>
-                        <div id="defaultOrderSpreadContainer" class="hidden"> <div class="control-label">
-                                <label for="orderSpreadSlider" class="block text-md font-medium text-slate-700">Order Location Spread (Default):</label>
-                                <span id="orderSpreadValue" class="font-bold text-xl text-blue-700">Medium</span>
-                            </div>
-                            <input type="range" id="orderSpreadSlider" min="1" max="5" value="3" class="mt-2">
-                             <div class="text-xs text-slate-500 flex justify-between mt-1 px-1"><span>Closer</span><span></span><span>Wider</span></div>
-                        </div>
-                        <div id="defaultOrderFocusRadiusContainer" class="input-group hidden"> <div class="control-label">
-                                <label for="defaultOrderFocusRadiusSlider" class="block text-md font-medium text-slate-700">Focus Radius (km - Default):</label>
-                                <span id="defaultOrderFocusRadiusValue" class="font-bold text-xl text-blue-700">3</span>
-                            </div>
-                            <input type="range" id="defaultOrderFocusRadiusSlider" min="1" max="5" value="3" step="0.5" class="mt-2">
-                        </div>
-                         <div class="input-group">
-                            <label for="routeWaypointsSelect" class="block text-md font-medium text-slate-700">Route Complexity (Waypoints):</label>
-                            <select id="routeWaypointsSelect" class="mt-1">
-                                <option value="0">0 (Straight Lines)</option>
-                                <option value="1" selected>1 Waypoint</option>
-                                <option value="2">2 Waypoints</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="manualTrafficControl" class="block text-md font-medium text-slate-700">Base Traffic Condition:</label>
-                            <select id="manualTrafficControl" class="mt-1">
-                                <option value="1.0" selected>Medium (Normal)</option>
-                                <option value="1.2">Light</option> <option value="0.7">Heavy</option> </select>
-                        </div>
-                        <div class="input-group checkbox-group items-center">
-                            <input type="checkbox" id="enableDynamicTraffic" class="mr-2">
-                            <label for="enableDynamicTraffic" class="text-md font-medium text-slate-700 cursor-pointer">Enable Dynamic Traffic</label>
-                        </div>
-                        <div class="input-group">
-                            <label for="agentCostPerHour" class="block text-md font-medium text-slate-700">Agent Cost/Hour (₹):</label>
-                            <input type="number" id="agentCostPerHour" value="150" min="0" step="10" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="costPerKmTraveled" class="block text-md font-medium text-slate-700">Cost/km Traveled (₹):</label>
-                            <input type="number" id="costPerKmTraveled" value="5" min="0" step="0.5" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="fixedCostPerDelivery" class="block text-md font-medium text-slate-700">Fixed Cost/Delivery (₹):</label>
-                            <input type="number" id="fixedCostPerDelivery" value="10" min="0" step="1" class="w-full">
-                        </div>
-                    </div>
-                </div>
-                <div class="text-center text-slate-600 mb-4">
-                    Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl text-slate-800">0</span> minutes
-                    (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)
-                </div>
-                <div class="grid lg:grid-cols-3 gap-x-8 gap-y-8">
-                    <div class="lg:col-span-2 space-y-6">
-                        <div id="simulationMap" class="w-full shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
-                        <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-                            <button id="startSimBtn" class="btn btn-primary w-full sm:flex-1">Start Simulation</button>
-                            <button id="pauseSimBtn" class="btn btn-secondary w-full sm:flex-1">Pause Simulation</button>
-                             <button id="resetSimBtn" class="btn btn-danger w-full sm:flex-1">Reset Simulation</button>
-                        </div>
-                        <div class="mt-4 text-center input-group checkbox-group justify-center">
-                            <input type="checkbox" id="toggleDeliveryTimeHeatmap" class="mr-2">
-                            <label for="toggleDeliveryTimeHeatmap" class="text-md font-medium text-slate-700 cursor-pointer">Show Delivery Time Heatmap</label>
-                        </div>
-                        <div class="grid md:grid-cols-2 gap-4 mt-4">
-                            <div class="live-chart-container">
-                                <h5>Pending Orders Over Time</h5>
-                                <canvas id="pendingOrdersChart"></canvas>
-                            </div>
-                            <div class="live-chart-container">
-                                <h5>Active Agents Over Time</h5>
-                                <canvas id="activeAgentsChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="stat-card">
-                            <h4 class="font-semibold text-xl mb-3 text-slate-700">Agent Status</h4>
-                            <div id="agentStatusList" class="space-y-2 text-sm max-h-60 overflow-y-auto log-container p-4 bg-white rounded-lg border border-slate-200">
-                                <p class="text-slate-500 italic">Agents will appear here...</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <h4 class="font-semibold text-xl mb-3 text-slate-700">Active Orders</h4>
-                            <div id="pendingOrdersList" class="space-y-2 text-sm max-h-60 overflow-y-auto log-container p-4 bg-white rounded-lg border border-slate-200">
-                                <p class="text-slate-500 italic">Active orders will appear here...</p>
-                            </div>
-                        </div>
-                         <div class="stat-card">
-                            <h4 class="font-semibold text-xl mb-3 text-slate-700">Simulation Log</h4>
-                            <div id="simulationLog" class="simulation-log text-xs space-y-1.5 h-72 overflow-y-auto bg-slate-900 text-slate-300 p-4 rounded-lg log-container font-mono">
-                                <p class="log-system"><em>[SYS] Simulation log initialized.</em></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="simulationOverallStats" class="simulation-stats-container">
-                    <h4 class="text-2xl font-semibold text-center">Simulation Statistics</h4>
-                    <div class="simulation-stats-grid">
-                        <p><strong >Total Orders Generated:</strong> <span id="statsTotalOrdersGenerated">0</span></p>
-                        <p><strong >Total Orders Delivered:</strong> <span id="statsTotalOrdersDelivered">0</span></p>
-                        <p><strong >Avg. Delivery Time:</strong> <span id="statsAvgDeliveryTime">N/A</span></p>
-                        <p><strong >Min Delivery Time:</strong> <span id="statsMinDeliveryTime">N/A</span></p>
-                        <p><strong >Max Delivery Time:</strong> <span id="statsMaxDeliveryTime">N/A</span></p>
-                        <p><strong >Std. Dev. Delivery Time:</strong> <span id="statsStdDevDeliveryTime">N/A</span></p>
-                        <p><strong >Avg. Order Wait Time:</strong> <span id="statsAvgOrderWaitTime">N/A</span></p>
-                        <p><strong >Avg. Agent Utilization:</strong> <span id="statsAvgAgentUtilization">N/A</span></p>
-                        <p><strong >Total Agent Travel Time:</strong> <span id="statsTotalAgentTravelTime">0</span> min</p>
-                        <p><strong >Total Agent Handling Time:</strong> <span id="statsTotalAgentHandlingTime">0</span> min</p>
-                        <p><strong >Total Simulation Runtime:</strong> <span id="statsTotalSimTime">0</span> min</p>
-                    </div>
-                    <div class="cost-kpi-grid">
-                        <p><strong>Total Agent Labor Cost:</strong> <span id="statsTotalAgentLaborCost">₹0.00</span></p>
-                        <p><strong>Total Travel Cost:</strong> <span id="statsTotalTravelCost">₹0.00</span></p>
-                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="statsTotalFixedDeliveryCosts">₹0.00</span></p>
-                        <p><strong>Overall Total Operational Cost:</strong> <span id="statsOverallTotalOperationalCost">₹0.00</span></p>
-                        <p><strong>Average Cost per Order:</strong> <span id="statsAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <div class="mt-6 flex justify-center space-x-3">
-                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
-                        <button id="exportSimResultsBtn" class="btn btn-primary">Export Results (CSV)</button>
-                    </div>
-                </div>
-            </div>
-        </section>
+export const orderGenerationProbabilities = {
+    1: 0.15, 2: 0.25, 3: 0.40, 4: 0.55, 5: 0.70
+};
+export const orderSpreadFactors = {1: 0.02, 2: 0.035, 3: 0.05, 4: 0.065, 5: 0.08};
 
-        <section id="workforceOptimization" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
-                <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
-                        <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">
-                                This tool helps you find a smart balance for your delivery team size. It analyzes how different team sizes impact delivery speed, customer service (getting orders on time), agent workload (utilization), and overall costs, using realistic demand patterns.
-                            </p>
-                            <p class="font-bold text-lg mt-3 mb-2">How it Works:</p>
-                            <p class="text-base leading-relaxed">
-                                You set a target for average delivery time and select a demand profile (or use defaults). The tool then runs multiple quick simulations for each different number of agents you want to test. For each agent count, it generates orders based on the chosen profile over a set simulation time and tracks key metrics.
-                            </p>
-                            <p class="text-base leading-relaxed mt-2">
-                                The "Best Scenario" is recommended by first ensuring a high percentage of orders are completed and meet your service level target. Then, it prioritizes the lowest cost per order. If costs are similar, it favors configurations where agents are well-utilized (e.g., between 60-90%) to avoid overstaffing or overworking agents.
-                            </p>
-                             <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                             <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Ensure "Clustering" has been run if you want to optimize for a specific clustered dark store.</li>
-                                <li>Set your desired "Target Avg. Delivery Time".</li>
-                                <li>Choose a "Dark Store" to optimize for.</li>
-                                <li>Select a "Demand Profile for Optimization". Default profiles generate orders uniformly or focused around the selected store using the "Order Generation Radius" and "Target Orders per Iteration". Custom profiles use their own defined zones and rates.</li>
-                                <li>If using a default profile, set the "Order Generation Radius" and "Target Orders per Iteration".</li>
-                                <li>Specify the "Min Agents" and "Max Agents" to test.</li>
-                                <li>Set "Number of Simulation Runs per Agent Count" to get more stable average results.</li>
-                                <li>Set "Max Sim Time per Iteration" (how long each test runs if the target orders aren't met sooner for default profiles, or the duration for custom profiles).</li>
-                                <li>Click "Run Workforce Optimization".</li>
-                            </ul>
-                        </div>
-                    </details>
-                </div>
+// --- Statistics Tracking ---
+let stats = {
+    totalOrdersGenerated: 0,
+    totalOrdersDelivered: 0,
+    sumDeliveryTimes: 0,
+    allDeliveryTimes: [],
+    sumOrderWaitTimes: 0,
+    countAssignedOrders: 0,
+    totalAgentTravelTime: 0,
+    totalAgentHandlingTime: 0,
+    totalAgentActiveTime: 0,
+    totalDistanceTraveledByAgentsKm: 0,
+};
 
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div class="input-group">
-                            <label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label>
-                            <input type="number" id="optTargetDeliveryTime" value="15" min="5" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optSelectDarkStore">Select Dark Store for Scenario:</label>
-                            <select id="optSelectDarkStore" class="w-full">
-                                <option value="">-- Run Clustering First --</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="optDemandProfileSelect">Select Demand Profile for Optimization:</label>
-                            <select id="optDemandProfileSelect" class="w-full">
-                                <option value="default_opt_uniform">Default: Uniform around Store</option>
-                                <option value="default_opt_focused">Default: Focused around Store</option>
-                                </select>
-                        </div>
-                         <div class="input-group" id="optOrderRadiusContainer"> <label for="optOrderGenerationRadius">Order Generation Radius (km - for default profiles):</label>
-                            <input type="number" id="optOrderGenerationRadius" value="3" min="0.5" step="0.5" class="w-full">
-                        </div>
-                        <div class="input-group" id="optTargetOrdersContainer"> <label for="optTargetOrdersPerIteration">Target Orders per Iteration (for default profiles):</label>
-                            <input type="number" id="optTargetOrdersPerIteration" value="20" min="5" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optMinAgents">Min Agents to Test:</label>
-                            <input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optMaxAgents">Max Agents to Test:</label>
-                            <input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optNumRunsPerAgentCount">Number of Simulation Runs per Agent Count:</label>
-                            <input type="number" id="optNumRunsPerAgentCount" value="3" min="1" max="10" step="1" class="w-full">
-                        </div>
-                         <div class="input-group">
-                            <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
-                            <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
-                        </div>
-                    </div>
-                    <div class="mt-6 text-center">
-                        <button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button>
-                    </div>
-                </div>
-                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden">
-                     <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Optimal Configuration)</h4>
-                    <div id="optimizationMapViz" class="w-full"></div>
-                </div>
-                <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-2xl font-semibold">Iteration Comparison Table (Averaged Results)</h4>
-                        <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary btn-sm">Export Table (CSV)</button>
-                    </div>
-                    <div class="comparison-table-container">
-                        <table id="optimizationComparisonTable" class="comparison-table">
-                            <thead>
-                                <tr>
-                                    <th>Agents</th>
-                                    <th>Avg. Generated Orders</th>
-                                    <th>Avg. Delivered Orders</th>
-                                    <th>Avg. Delivery Time (min)</th>
-                                    <th>Avg. % Orders within Target</th>
-                                    <th>Avg. Min Delivery Time (min)</th>
-                                    <th>Avg. Max Delivery Time (min)</th>
-                                    <th>Avg. Std. Dev. Delivery Time (min)</th>
-                                    <th>Avg. Agent Utilization (%)</th>
-                                    <th>Avg. Order Wait Time (min)</th>
-                                    <th>Avg. Undelivered Orders</th>
-                                    <th>Avg. Total Op. Cost (₹)</th>
-                                    <th>Avg. Cost/Order (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                 <div id="optimizationChartsContainer" class="hidden mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4>
-                        <canvas id="deliveryTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Utilization</h4>
-                        <canvas id="utilizationChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Total Delivered Orders</h4>
-                        <canvas id="totalDeliveredOrdersChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
-                        <canvas id="avgOrderWaitTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container md:col-span-2">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. % Orders within Target Time</h4>
-                        <canvas id="ordersWithinSlaChart"></canvas>
-                    </div>
-                </div>
-                <div id="optimizationResultsContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
-                    <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
-                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization.</p>
-                    </div>
-                    <div class="optimization-results-grid">
-                        <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
-                        <p><strong >Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
-                        <p><strong >Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
-                        <p><strong >% Orders within Target:</strong> <span id="optResultSlaMet">N/A</span></p>
-                        <p><strong >Avg. Agent Utilization:</strong> <span id="optResultAvgUtilization">N/A</span></p>
-                        <p><strong >Avg. Order Wait Time:</strong> <span id="optResultAvgWaitTime">N/A</span></p>
-                        <p><strong >Undelivered Orders:</strong> <span id="optResultUndelivered">N/A</span></p>
-                    </div>
-                    <div class="cost-kpi-grid">
-                        <p><strong>Total Agent Labor Cost:</strong> <span id="optResultTotalAgentLaborCost">₹0.00</span></p>
-                        <p><strong>Total Travel Cost:</strong> <span id="optResultTotalTravelCost">₹0.00</span></p>
-                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="optResultTotalFixedDeliveryCosts">₹0.00</span></p>
-                        <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
-                        <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <div class="mt-4">
-                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Recommended Scenario):</h5>
-                        <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
-                        </ul>
-                        <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
-                    </div>
-                    <h5 class="text-xl font-semibold text-slate-700 mt-6 mb-2">Optimization Log:</h5>
-                    <div id="optimizationLog" class="optimization-log">
-                        <p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p>
-                    </div>
-                </div>
-            </div>
-        </section>
+// --- Live Chart Data ---
+let liveChartData = {
+    simTimeHistory: [],
+    pendingOrdersHistory: [],
+    activeAgentsHistory: [],
+};
 
-        <section id="scenarioAnalysis" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
-                 <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
-                        <summary class="font-bold text-lg text-purple-700 hover:text-purple-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section allows you to compare the results of different simulation runs side-by-side. After running various simulations with different parameters (e.g., more agents, different order profiles, changed traffic), you can save those results and then come here to analyze their impact on performance and cost.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>First, run one or more simulations in the "Simulation" tab. At the end of each simulation (or when you're satisfied with its run), click the "Save Current Scenario Results" button there.</li>
-                                <li>Saved scenarios will appear in the "Saved Scenarios" list on the left of this page.</li>
-                                <li>Select the checkboxes next to the scenarios you want to compare.</li>
-                                <li>Click "Compare Selected". A table will appear on the right showing a detailed comparison of parameters and results for your chosen scenarios.</li>
-                                <li>You can "Clear All Saved Scenarios" if you want to start fresh.</li>
-                            </ul>
-                            <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                            <p class="text-base leading-relaxed">A detailed table that helps you understand how changing different inputs (like number of agents or order arrival rates) affects outcomes like average delivery time, agent utilization, and total operational costs. This is useful for making strategic decisions about your logistics setup.</p>
-                             <p class="text-sm mt-2 italic">Note: Scenarios are saved in your browser's local storage, so they will persist even if you close and reopen your browser (unless you clear your browser data).</p>
-                        </div>
-                    </details>
-                </div>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="md:col-span-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
-                        <div id="savedScenariosListContainer">
-                            <ul id="savedScenariosList">
-                                <li class="italic text-slate-500">No scenarios saved yet.</li>
-                            </ul>
-                        </div>
-                        <div class="mt-4 flex flex-col space-y-2">
-                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
-                            <button id="clearAllScenariosBtn" class="btn btn-danger">Clear All Saved Scenarios</button>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
-                        <div id="scenarioComparisonResultsContainer" class="hidden">
-                             <div class="comparison-table-container">
-                                <table id="scenarioComparisonTable" class="comparison-table">
-                                    <thead>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                         <p id="scenarioComparisonPlaceholder" class="italic text-slate-500 mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+// --- DOM Elements ---
+let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
+let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
+let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
+let statsTotalOrdersGeneratedEl, statsTotalOrdersDeliveredEl, statsAvgDeliveryTimeEl, statsMinDeliveryTimeEl,
+    statsMaxDeliveryTimeEl, statsStdDevDeliveryTimeEl, statsAvgOrderWaitTimeEl, statsAvgAgentUtilizationEl,
+    statsTotalAgentTravelTimeEl, statsTotalAgentHandlingTimeEl, statsTotalSimTimeEl,
+    statsTotalAgentLaborCostEl, statsTotalTravelCostEl, statsTotalFixedDeliveryCostsEl,
+    statsOverallTotalOperationalCostEl, statsAverageCostPerOrderEl, saveCurrentSimScenarioBtnEl;
+let toggleDeliveryTimeHeatmapCheckboxEl;
+let exportSimResultsBtnEl;
 
-    <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
-        <p class="text-slate-300 text-lg">&copy; <span id="currentYear"></span> Rakshit Monga - IIM Sirmaur.</p>
-        <p class="text-md mt-2">Chandigarh Last-Mile Logistics Optimization Project</p>
-        <div class="mt-8">
-            <button id="toggleSectorCoordsBtn" class="btn btn-secondary btn-sm">Show/Hide Sector Coordinates</button>
-            <div id="sectorCoordinatesContainer" class="hidden mt-4 text-left max-w-2xl mx-auto bg-slate-800 p-4 rounded-lg text-sm">
-                <h4 class="text-lg font-semibold text-slate-200 mb-2 text-center">Chandigarh Sector Coordinates (Approximate Centers)</h4>
-                <pre id="sectorCoordinatesList" class="text-slate-300 whitespace-pre-wrap"></pre>
-            </div>
-        </div>
-    </footer>
 
-    <script type="module" src="js/main.js"></script>
-</body>
-</html>
+export function setSimParameter(key, value) {
+    if (simParams.hasOwnProperty(key)) {
+        simParams[key] = value;
+        if (key === 'orderGenerationProfile') {
+            toggleProfileSpecificControlsUI();
+        }
+    } else {
+        console.warn(`[Sim] Attempted to set unknown simulation parameter: ${key}`);
+    }
+}
+export function getSimParameter(key) {
+    return simParams.hasOwnProperty(key) ? simParams[key] : undefined;
+}
+
+function toggleProfileSpecificControlsUI() {
+    const selectedProfile = getSimParameter('orderGenerationProfile');
+    if(uniformOrderRadiusContainerEl) uniformOrderRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_uniform');
+    if(defaultOrderFocusRadiusContainerEl) defaultOrderFocusRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_focused');
+    if(defaultOrderSpreadContainerEl) defaultOrderSpreadContainerEl.classList.toggle('hidden', true);
+}
+
+function createAgent() {
+    const agentId = agentIdCounter++;
+    const speedRange = getSimParameter('agentMaxSpeed') - getSimParameter('agentMinSpeed');
+    const baseSpeed = speedRange >= 0 ? getSimParameter('agentMinSpeed') + Math.random() * speedRange : getSimParameter('agentMinSpeed');
+    
+    const newAgent = {
+        id: agentId,
+        location: {
+            lat: defaultDarkStoreLocationSim.lat + (Math.random() - 0.5) * 0.002,
+            lng: defaultDarkStoreLocationSim.lng + (Math.random() - 0.5) * 0.002
+        },
+        baseSpeedKmph: baseSpeed, // Store original speed
+        currentFatigueFactor: 1.0, // Starts fresh
+        consecutiveDeliveriesSinceRest: 0,
+        timeContinuouslyActive: 0, // Time spent not 'available' since last break/start
+        timeBecameAvailableAt: 0, // When agent last became available
+
+        speedKmph: baseSpeed, // Initial effective speed (will be updated by fatigue)
+        status: 'available', assignedOrderId: null,
+        routePath: [], currentLegIndex: 0, legProgress: 0, timeSpentAtStore: 0,
+        deliveriesMade: 0, totalTime: 0, busyTime: 0, routePolyline: null,
+        distanceTraveledThisSimKm: 0,
+        timeSpentIdle: 0, timeSpentTraveling: 0, timeSpentHandling: 0,
+    };
+    agents.push(newAgent);
+    if (simulationMap && agentMarkers) {
+        const effectiveSpeed = newAgent.baseSpeedKmph * newAgent.currentFatigueFactor;
+        agentMarkers[agentId] = L.marker([newAgent.location.lat, newAgent.location.lng], { icon: createAgentIcon(agentId, false) })
+            .addTo(simulationMap)
+            .bindPopup(`<b>Agent ${newAgent.id}</b><br>Status: ${newAgent.status}<br>Base Speed: ${newAgent.baseSpeedKmph.toFixed(1)} km/h<br>Effective Speed: ${effectiveSpeed.toFixed(1)} km/h<br>Fatigue: ${((1 - newAgent.currentFatigueFactor) * 100).toFixed(0)}%`);
+    }
+}
+
+function updateAgentPopup(agent) {
+    if (agentMarkers[agent.id]) {
+        const effectiveSpeed = agent.baseSpeedKmph * agent.currentFatigueFactor;
+        const fatiguePercent = ((1 - agent.currentFatigueFactor) * 100).toFixed(0);
+        agentMarkers[agent.id].setPopupContent(
+            `<b>Agent ${agent.id}</b><br>Status: ${agent.status.replace(/_/g, ' ')}` +
+            (agent.assignedOrderId !== null ? ` (Order: ${agent.assignedOrderId})` : "") +
+            `<br>Base Speed: ${agent.baseSpeedKmph.toFixed(1)} km/h` +
+            `<br>Effective Speed: ${effectiveSpeed.toFixed(1)} km/h` +
+            `<br>Fatigue Level: ${fatiguePercent}%`
+        );
+    }
+}
+
+
+function updateSimTimeDisplayLocal(time) {
+    const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
+    if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
+}
+
+function updateAgentStatusListUI() {
+    if (!agentStatusListEl) return;
+    agentStatusListEl.innerHTML = '';
+    if (agents.length === 0) { agentStatusListEl.innerHTML = '<p class="text-slate-500 italic">No agents yet.</p>'; return; }
+    agents.forEach(agent => {
+        const agentDiv = document.createElement('div');
+        let statusText = `Agent ${agent.id}: ${agent.status.replace(/_/g, ' ')}`;
+        if (agent.assignedOrderId !== null) statusText += ` (Order: ${agent.assignedOrderId})`;
+        if (agent.status === 'at_store') statusText += ` (${agent.timeSpentAtStore}/${getSimParameter('handlingTime')} min)`;
+        statusText += ` | Delivered: ${agent.deliveriesMade}`;
+        const utilization = agent.totalTime > 0 ? (agent.busyTime / agent.totalTime * 100).toFixed(1) : 0;
+        statusText += ` | Util: ${utilization}%`;
+        statusText += ` | Fatigue: ${((1 - agent.currentFatigueFactor) * 100).toFixed(0)}%`; // Add fatigue to status list
+        agentDiv.className = `p-1.5 rounded-md text-xs ${agent.status === 'available' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`;
+        agentDiv.textContent = statusText;
+        agentStatusListEl.appendChild(agentDiv);
+    });
+}
+
+function updatePendingOrdersListUI() {
+    if (!pendingOrdersListEl) return;
+    pendingOrdersListEl.innerHTML = '';
+    const activeOrdersForList = orders.filter(o => o.status !== 'delivered');
+    if (activeOrdersForList.length === 0) { pendingOrdersListEl.innerHTML = '<p class="text-slate-500 italic">No active orders.</p>'; return; }
+    activeOrdersForList.forEach(order => {
+        const orderDiv = document.createElement('div');
+        let orderText = `Order ${order.id}: ${order.status.replace(/_/g, ' ')}`;
+        if (order.assignedAgentId !== null) orderText += ` (Agent ${order.assignedAgentId}, ETA ${order.etaMinutes ? order.etaMinutes.toFixed(1) : 'N/A'} min)`;
+        else orderText += ` (Placed: T+${order.timePlaced} min)`;
+        orderDiv.className = `p-1.5 rounded-md text-xs ${order.status === 'pending' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`;
+        orderDiv.textContent = orderText;
+        pendingOrdersListEl.appendChild(orderDiv);
+    });
+}
+
+function updateSimulationStatsUI() {
+    if (!statsTotalOrdersGeneratedEl) return;
+    statsTotalOrdersGeneratedEl.textContent = stats.totalOrdersGenerated;
+    statsTotalOrdersDeliveredEl.textContent = stats.totalOrdersDelivered;
+    const avgDeliveryTime = stats.totalOrdersDelivered > 0 ? (stats.sumDeliveryTimes / stats.totalOrdersDelivered) : NaN;
+    statsAvgDeliveryTimeEl.textContent = isNaN(avgDeliveryTime) ? "N/A" : avgDeliveryTime.toFixed(1) + " min";
+    statsMinDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.min(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
+    statsMaxDeliveryTimeEl.textContent = stats.allDeliveryTimes.length > 0 ? Math.max(...stats.allDeliveryTimes).toFixed(1) + " min" : "N/A";
+    const stdDevDelTime = calculateStdDev(stats.allDeliveryTimes, avgDeliveryTime);
+    statsStdDevDeliveryTimeEl.textContent = (stats.allDeliveryTimes.length > 1 && !isNaN(stdDevDelTime)) ? stdDevDelTime.toFixed(1) + " min" : "N/A";
+    const avgOrderWaitTime = stats.countAssignedOrders > 0 ? (stats.sumOrderWaitTimes / stats.countAssignedOrders).toFixed(1) : "N/A";
+    statsAvgOrderWaitTimeEl.textContent = avgOrderWaitTime + (avgOrderWaitTime !== "N/A" ? " min" : "");
+    let totalAgentPossibleTime = 0;
+    let totalAgentActualBusyTime = 0;
+    agents.forEach(agent => {
+        totalAgentPossibleTime += agent.totalTime;
+        totalAgentActualBusyTime += agent.busyTime;
+    });
+    const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime * 100).toFixed(1) : "N/A";
+    statsAvgAgentUtilizationEl.textContent = avgAgentUtilization + (avgAgentUtilization !== "N/A" ? "%" : "");
+    statsTotalAgentTravelTimeEl.textContent = stats.totalAgentTravelTime.toFixed(0) + " min";
+    statsTotalAgentHandlingTimeEl.textContent = stats.totalAgentHandlingTime.toFixed(0) + " min";
+    if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = currentSimulationTime + " min";
+    const totalAgentLaborCost = (stats.totalAgentActiveTime / 60) * getSimParameter('agentCostPerHour');
+    const totalTravelCostVal = stats.totalDistanceTraveledByAgentsKm * getSimParameter('costPerKmTraveled');
+    const totalFixedDeliveryCostsVal = stats.totalOrdersDelivered * getSimParameter('fixedCostPerDelivery');
+    const overallTotalOperationalCostVal = totalAgentLaborCost + totalTravelCostVal + totalFixedDeliveryCostsVal;
+    const averageCostPerOrderVal = stats.totalOrdersDelivered > 0 ? (overallTotalOperationalCostVal / stats.totalOrdersDelivered) : NaN;
+    statsTotalAgentLaborCostEl.textContent = `₹${totalAgentLaborCost.toFixed(2)}`;
+    statsTotalTravelCostEl.textContent = `₹${totalTravelCostVal.toFixed(2)}`;
+    statsTotalFixedDeliveryCostsEl.textContent = `₹${totalFixedDeliveryCostsVal.toFixed(2)}`;
+    statsOverallTotalOperationalCostEl.textContent = `₹${overallTotalOperationalCostVal.toFixed(2)}`;
+    statsAverageCostPerOrderEl.textContent = isNaN(averageCostPerOrderVal) ? "N/A" : `₹${averageCostPerOrderVal.toFixed(2)}`;
+}
+
+function updateLiveCharts() {
+    if (isSimulationRunning || currentSimulationTime === 0) {
+        liveChartData.simTimeHistory.push(currentSimulationTime);
+        liveChartData.pendingOrdersHistory.push(orders.filter(o => o.status !== 'delivered').length);
+        liveChartData.activeAgentsHistory.push(agents.filter(a => a.status !== 'available').length);
+        const maxHistoryLength = 100;
+        if (liveChartData.simTimeHistory.length > maxHistoryLength) {
+            liveChartData.simTimeHistory.shift();
+            liveChartData.pendingOrdersHistory.shift();
+            liveChartData.activeAgentsHistory.shift();
+        }
+    }
+    
+    let pendingOrdersChart = getChartInstance('pendingOrders');
+    if (pendingOrdersChart) {
+        updateChartData('pendingOrders', liveChartData.simTimeHistory, [{ data: liveChartData.pendingOrdersHistory, label: 'Pending Orders', borderColor: 'rgb(255, 99, 132)', tension: 0.1, fill: false }]);
+    }
+
+    let activeAgentsChart = getChartInstance('activeAgents');
+    if (activeAgentsChart) {
+        updateChartData('activeAgents', liveChartData.simTimeHistory, [{ data: liveChartData.activeAgentsHistory, label: 'Active Agents', borderColor: 'rgb(54, 162, 235)', tension: 0.1, fill: false }]);
+    }
+}
+
+function resetSimulationState() {
+    currentSimulationTime = 0;
+    orderIdCounter = 0;
+    agentIdCounter = 1;
+    isSimulationRunning = false;
+
+    agents.forEach(agent => { if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline); });
+    agents = [];
+    orders = [];
+    allGeneratedOrdersThisRun = [];
+    Object.values(agentMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); agentMarkers = {};
+    Object.values(orderMarkers).forEach(m => { if (simulationMap) simulationMap.removeLayer(m); }); orderMarkers = {};
+
+    deliveredOrderDataForHeatmap = [];
+    if (deliveryTimeHeatmapLayer && simulationMap && simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+        simulationMap.removeLayer(deliveryTimeHeatmapLayer);
+    }
+    if (deliveryTimeHeatmapLayer) {
+        deliveryTimeHeatmapLayer.setData({max:1, data:[]});
+    }
+    if (toggleDeliveryTimeHeatmapCheckboxEl) {
+        toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        toggleDeliveryTimeHeatmapCheckboxEl.disabled = (deliveryTimeHeatmapLayer === null);
+    }
+
+    for (let key in stats) {
+        if (Array.isArray(stats[key])) stats[key] = [];
+        else if (typeof stats[key] === 'number') stats[key] = 0;
+    }
+    for (let key in liveChartData) {
+        liveChartData[key] = [];
+    }
+    updateLiveCharts();
+
+    simParams = {
+        numAgents: parseInt(document.getElementById('numAgentsSlider')?.value) || 5,
+        agentMinSpeed: parseInt(document.getElementById('agentMinSpeedSlider')?.value) || 20,
+        agentMaxSpeed: parseInt(document.getElementById('agentMaxSpeedSlider')?.value) || 30,
+        handlingTime: parseInt(document.getElementById('handlingTimeSlider')?.value) || 5,
+        orderGenerationProfile: document.getElementById('orderGenerationProfileSelect')?.value || 'default_uniform',
+        uniformOrderRadiusKm: parseFloat(document.getElementById('uniformOrderRadiusKmSlider')?.value) || 5,
+        defaultFocusRadiusKm: parseFloat(document.getElementById('defaultOrderFocusRadiusSlider')?.value) || 3,
+        orderLocationSpreadFactor: 0.05,
+        routeWaypoints: parseInt(document.getElementById('routeWaypointsSelect')?.value) || 1,
+        baseTrafficFactor: parseFloat(document.getElementById('manualTrafficControl')?.value) || 1.0,
+        enableDynamicTraffic: document.getElementById('enableDynamicTraffic')?.checked || false,
+        currentDynamicTrafficFactor: 1.0,
+        agentCostPerHour: parseFloat(document.getElementById('agentCostPerHour')?.value) || 150,
+        costPerKmTraveled: parseFloat(document.getElementById('costPerKmTraveled')?.value) || 5,
+        fixedCostPerDelivery: parseFloat(document.getElementById('fixedCostPerDelivery')?.value) || 10,
+        currentOrderGenerationProbability: orderGenerationProbabilities[document.getElementById('orderFrequencySlider')?.value || "3"] || 0.40,
+    };
+
+    const numAgents = getSimParameter('numAgents');
+    for (let i = 0; i < numAgents; i++) {
+        createAgent();
+    }
+
+    updateSimTimeDisplayLocal(currentSimulationTime);
+    updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
+    updateAgentStatusListUI();
+    updatePendingOrdersListUI();
+    updateSimulationStatsUI();
+    if (simulationLogEl) simulationLogEl.innerHTML = '<p class="log-system"><em>[SYS] Simulation log initialized.</em></p>';
+    logMessage("Simulation state initialized/reset.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+
+    if (startSimBtnEl) startSimBtnEl.disabled = false;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+    toggleSimConfigLock(false);
+}
+
+// --- Event Handler Functions ---
+function startSimulation() {
+    if (isSimulationRunning) return;
+    if (currentSimulationTime === 0) {
+        resetSimulationState();
+        logMessage(`Simulation started. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
+    } else {
+        logMessage(`Simulation resumed. Order Gen Prob: ${getSimParameter('currentOrderGenerationProbability')}`, 'SYSTEM', simulationLogEl, currentSimulationTime);
+    }
+    isSimulationRunning = true;
+    simulationIntervalId = setInterval(simulationStep, SIMULATION_STEP_INTERVAL_MS);
+    if (startSimBtnEl) startSimBtnEl.disabled = true;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = false;
+    toggleSimConfigLock(true);
+}
+
+function pauseSimulation() {
+    if (!isSimulationRunning) return;
+    isSimulationRunning = false;
+    clearInterval(simulationIntervalId);
+    logMessage("Simulation paused.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+    if (startSimBtnEl) startSimBtnEl.disabled = false;
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+}
+
+function resetSimulation() {
+    if (isSimulationRunning) {
+        isSimulationRunning = false;
+        clearInterval(simulationIntervalId);
+    }
+    resetSimulationState();
+}
+
+function toggleDeliveryTimeHeatmapDisplay() {
+    if (!simulationMap) {
+        console.warn("[Heatmap] Simulation map not available for heatmap toggle.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+        return;
+    }
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot toggle display.");
+        if (toggleDeliveryTimeHeatmapCheckboxEl) {
+            toggleDeliveryTimeHeatmapCheckboxEl.checked = false;
+            toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
+        }
+        return;
+    }
+
+    if (toggleDeliveryTimeHeatmapCheckboxEl?.checked) {
+        updateDeliveryTimeHeatmapData();
+        if (!simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            deliveryTimeHeatmapLayer.addTo(simulationMap);
+            logMessage("Delivery Time Heatmap ON.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    } else {
+        if (simulationMap.hasLayer(deliveryTimeHeatmapLayer)) {
+            simulationMap.removeLayer(deliveryTimeHeatmapLayer);
+            logMessage("Delivery Time Heatmap OFF.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+        }
+    }
+}
+
+// --- HEATMAP DATA FUNCTIONS ---
+function updateDeliveryTimeHeatmapData() {
+    if (!deliveryTimeHeatmapLayer) {
+        console.warn("[Heatmap] Heatmap layer not initialized. Cannot update data.");
+        return;
+    }
+    if (deliveredOrderDataForHeatmap.length === 0) {
+        deliveryTimeHeatmapLayer.setData({ max: 1, data: [] });
+        return;
+    }
+    const heatmapPoints = deliveredOrderDataForHeatmap.map(d => ({
+        lat: d.lat, lng: d.lng, value: d.value
+    }));
+    deliveryTimeHeatmapLayer.setData(heatmapPoints);
+}
+
+// --- AGENT FATIGUE LOGIC ---
+function updateAgentFatigue(agent) {
+    let fatigueStatusChanged = false;
+    const previousFatigueFactor = agent.currentFatigueFactor;
+
+    // Apply fatigue
+    if (agent.status !== 'available' && 
+        (agent.consecutiveDeliveriesSinceRest >= FATIGUE_CONSECUTIVE_DELIVERIES_THRESHOLD || 
+         agent.timeContinuouslyActive >= FATIGUE_CONTINUOUSLY_ACTIVE_THRESHOLD_MIN)) {
+        
+        if (agent.currentFatigueFactor > MIN_FATIGUE_FACTOR) {
+            agent.currentFatigueFactor = Math.max(MIN_FATIGUE_FACTOR, agent.currentFatigueFactor - FATIGUE_REDUCTION_STEP);
+            fatigueStatusChanged = true;
+        }
+    }
+    // Attempt recovery if agent is available and has been idle for a bit
+    else if (agent.status === 'available' && agent.currentFatigueFactor < 1.0) {
+        const idleTime = currentSimulationTime - agent.timeBecameAvailableAt;
+        if (idleTime >= FATIGUE_RECOVERY_IDLE_TIME_MIN) {
+            agent.currentFatigueFactor = Math.min(1.0, agent.currentFatigueFactor + FATIGUE_RECOVERY_STEP);
+            // Reset counters once recovery starts or full recovery is achieved
+            if (agent.currentFatigueFactor === 1.0 || agent.currentFatigueFactor > previousFatigueFactor) {
+                 agent.consecutiveDeliveriesSinceRest = 0;
+                 // agent.timeContinuouslyActive is already 0 as agent is available
+                 agent.timeBecameAvailableAt = currentSimulationTime; // Reset idle timer for next recovery check
+            }
+            fatigueStatusChanged = true;
+        }
+    }
+
+    if (fatigueStatusChanged) {
+        logMessage(`Agent ${agent.id} fatigue factor is now ${agent.currentFatigueFactor.toFixed(2)}. Effective speed: ${(agent.baseSpeedKmph * agent.currentFatigueFactor).toFixed(1)} km/h.`, 'AGENT', simulationLogEl, currentSimulationTime);
+        updateAgentPopup(agent); // Update map popup
+    }
+}
+
+
+// --- CORE SIMULATION LOGIC ---
+function generateUniformPointInChd(numPoints, polygonCoords) {
+    const points = [];
+    if (numPoints <= 0) return points;
+    let attempts = 0;
+    const localBounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    polygonCoords.forEach(p => {
+        if (p[0] < localBounds.minX) localBounds.minX = p[0];
+        if (p[0] > localBounds.maxX) localBounds.maxX = p[0];
+        if (p[1] < localBounds.minY) localBounds.minY = p[1];
+        if (p[1] > localBounds.maxY) localBounds.maxY = p[1];
+    });
+    while (points.length < numPoints && attempts < numPoints * 200) {
+        attempts++;
+        const lng = Math.random() * (localBounds.maxX - localBounds.minX) + localBounds.minX;
+        const lat = Math.random() * (localBounds.maxY - localBounds.minY) + localBounds.minY;
+        if (isPointInPolygon([lng, lat], polygonCoords)) {
+            points.push({ lat, lng });
+        }
+    }
+    return points;
+}
+
+function generateOrder() {
+    stats.totalOrdersGenerated++;
+    const orderId = orderIdCounter++;
+    let newOrderLocation;
+    const selectedProfileId = getSimParameter('orderGenerationProfile');
+    let profileSourceInfo = `Profile: ${selectedProfileId}`;
+
+    const customProfiles = getCustomDemandProfiles();
+
+    if (selectedProfileId.startsWith('custom_')) {
+        const profileName = selectedProfileId.substring('custom_'.length);
+        profileSourceInfo = `Custom: ${profileName}`;
+        const customProfile = customProfiles.find(p => p.name === profileName);
+
+        if (customProfile && customProfile.zones && customProfile.zones.length > 0) {
+            const activeZones = customProfile.zones.filter(zone => {
+                const startTime = zone.startTime !== undefined ? zone.startTime : 0;
+                const endTime = zone.endTime !== undefined ? zone.endTime : Infinity;
+                return currentSimulationTime >= startTime && currentSimulationTime <= endTime;
+            });
+
+            if (activeZones.length > 0) {
+                let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (zone.maxOrders > 0 ? (zone.minOrders + zone.maxOrders) / 2 : 1), 0);
+                if (totalOrderWeight === 0) totalOrderWeight = activeZones.length;
+                let randomPick = Math.random() * totalOrderWeight;
+                let selectedZone = null;
+                for (const zone of activeZones) {
+                    const weight = (zone.minOrders + zone.maxOrders) / 2 > 0 ? (zone.minOrders + zone.maxOrders) / 2 : (totalOrderWeight === activeZones.length ? 1 : 0);
+                    if (randomPick < weight) { selectedZone = zone; break; }
+                    randomPick -= weight;
+                }
+                if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)];
+
+                if (selectedZone) {
+                    profileSourceInfo += ` (Zone Type: ${selectedZone.type})`;
+                    if (selectedZone.type === 'uniform') {
+                        const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
+                        newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...defaultDarkStoreLocationSim };
+                    } else if (selectedZone.type === 'hotspot') {
+                        const hotspotCenter = { lat: selectedZone.centerLat, lng: selectedZone.centerLng };
+                        const spreadKm = selectedZone.spreadKm; const spreadDeg = spreadKm / 111;
+                        let attempts = 0;
+                        do {
+                            newOrderLocation = { lat: hotspotCenter.lat + (Math.random() - 0.5) * 2 * spreadDeg, lng: hotspotCenter.lng + (Math.random() - 0.5) * 2 * spreadDeg };
+                            attempts++;
+                        } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
+                        if (attempts >= 100 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
+                            newOrderLocation = { ...hotspotCenter };
+                        }
+                    } else if (selectedZone.type === 'sector') {
+                        if (selectedZone.selectedSectors && selectedZone.selectedSectors.length > 0) {
+                            const randomSectorName = selectedZone.selectedSectors[Math.floor(Math.random() * selectedZone.selectedSectors.length)];
+                            profileSourceInfo += ` - ${randomSectorName}`;
+                            const sectorData = chandigarhSectors.find(s => s.name === randomSectorName);
+                            if (sectorData) {
+                                const sectorCenter = { lat: sectorData.lat, lng: sectorData.lng }; const sectorSpreadDeg = 0.005;
+                                let attempts = 0;
+                                do {
+                                    newOrderLocation = { lat: sectorCenter.lat + (Math.random() - 0.5) * 2 * sectorSpreadDeg, lng: sectorCenter.lng + (Math.random() - 0.5) * 2 * sectorSpreadDeg };
+                                    attempts++;
+                                } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 50);
+                                if (attempts >= 50 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)){
+                                     newOrderLocation = { ...sectorCenter };
+                                }
+                            } else {
+                                newOrderLocation = { ...defaultDarkStoreLocationSim };
+                            }
+                        } else {
+                             newOrderLocation = { ...defaultDarkStoreLocationSim };
+                        }
+                    } else if (selectedZone.type === 'route') {
+                        if (selectedZone.routePoints && selectedZone.routePoints.length >= 1) {
+                            const routeBounds = L.latLngBounds(selectedZone.routePoints);
+                            const routeSpreadDeg = (selectedZone.routeSpreadKm || 0.5) / 111;
+                            let attempts = 0;
+                            do {
+                                const randLat = routeBounds.getSouthWest().lat + Math.random() * (routeBounds.getNorthEast().lat - routeBounds.getSouthWest().lat);
+                                const randLng = routeBounds.getSouthWest().lng + Math.random() * (routeBounds.getNorthEast().lng - routeBounds.getSouthWest().lng);
+                                newOrderLocation = {
+                                    lat: randLat + (Math.random() - 0.5) * 2 * routeSpreadDeg,
+                                    lng: randLng + (Math.random() - 0.5) * 2 * routeSpreadDeg
+                                };
+                                attempts++;
+                            } while(!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 50);
+                            if (attempts >= 50 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
+                                newOrderLocation = generateUniformPointInChd(1, chandigarhGeoJsonPolygon)[0] || {...defaultDarkStoreLocationSim};
+                            }
+                        } else {
+                            newOrderLocation = generateUniformPointInChd(1, chandigarhGeoJsonPolygon)[0] || {...defaultDarkStoreLocationSim};
+                        }
+                    } else {
+                        newOrderLocation = { ...defaultDarkStoreLocationSim };
+                    }
+                } else {
+                    stats.totalOrdersGenerated--; return;
+                }
+            } else {
+                stats.totalOrdersGenerated--; return;
+            }
+        } else {
+            stats.totalOrdersGenerated--; return;
+        }
+    } else if (selectedProfileId === 'default_focused') {
+        profileSourceInfo = "Default Focused";
+        const focusRadiusDeg = getSimParameter('defaultFocusRadiusKm') / 111;
+        let attempts = 0;
+        do {
+            newOrderLocation = {
+                lat: defaultDarkStoreLocationSim.lat + (Math.random() - 0.5) * 2 * focusRadiusDeg,
+                lng: defaultDarkStoreLocationSim.lng + (Math.random() - 0.5) * 2 * focusRadiusDeg
+            };
+            attempts++;
+        } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
+        if (attempts >= 100 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
+            newOrderLocation = { ...defaultDarkStoreLocationSim };
+        }
+    } else if (selectedProfileId === 'default_uniform') {
+        profileSourceInfo = `Default Uniform (Radius: ${getSimParameter('uniformOrderRadiusKm')}km)`;
+        const radiusDeg = getSimParameter('uniformOrderRadiusKm') / 111.0;
+        let attempts = 0;
+        do {
+            const angle = Math.random() * 2 * Math.PI;
+            const distance = Math.sqrt(Math.random()) * radiusDeg;
+            newOrderLocation = {
+                lat: defaultDarkStoreLocationSim.lat + distance * Math.sin(angle),
+                lng: defaultDarkStoreLocationSim.lng + distance * Math.cos(angle)
+            };
+            attempts++;
+        } while (!isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 200);
+        if (attempts >= 200 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
+            const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
+            newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...defaultDarkStoreLocationSim };
+            profileSourceInfo += " (Fallback to city boundary)";
+        }
+    } else {
+        profileSourceInfo = "Fallback Uniform (Unknown Profile)";
+        const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
+        newOrderLocation = uniformPoints.length > 0 ? uniformPoints[0] : { ...defaultDarkStoreLocationSim };
+    }
+
+    if (!newOrderLocation) {
+        stats.totalOrdersGenerated--;
+        return;
+    }
+
+    const newOrder = {
+        id: orderId, location: newOrderLocation, status: 'pending',
+        assignedAgentId: null, etaMinutes: null, timePlaced: currentSimulationTime,
+        assignmentTime: null, noAgentLogged: false,
+        deliveryDuration: null
+    };
+    orders.push(newOrder);
+    allGeneratedOrdersThisRun.push(newOrder);
+
+    logMessage(`Order ${orderId} from ${profileSourceInfo} at [${newOrderLocation.lat.toFixed(4)}, ${newOrderLocation.lng.toFixed(4)}].`, 'ORDER_GEN', simulationLogEl, currentSimulationTime);
+
+    if (simulationMap && orderMarkers) {
+        orderMarkers[orderId] = L.marker([newOrder.location.lat, newOrder.location.lng], { icon: createOrderIcon(orderId, 'pending') })
+            .addTo(simulationMap)
+            .bindPopup(`<b>Order ${orderId}</b><br>Status: ${newOrder.status}<br>Placed at: T+${newOrder.timePlaced} min`);
+    }
+}
+
+function calculateETA(agent, orderLocation) {
+    const effectiveTraffic = getSimParameter('enableDynamicTraffic') ? getSimParameter('currentDynamicTrafficFactor') : getSimParameter('baseTrafficFactor');
+    const agentEffectiveSpeed = agent.baseSpeedKmph * agent.currentFatigueFactor; // Use fatigue adjusted speed
+
+    const agentToStoreDistKm = getDistanceKm(agent.location, defaultDarkStoreLocationSim);
+    const storeToOrderDistKm = getDistanceKm(defaultDarkStoreLocationSim, orderLocation);
+    const totalTravelDistKm = agentToStoreDistKm + storeToOrderDistKm;
+    const travelTimeHours = totalTravelDistKm / (agentEffectiveSpeed * effectiveTraffic);
+    const travelTimeMinutes = travelTimeHours * 60;
+    return travelTimeMinutes + getSimParameter('handlingTime');
+}
+
+function assignOrders() {
+    orders.filter(o => o.status === 'pending').forEach(order => {
+        let bestAgent = null;
+        let shortestETA = Infinity;
+        agents.filter(a => a.status === 'available').forEach(agent => {
+            const eta = calculateETA(agent, order.location);
+            if (eta < shortestETA) {
+                shortestETA = eta; bestAgent = agent;
+            }
+        });
+        if (bestAgent) {
+            order.status = 'assigned_to_agent_going_to_store';
+            order.assignedAgentId = bestAgent.id;
+            order.etaMinutes = shortestETA;
+            order.assignmentTime = currentSimulationTime;
+            const waitTime = order.assignmentTime - order.timePlaced;
+            stats.sumOrderWaitTimes += waitTime;
+            stats.countAssignedOrders++;
+            bestAgent.assignedOrderId = order.id;
+            bestAgent.status = 'to_store';
+            bestAgent.timeSpentIdle += (currentSimulationTime - bestAgent.timeBecameAvailableAt); // Agent is no longer idle
+            bestAgent.timeContinuouslyActive = 0; // Reset continuous active timer as they start a new task
+            logMessage(`Agent ${bestAgent.id} assigned Order ${order.id}. ETA: ${shortestETA.toFixed(1)} min. Wait: ${waitTime} min.`, 'AGENT_ASSIGN', simulationLogEl, currentSimulationTime);
+            const waypointsToStore = generateWaypoints(bestAgent.location, defaultDarkStoreLocationSim, getSimParameter('routeWaypoints'));
+            bestAgent.routePath = [bestAgent.location, ...waypointsToStore, defaultDarkStoreLocationSim];
+            bestAgent.currentLegIndex = 0;
+            bestAgent.legProgress = 0;
+            if (bestAgent.routePolyline && simulationMap) simulationMap.removeLayer(bestAgent.routePolyline);
+            if (simulationMap && bestAgent.routePath.length > 0) {
+                bestAgent.routePolyline = L.polyline(bestAgent.routePath.map(p => [p.lat, p.lng]), { color: '#0ea5e9', weight: 3, opacity: 0.7, dashArray: '5, 5' }).addTo(simulationMap);
+            }
+            if (orderMarkers[order.id]) {
+                orderMarkers[order.id].setIcon(createOrderIcon(order.id, 'assigned')).setPopupContent(`<b>Order ${order.id}</b><br>Status: Assigned (Agent ${bestAgent.id})<br>ETA: ${order.etaMinutes.toFixed(1)} min`);
+            }
+            updateAgentPopup(bestAgent); // Update popup with new status
+        } else {
+            if (!order.noAgentLogged) {
+                logMessage(`No available agent for Order ${order.id}. Order remains pending.`, 'SYS_WARN', simulationLogEl, currentSimulationTime);
+                order.noAgentLogged = true;
+            }
+        }
+    });
+}
+
+function updateAgentsMovementAndStatus() {
+    const effectiveTraffic = getSimParameter('enableDynamicTraffic') ? getSimParameter('currentDynamicTrafficFactor') : getSimParameter('baseTrafficFactor');
+    agents.forEach(agent => {
+        agent.totalTime += MINUTES_PER_SIMULATION_STEP;
+        if (agent.status !== 'available') {
+            agent.busyTime += MINUTES_PER_SIMULATION_STEP;
+            stats.totalAgentActiveTime += MINUTES_PER_SIMULATION_STEP;
+            agent.timeContinuouslyActive += MINUTES_PER_SIMULATION_STEP;
+        } else {
+            agent.timeSpentIdle += MINUTES_PER_SIMULATION_STEP; // Agent is idle
+        }
+
+        updateAgentFatigue(agent); // Check and apply/recover fatigue each step
+        const agentEffectiveSpeed = agent.baseSpeedKmph * agent.currentFatigueFactor;
+
+
+        if (agent.status === 'available') return;
+
+        if (agent.status === 'at_store') {
+            agent.timeSpentAtStore += MINUTES_PER_SIMULATION_STEP;
+            agent.timeSpentHandling += MINUTES_PER_SIMULATION_STEP;
+            stats.totalAgentHandlingTime += MINUTES_PER_SIMULATION_STEP;
+            if (agent.timeSpentAtStore >= getSimParameter('handlingTime')) {
+                const order = orders.find(o => o.id === agent.assignedOrderId);
+                if (order && order.location) {
+                    agent.status = 'to_customer';
+                    const waypointsToCustomer = generateWaypoints(defaultDarkStoreLocationSim, order.location, getSimParameter('routeWaypoints'));
+                    agent.routePath = [defaultDarkStoreLocationSim, ...waypointsToCustomer, order.location];
+                    order.status = 'out_for_delivery';
+                    logMessage(`Agent ${agent.id} LEFT store with Order ${order.id}. En route to customer.`, 'AGENT_DEPART', simulationLogEl, currentSimulationTime);
+                    agent.currentLegIndex = 0; agent.legProgress = 0; agent.timeSpentAtStore = 0;
+                    if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline);
+                    if (simulationMap && agent.routePath.length > 1) {
+                        agent.routePolyline = L.polyline(agent.routePath.map(p => [p.lat, p.lng]), { color: '#16a34a', weight: 3, opacity: 0.8 }).addTo(simulationMap);
+                    }
+                    updateAgentPopup(agent);
+                    if (orderMarkers[order.id]) { orderMarkers[order.id].setIcon(createOrderIcon(order.id, 'assigned')); }
+                } else {
+                    logMessage(`Order ${agent.assignedOrderId} not found for Agent ${agent.id} at store. Agent becoming available.`, 'SYS_ERROR', simulationLogEl, currentSimulationTime);
+                    agent.status = 'available'; agent.assignedOrderId = null; agent.timeBecameAvailableAt = currentSimulationTime; agent.timeContinuouslyActive = 0; agent.consecutiveDeliveriesSinceRest = 0;
+                    if (agent.routePolyline && simulationMap) { simulationMap.removeLayer(agent.routePolyline); agent.routePolyline = null; }
+                    updateAgentPopup(agent);
+                }
+            }
+            return;
+        }
+        if (agent.status === 'to_store' || agent.status === 'to_customer') {
+            stats.totalAgentTravelTime += MINUTES_PER_SIMULATION_STEP;
+            agent.timeSpentTraveling += MINUTES_PER_SIMULATION_STEP;
+        }
+        if (!agent.routePath || agent.routePath.length < 2 || agent.currentLegIndex >= agent.routePath.length - 1) return;
+        const startPoint = agent.routePath[agent.currentLegIndex];
+        const endPoint = agent.routePath[agent.currentLegIndex + 1];
+        if (!startPoint || !endPoint || typeof startPoint.lat !== 'number' || typeof endPoint.lat !== 'number') {
+            logMessage(`Invalid route for Agent ${agent.id}. Resetting agent.`, 'SYS_ERROR', simulationLogEl, currentSimulationTime);
+            agent.status = 'available'; agent.assignedOrderId = null; agent.timeBecameAvailableAt = currentSimulationTime; agent.timeContinuouslyActive = 0; agent.consecutiveDeliveriesSinceRest = 0;
+            if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline); 
+            updateAgentPopup(agent);
+            return;
+        }
+        const legDistanceKm = getDistanceKm(startPoint, endPoint);
+        let distanceCoveredThisStepKm = 0;
+        if (legDistanceKm < 0.001) {
+            agent.legProgress = 1;
+        } else {
+            distanceCoveredThisStepKm = (agentEffectiveSpeed * effectiveTraffic / 60) * MINUTES_PER_SIMULATION_STEP;
+            agent.legProgress += (distanceCoveredThisStepKm / legDistanceKm);
+            agent.distanceTraveledThisSimKm += distanceCoveredThisStepKm;
+            stats.totalDistanceTraveledByAgentsKm += distanceCoveredThisStepKm;
+        }
+        if (agent.legProgress >= 1) {
+            agent.legProgress = 0;
+            agent.location = { ...endPoint };
+            agent.currentLegIndex++;
+            if (agent.status === 'to_store' && agent.currentLegIndex === agent.routePath.length - 1) {
+                agent.status = 'at_store';
+                agent.timeSpentAtStore = 0;
+                logMessage(`Agent ${agent.id} ARRIVED at Dark Store for Order ${agent.assignedOrderId}.`, 'AGENT_ARRIVE_STORE', simulationLogEl, currentSimulationTime);
+                const order = orders.find(o => o.id === agent.assignedOrderId);
+                if (order) order.status = 'at_store_with_agent';
+                updateAgentPopup(agent);
+            } else if (agent.status === 'to_customer' && agent.currentLegIndex === agent.routePath.length - 1) {
+                const deliveredOrder = orders.find(o => o.id === agent.assignedOrderId);
+                const masterOrderRecord = allGeneratedOrdersThisRun.find(o => o.id === agent.assignedOrderId);
+
+                if (deliveredOrder && deliveredOrder.location.lat === agent.location.lat && deliveredOrder.location.lng === agent.location.lng) {
+                    deliveredOrder.status = 'delivered';
+                    stats.totalOrdersDelivered++;
+                    const deliveryDuration = currentSimulationTime - deliveredOrder.timePlaced;
+                    if(masterOrderRecord) masterOrderRecord.deliveryDuration = deliveryDuration;
+
+                    stats.sumDeliveryTimes += deliveryDuration;
+                    stats.allDeliveryTimes.push(deliveryDuration);
+                    logMessage(`Agent ${agent.id} DELIVERED Order ${agent.assignedOrderId}. Delivery time: ${deliveryDuration.toFixed(1)} min.`, 'ORDER_DELIVER', simulationLogEl, currentSimulationTime);
+
+                    deliveredOrderDataForHeatmap.push({
+                        lat: deliveredOrder.location.lat,
+                        lng: deliveredOrder.location.lng,
+                        value: deliveryDuration
+                    });
+
+                    if (orderMarkers[agent.assignedOrderId] && simulationMap) { simulationMap.removeLayer(orderMarkers[agent.assignedOrderId]); delete orderMarkers[agent.assignedOrderId]; }
+                    agent.deliveriesMade++;
+                    agent.consecutiveDeliveriesSinceRest++; // Increment before checking fatigue on becoming available
+                    agent.status = 'available';
+                    agent.timeBecameAvailableAt = currentSimulationTime;
+                    agent.timeContinuouslyActive = 0; // Reset active timer
+                    logMessage(`Agent ${agent.id} now AVAILABLE. Total deliveries: ${agent.deliveriesMade}.`, 'AGENT_AVAIL', simulationLogEl, currentSimulationTime);
+                    if (agent.routePolyline && simulationMap) { simulationMap.removeLayer(agent.routePolyline); agent.routePolyline = null; }
+                    agent.assignedOrderId = null; agent.routePath = []; agent.currentLegIndex = 0;
+                    updateAgentPopup(agent);
+                    updateAgentFatigue(agent); // Check fatigue/recovery now that they are available
+                } else {
+                     logMessage(`Agent ${agent.id} arrived for Order ${agent.assignedOrderId}, but location mismatch or order not found. Agent becoming available.`, 'SYS_ERROR', simulationLogEl, currentSimulationTime);
+                    agent.status = 'available'; agent.assignedOrderId = null; agent.routePath = []; agent.currentLegIndex = 0; agent.timeBecameAvailableAt = currentSimulationTime; agent.timeContinuouslyActive = 0; agent.consecutiveDeliveriesSinceRest = 0;
+                    updateAgentPopup(agent);
+                }
+            }
+        } else {
+            const currentLegStart = agent.routePath[agent.currentLegIndex];
+            const currentLegEnd = agent.routePath[agent.currentLegIndex + 1];
+            if (currentLegStart && currentLegEnd && typeof currentLegStart.lat === 'number' && typeof currentLegEnd.lat === 'number') {
+                const newLat = currentLegStart.lat + (currentLegEnd.lat - currentLegStart.lat) * agent.legProgress;
+                const newLng = currentLegStart.lng + (currentLegEnd.lng - currentLegStart.lng) * agent.legProgress;
+                agent.location = { lat: newLat, lng: newLng };
+            }
+        }
+        if (agentMarkers[agent.id] && simulationMap && agent.location && typeof agent.location.lat === 'number') {
+            agentMarkers[agent.id].setLatLng([agent.location.lat, agent.location.lng]);
+        }
+    });
+}
+
+function simulationStep() {
+    if (!isSimulationRunning) return;
+    currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
+    updateSimTimeDisplayLocal(currentSimulationTime);
+    updateSimTimeDisplay(currentSimulationTime); // Call imported UI update
+
+    if (getSimParameter('enableDynamicTraffic') && (currentSimulationTime % DYNAMIC_TRAFFIC_UPDATE_INTERVAL === 0 || currentSimulationTime === MINUTES_PER_SIMULATION_STEP)) {
+        const factors = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
+        setSimParameter('currentDynamicTrafficFactor', factors[Math.floor(Math.random() * factors.length)]);
+        logMessage(`Dynamic traffic condition changed. New factor: ${getSimParameter('currentDynamicTrafficFactor').toFixed(1)}x`, "TRAFFIC", simulationLogEl, currentSimulationTime);
+        updateTrafficStatusDisplay(getSimParameter('currentDynamicTrafficFactor'));
+    }
+
+    const orderGenProb = getSimParameter('currentOrderGenerationProbability');
+    if (Math.random() < orderGenProb) {
+        generateOrder();
+    }
+
+    updateAgentsMovementAndStatus();
+    assignOrders();
+    updateAgentStatusListUI();
+    updatePendingOrdersListUI();
+    updateSimulationStatsUI();
+    updateLiveCharts();
+    orders = orders.filter(o => o.status !== 'delivered');
+}
+
+function initializeLiveCharts() {
+    const chartOptionsBase = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 200 },
+        // Scales will be added per chart
+    };
+
+    initializeChart('pendingOrdersChart', 'pendingOrders', {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Pending Orders', data: [], borderColor: 'rgb(255, 99, 132)', tension: 0.1, fill: false }] },
+        options: {...chartOptionsBase, scales: { y: { beginAtZero: true, suggestedMax: 10 }, x: { title: { display: true, text: 'Sim Time (min)'}}} }
+    });
+    initializeChart('activeAgentsChart', 'activeAgents', {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Active Agents', data: [], borderColor: 'rgb(54, 162, 235)', tension: 0.1, fill: false }] },
+        options: {...chartOptionsBase, scales: { y: { beginAtZero: true, suggestedMax: (getSimParameter('numAgents') || 5) + 2 }, x: { title: { display: true, text: 'Sim Time (min)'}}} }
+    });
+}
+
+// --- EXPORTED FUNCTIONS for other modules ---
+export function getCurrentSimulationParameters() {
+    return { ...simParams };
+}
+export function getCurrentSimulationStats() {
+    if (!isSimulationRunning && currentSimulationTime > 0) {
+        agents.forEach(agent => {
+            if (agent.status === 'available') {
+                // Update idle time one last time if sim ended while agent was idle
+                // This assumes timeBecameAvailableAt was set correctly
+                agent.timeSpentIdle += (currentSimulationTime - agent.timeBecameAvailableAt);
+                agent.timeBecameAvailableAt = currentSimulationTime; 
+            }
+        });
+    }
+    return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap], agentsData: [...agents], allOrdersData: [...allGeneratedOrdersThisRun] };
+}
+
+// This function MUST be exported for demandProfiles.js
+export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
+    if (!orderGenerationProfileSelectEl) {
+        orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
+        if (!orderGenerationProfileSelectEl) {
+            console.warn("[Sim] Order generation profile select element ('orderGenerationProfileSelect') not found during populate.");
+            return;
+        }
+    }
+
+    const currentVal = orderGenerationProfileSelectEl.value;
+    const defaultOptions = Array.from(orderGenerationProfileSelectEl.options).filter(opt => opt.value.startsWith('default_'));
+    orderGenerationProfileSelectEl.innerHTML = '';
+    defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
+
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported
+    
+    profilesToUse.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = `custom_${profile.name}`;
+        option.textContent = `Custom: ${profile.name}`;
+        orderGenerationProfileSelectEl.appendChild(option);
+    });
+
+    if (Array.from(orderGenerationProfileSelectEl.options).some(opt => opt.value === currentVal)) {
+        orderGenerationProfileSelectEl.value = currentVal;
+    } else {
+        orderGenerationProfileSelectEl.value = 'default_uniform';
+    }
+    setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
+}
+
+// Main initialization function for this module, called by navigation.js
+export function initializeSimulationSection() {
+    agentStatusListEl = document.getElementById('agentStatusList');
+    pendingOrdersListEl = document.getElementById('pendingOrdersList');
+    simulationLogEl = document.getElementById('simulationLog');
+    startSimBtnEl = document.getElementById('startSimBtn');
+    pauseSimBtnEl = document.getElementById('pauseSimBtn');
+    resetSimBtnEl = document.getElementById('resetSimBtn');
+    orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
+    uniformOrderRadiusContainerEl = document.getElementById('uniformOrderRadiusContainer');
+    defaultOrderFocusRadiusContainerEl = document.getElementById('defaultOrderFocusRadiusContainer');
+    defaultOrderSpreadContainerEl = document.getElementById('defaultOrderSpreadContainer');
+    statsTotalOrdersGeneratedEl = document.getElementById('statsTotalOrdersGenerated');
+    statsTotalOrdersDeliveredEl = document.getElementById('statsTotalOrdersDelivered');
+    statsAvgDeliveryTimeEl = document.getElementById('statsAvgDeliveryTime');
+    statsMinDeliveryTimeEl = document.getElementById('statsMinDeliveryTime');
+    statsMaxDeliveryTimeEl = document.getElementById('statsMaxDeliveryTime');
+    statsStdDevDeliveryTimeEl = document.getElementById('statsStdDevDeliveryTime');
+    statsAvgOrderWaitTimeEl = document.getElementById('statsAvgOrderWaitTime');
+    statsAvgAgentUtilizationEl = document.getElementById('statsAvgAgentUtilization');
+    statsTotalAgentTravelTimeEl = document.getElementById('statsTotalAgentTravelTime');
+    statsTotalAgentHandlingTimeEl = document.getElementById('statsTotalAgentHandlingTime');
+    statsTotalSimTimeEl = document.getElementById('statsTotalSimTime');
+    statsTotalAgentLaborCostEl = document.getElementById('statsTotalAgentLaborCost');
+    statsTotalTravelCostEl = document.getElementById('statsTotalTravelCost');
+    statsTotalFixedDeliveryCostsEl = document.getElementById('statsTotalFixedDeliveryCosts');
+    statsOverallTotalOperationalCostEl = document.getElementById('statsOverallTotalOperationalCost');
+    statsAverageCostPerOrderEl = document.getElementById('statsAverageCostPerOrder');
+    saveCurrentSimScenarioBtnEl = document.getElementById('saveCurrentSimScenarioBtn');
+    toggleDeliveryTimeHeatmapCheckboxEl = document.getElementById('toggleDeliveryTimeHeatmap');
+    exportSimResultsBtnEl = document.getElementById('exportSimResultsBtn');
+
+    simulationMap = initializeMap('simulationMap', defaultDarkStoreLocationSim, 13, 'simulation');
+    if (simulationMap) {
+        simDarkStoreMarker = L.marker([defaultDarkStoreLocationSim.lat, defaultDarkStoreLocationSim.lng], { icon: darkStoreIcon })
+            .addTo(simulationMap)
+            .bindPopup('<b>Dark Store Chandigarh (Simulation)</b><br>Central Hub')
+            .openPopup();
+
+        if (typeof L.heatLayer === 'function') {
+            deliveryTimeHeatmapLayer = L.heatLayer([], {
+                radius: 25, maxOpacity: 0.7, scaleRadius: true, useLocalExtrema: true, valueField: 'value'
+            });
+        } else {
+            console.error("[Sim] CRITICAL: L.heatLayer is NOT a function. leaflet-heatmap.js might not be loaded correctly or is missing. Heatmap functionality will be disabled.");
+            deliveryTimeHeatmapLayer = null;
+            if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
+        }
+    } else {
+        console.error("[Sim] CRITICAL: Simulation map failed to initialize!");
+        if(toggleDeliveryTimeHeatmapCheckboxEl) toggleDeliveryTimeHeatmapCheckboxEl.disabled = true;
+    }
+
+    initializeLiveCharts();
+
+    startSimBtnEl?.addEventListener('click', startSimulation);
+    pauseSimBtnEl?.addEventListener('click', pauseSimulation);
+    resetSimBtnEl?.addEventListener('click', resetSimulation);
+    saveCurrentSimScenarioBtnEl?.addEventListener('click', saveCurrentSimulationScenario);
+    toggleDeliveryTimeHeatmapCheckboxEl?.addEventListener('change', toggleDeliveryTimeHeatmapDisplay);
+    exportSimResultsBtnEl?.addEventListener('click', exportSimulationResultsToCSV);
+
+    orderGenerationProfileSelectEl?.addEventListener('change', () => {
+        setSimParameter('orderGenerationProfile', orderGenerationProfileSelectEl.value);
+    });
+    document.getElementById('routeWaypointsSelect')?.addEventListener('change', (e) => setSimParameter('routeWaypoints', parseInt(e.target.value)));
+    document.getElementById('manualTrafficControl')?.addEventListener('change', (e) => {
+        setSimParameter('baseTrafficFactor', parseFloat(e.target.value));
+        if (!getSimParameter('enableDynamicTraffic')) {
+            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
+        }
+    });
+    document.getElementById('enableDynamicTraffic')?.addEventListener('change', (e) => {
+        setSimParameter('enableDynamicTraffic', e.target.checked);
+        if (!e.target.checked) {
+            updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
+        } else {
+            logMessage('Dynamic traffic enabled. Fluctuations will apply.', "TRAFFIC", simulationLogEl, currentSimulationTime);
+        }
+    });
+
+    populateOrderGenerationProfileSelectorSim();
+    resetSimulationState();
+    toggleSimConfigLock(false);
+    if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
+}
+
+function exportSimulationResultsToCSV() {
+    if (currentSimulationTime === 0 && stats.totalOrdersGenerated === 0) {
+        alert("No simulation data to export. Please run a simulation first.");
+        return;
+    }
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Simulation Parameters\r\n";
+    const params = getCurrentSimulationParameters();
+    for (const key in params) {
+        if (params.hasOwnProperty(key)) {
+            csvContent += `${key},${params[key]}\r\n`;
+        }
+    }
+    csvContent += "\r\n";
+    csvContent += "Overall Statistics\r\n";
+    const currentStats = getCurrentSimulationStats();
+    const overallStatDisplayOrder = [
+        'currentSimTime', 'totalOrdersGenerated', 'totalOrdersDelivered',
+        'sumDeliveryTimes', 'avgDeliveryTime', 'minDeliveryTime', 'maxDeliveryTime', 'stdDevDeliveryTime',
+        'sumOrderWaitTimes', 'avgOrderWaitTime', 'countAssignedOrders',
+        'totalAgentTravelTime', 'totalAgentHandlingTime', 'totalAgentActiveTime', 'avgAgentUtilization',
+        'totalDistanceTraveledByAgentsKm',
+        'totalAgentLaborCost', 'totalTravelCost', 'totalFixedDeliveryCosts',
+        'overallTotalOperationalCost', 'averageCostPerOrder'
+    ];
+    const avgDeliveryTime = currentStats.totalOrdersDelivered > 0 ? (currentStats.sumDeliveryTimes / currentStats.totalOrdersDelivered) : NaN;
+    const minDeliveryTime = currentStats.allDeliveryTimes.length > 0 ? Math.min(...currentStats.allDeliveryTimes) : NaN;
+    const maxDeliveryTime = currentStats.allDeliveryTimes.length > 0 ? Math.max(...currentStats.allDeliveryTimes) : NaN;
+    const stdDevDeliveryTime = calculateStdDev(currentStats.allDeliveryTimes, avgDeliveryTime);
+    const avgOrderWaitTime = currentStats.countAssignedOrders > 0 ? (currentStats.sumOrderWaitTimes / currentStats.countAssignedOrders) : NaN;
+    let totalAgentPossibleTime = 0;
+    let totalAgentActualBusyTime = 0;
+    currentStats.agentsData.forEach(agent => {
+        totalAgentPossibleTime += agent.totalTime;
+        totalAgentActualBusyTime += agent.busyTime;
+    });
+    const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime) : NaN;
+    const totalAgentLaborCost = (currentStats.totalAgentActiveTime / 60) * params.agentCostPerHour;
+    const totalTravelCost = currentStats.totalDistanceTraveledByAgentsKm * params.costPerKmTraveled;
+    const totalFixedDeliveryCosts = currentStats.totalOrdersDelivered * params.fixedCostPerDelivery;
+    const overallTotalOperationalCost = totalAgentLaborCost + totalTravelCost + totalFixedDeliveryCosts;
+    const averageCostPerOrder = currentStats.totalOrdersDelivered > 0 ? (overallTotalOperationalCost / currentStats.totalOrdersDelivered) : NaN;
+    const derivedStats = {
+        avgDeliveryTime: isNaN(avgDeliveryTime) ? "N/A" : avgDeliveryTime.toFixed(1),
+        minDeliveryTime: isNaN(minDeliveryTime) ? "N/A" : minDeliveryTime.toFixed(1),
+        maxDeliveryTime: isNaN(maxDeliveryTime) ? "N/A" : maxDeliveryTime.toFixed(1),
+        stdDevDeliveryTime: isNaN(stdDevDeliveryTime) ? "N/A" : stdDevDeliveryTime.toFixed(1),
+        avgOrderWaitTime: isNaN(avgOrderWaitTime) ? "N/A" : avgOrderWaitTime.toFixed(1),
+        avgAgentUtilization: isNaN(avgAgentUtilization) ? "N/A" : (avgAgentUtilization * 100).toFixed(1) + "%",
+        totalAgentLaborCost: totalAgentLaborCost.toFixed(2),
+        totalTravelCost: totalTravelCost.toFixed(2),
+        totalFixedDeliveryCosts: totalFixedDeliveryCosts.toFixed(2),
+        overallTotalOperationalCost: overallTotalOperationalCost.toFixed(2),
+        averageCostPerOrder: isNaN(averageCostPerOrder) ? "N/A" : averageCostPerOrder.toFixed(2),
+    };
+    overallStatDisplayOrder.forEach(key => {
+        let value = currentStats[key];
+        if (derivedStats.hasOwnProperty(key)) {
+            value = derivedStats[key];
+        }
+        if (value === undefined || value === null || (typeof value === 'number' && isNaN(value))) {
+            value = "N/A";
+        } else if (Array.isArray(value)) {
+            value = `"${value.join(';')}"`;
+        }
+        csvContent += `${key},${value}\r\n`;
+    });
+    csvContent += "\r\n";
+    csvContent += "Agent Performance\r\n";
+    csvContent += "Agent ID,Deliveries Made,Total Distance (km),Total Time (min),Busy Time (min),Idle Time (min),Handling Time (min),Traveling Time (min),Utilization (%)\r\n";
+    currentStats.agentsData.forEach(agent => {
+        const utilization = agent.totalTime > 0 ? (agent.busyTime / agent.totalTime * 100).toFixed(1) : "0.0";
+        const idleTime = agent.totalTime - agent.busyTime;
+        csvContent += `${agent.id},${agent.deliveriesMade},${agent.distanceTraveledThisSimKm.toFixed(2)},${agent.totalTime},${agent.busyTime},${idleTime},${agent.timeSpentHandling || 0},${agent.timeSpentTraveling || 0},${utilization}\r\n`;
+    });
+    csvContent += "\r\n";
+    csvContent += "Delivered Order Details\r\n";
+    csvContent += "Order ID,Time Placed (min),Assignment Time (min),Delivery Time (min),Delivery Duration (min),Latitude,Longitude\r\n";
+    currentStats.allOrdersData.filter(order => order.status === 'delivered').forEach(order => {
+        const deliveryTime = (order.deliveryDuration !== null && order.deliveryDuration !== undefined) ? order.timePlaced + order.deliveryDuration : "N/A";
+        const deliveryDuration = order.deliveryDuration !== null && order.deliveryDuration !== undefined ? order.deliveryDuration.toFixed(1) : "N/A";
+        const assignmentTime = order.assignmentTime !== null ? order.assignmentTime : "N/A";
+        csvContent += `${order.id},${order.timePlaced},${assignmentTime},${deliveryTime === "N/A" ? "N/A" : deliveryTime.toFixed(0)},${deliveryDuration},${order.location.lat.toFixed(5)},${order.location.lng.toFixed(5)}\r\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `simulation_results_T${currentSimulationTime}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    logMessage("Simulation results exported to CSV.", 'SYSTEM', simulationLogEl, currentSimulationTime);
+}
