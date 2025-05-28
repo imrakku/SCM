@@ -19,7 +19,7 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
-// getCustomDemandProfiles is imported here because populateOrderGenerationProfileSelectorSim might use it as a fallback
+// getCustomDemandProfiles is imported here because populateOrderGenerationProfileSelectorSim uses it.
 import { getCustomDemandProfiles } from './demandProfiles.js';
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
@@ -149,7 +149,7 @@ function createAgent() {
         timeContinuouslyActive: 0,
         timeBecameAvailableAt: 0,
 
-        speedKmph: baseSpeed, // This will be agentEffectiveSpeed in calculations
+        speedKmph: baseSpeed,
         status: 'available', assignedOrderId: null,
         routePath: [], currentLegIndex: 0, legProgress: 0, timeSpentAtStore: 0,
         deliveriesMade: 0, totalTime: 0, busyTime: 0, routePolyline: null,
@@ -157,7 +157,7 @@ function createAgent() {
         timeSpentIdle: 0, timeSpentTraveling: 0, timeSpentHandling: 0,
     };
     agents.push(newAgent);
-    if (simulationMap && agentMarkers) { // Ensure agentMarkers is initialized
+    if (simulationMap && agentMarkers) {
         const effectiveSpeed = newAgent.baseSpeedKmph * newAgent.currentFatigueFactor;
         agentMarkers[agentId] = L.marker([newAgent.location.lat, newAgent.location.lng], { icon: createAgentIcon(agentId, false) })
             .addTo(simulationMap)
@@ -179,13 +179,11 @@ function updateAgentPopup(agent) {
     }
 }
 
-
 function updateSimTimeDisplayLocal(time) {
     const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
     if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
     if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
 }
-
 
 function updateAgentStatusListUI() {
     if (!agentStatusListEl) return;
@@ -431,26 +429,30 @@ function updateDeliveryTimeHeatmapData() {
 }
 
 // --- AGENT FATIGUE LOGIC ---
+const FATIGUE_UPDATE_INTERVAL = 5; // Check fatigue every 5 simulation minutes for active agents
 function updateAgentFatigue(agent) {
+    if (currentSimulationTime % FATIGUE_UPDATE_INTERVAL !== 0 && agent.status !== 'available') return; // Only check periodically for active, or on becoming available
+
     let fatigueStatusChanged = false;
     const previousFatigueFactor = agent.currentFatigueFactor;
 
-    if (agent.status !== 'available' && 
-        (agent.consecutiveDeliveriesSinceRest >= FATIGUE_CONSECUTIVE_DELIVERIES_THRESHOLD || 
-         agent.timeContinuouslyActive >= FATIGUE_CONTINUOUSLY_ACTIVE_THRESHOLD_MIN)) {
-        
-        if (agent.currentFatigueFactor > MIN_FATIGUE_FACTOR) {
-            agent.currentFatigueFactor = Math.max(MIN_FATIGUE_FACTOR, agent.currentFatigueFactor - FATIGUE_REDUCTION_STEP);
-            fatigueStatusChanged = true;
+    if (agent.status !== 'available') {
+        if (agent.consecutiveDeliveriesSinceRest >= FATIGUE_CONSECUTIVE_DELIVERIES_THRESHOLD || 
+            agent.timeContinuouslyActive >= FATIGUE_CONTINUOUSLY_ACTIVE_THRESHOLD_MIN) {
+            if (agent.currentFatigueFactor > MIN_FATIGUE_FACTOR) {
+                agent.currentFatigueFactor = Math.max(MIN_FATIGUE_FACTOR, agent.currentFatigueFactor - FATIGUE_REDUCTION_STEP);
+                fatigueStatusChanged = true;
+            }
         }
-    }
-    else if (agent.status === 'available' && agent.currentFatigueFactor < 1.0) {
-        const idleTime = currentSimulationTime - agent.timeBecameAvailableAt;
-        if (idleTime >= FATIGUE_RECOVERY_IDLE_TIME_MIN) {
+    } else { // Agent is available
+        const idleTimeSinceLastAvailable = currentSimulationTime - agent.timeBecameAvailableAt;
+        if (agent.currentFatigueFactor < 1.0 && idleTimeSinceLastAvailable >= FATIGUE_RECOVERY_IDLE_TIME_MIN) {
             agent.currentFatigueFactor = Math.min(1.0, agent.currentFatigueFactor + FATIGUE_RECOVERY_STEP);
+            // Reset counters once recovery starts or full recovery is achieved
             if (agent.currentFatigueFactor === 1.0 || agent.currentFatigueFactor > previousFatigueFactor) {
                  agent.consecutiveDeliveriesSinceRest = 0;
-                 agent.timeBecameAvailableAt = currentSimulationTime;
+                 // agent.timeContinuouslyActive is reset when agent becomes available
+                 agent.timeBecameAvailableAt = currentSimulationTime; // Reset idle timer for next recovery check
             }
             fatigueStatusChanged = true;
         }
