@@ -19,6 +19,7 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
+// getCustomDemandProfiles is imported here because populateOrderGenerationProfileSelectorSim might use it as a fallback
 import { getCustomDemandProfiles } from './demandProfiles.js';
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
@@ -28,8 +29,8 @@ import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 let simulationMap;
 let simDarkStoreMarker;
 let agents = [];
-let orders = [];
-let allGeneratedOrdersThisRun = [];
+let orders = []; // Holds active orders
+let allGeneratedOrdersThisRun = []; // Holds ALL orders generated in the current run, including delivered ones
 let agentMarkers = {};
 let orderMarkers = {};
 let simulationIntervalId;
@@ -65,7 +66,7 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40,
+    currentOrderGenerationProbability: 0.40, // Default for "Medium"
 };
 
 export const orderGenerationProbabilities = {
@@ -94,7 +95,7 @@ let liveChartData = {
     activeAgentsHistory: [],
 };
 
-// --- DOM Elements ---
+// --- DOM Elements (will be cached in initializeSimulationSection) ---
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -107,6 +108,8 @@ let toggleDeliveryTimeHeatmapCheckboxEl;
 let exportSimResultsBtnEl;
 
 
+// --- Function Definitions ---
+
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
@@ -117,6 +120,7 @@ export function setSimParameter(key, value) {
         console.warn(`[Sim] Attempted to set unknown simulation parameter: ${key}`);
     }
 }
+
 export function getSimParameter(key) {
     return simParams.hasOwnProperty(key) ? simParams[key] : undefined;
 }
@@ -142,31 +146,30 @@ function createAgent() {
         baseSpeedKmph: baseSpeed,
         currentFatigueFactor: 1.0,
         consecutiveDeliveriesSinceRest: 0,
-        timeContinuouslyActive: 0, // Time spent in non-available states since last break/start
-        timeBecameAvailableAt: 0, // When agent last became available (set to currentSimulationTime)
+        timeContinuouslyActive: 0, 
+        timeBecameAvailableAt: 0, 
 
-        speedKmph: baseSpeed, // This will be agentEffectiveSpeed in calculations
+        speedKmph: baseSpeed, 
         status: 'available', 
         assignedOrderId: null,
-        currentOrderETA: null, // ETA for the current order
-        currentTaskStartTime: 0, // When the current task (to_store, at_store, to_customer) started
+        currentOrderETA: null, 
+        currentTaskStartTime: 0, 
 
         routePath: [], currentLegIndex: 0, legProgress: 0, timeSpentAtStore: 0,
         
-        // Cumulative stats for this agent
         deliveriesMade: 0, 
-        totalTime: 0,         // Total sim time this agent has existed
-        busyTime: 0,          // Total time not 'available'
-        timeSpentIdle: 0,     // Total time 'available'
-        timeSpentTraveling: 0,// Total time in 'to_store' or 'to_customer'
-        timeSpentHandling: 0, // Total time in 'at_store' (actual handling)
+        totalTime: 0,         
+        busyTime: 0,          
+        timeSpentIdle: 0,     
+        timeSpentTraveling: 0,
+        timeSpentHandling: 0, 
         distanceTraveledThisSimKm: 0,
         
         routePolyline: null,
     };
     agents.push(newAgent);
-    if (simulationMap && agentMarkers) {
-        updateAgentPopup(newAgent); // Use a common function to create/update popup
+    if (simulationMap && agentMarkers) { 
+        updateAgentPopup(newAgent); 
     }
 }
 
@@ -182,7 +185,8 @@ function updateAgentPopup(agent) {
     if (agent.assignedOrderId !== null) {
         popupContent += ` (Order: ${agent.assignedOrderId})`;
         if (agent.currentOrderETA !== null) {
-            const remainingETA = Math.max(0, agent.currentOrderETA - (currentSimulationTime - (agent.assignmentTime || agent.currentTaskStartTime))).toFixed(1);
+            const assignmentTimeForETA = agent.assignmentTime !== null ? agent.assignmentTime : agent.currentTaskStartTime;
+            const remainingETA = Math.max(0, agent.currentOrderETA - (currentSimulationTime - assignmentTimeForETA)).toFixed(1);
             popupContent += `<br>Order ETA: ${remainingETA} min (Original: ${agent.currentOrderETA.toFixed(1)} min)`;
         }
     }
@@ -208,6 +212,7 @@ function updateSimTimeDisplayLocal(time) {
     if (simTimeDisplaySpan) simTimeDisplaySpan.textContent = time;
     if (statsTotalSimTimeEl) statsTotalSimTimeEl.textContent = time + " min";
 }
+
 
 function updateAgentStatusListUI() {
     if (!agentStatusListEl) return;
@@ -260,7 +265,7 @@ function updateSimulationStatsUI() {
     let totalAgentPossibleTime = 0;
     let totalAgentActualBusyTime = 0;
     agents.forEach(agent => {
-        totalAgentPossibleTime += agent.totalTime; // totalTime is effectively sim time for this agent
+        totalAgentPossibleTime += agent.totalTime;
         totalAgentActualBusyTime += agent.busyTime;
     });
     const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime * 100).toFixed(1) : "N/A";
@@ -364,8 +369,8 @@ function resetSimulationState() {
         createAgent();
     }
 
-    updateSimTimeDisplayLocal(currentSimulationTime); // For stats total sim time
-    updateSimTimeDisplay(currentSimulationTime); // For main display from uiElements
+    updateSimTimeDisplayLocal(currentSimulationTime);
+    updateSimTimeDisplay(currentSimulationTime); 
     updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
     updateAgentStatusListUI();
     updatePendingOrdersListUI();
@@ -457,7 +462,7 @@ function updateDeliveryTimeHeatmapData() {
 }
 
 // --- AGENT FATIGUE LOGIC ---
-const FATIGUE_UPDATE_INTERVAL = 5;
+// const FATIGUE_UPDATE_INTERVAL = 5; // Defined at the top
 function updateAgentFatigue(agent) {
     if (currentSimulationTime % FATIGUE_UPDATE_INTERVAL !== 0 && agent.status !== 'available') return;
 
@@ -685,7 +690,7 @@ function calculateETA(agent, orderLocation) {
     const agentToStoreDistKm = getDistanceKm(agent.location, defaultDarkStoreLocationSim);
     const storeToOrderDistKm = getDistanceKm(defaultDarkStoreLocationSim, orderLocation);
     const totalTravelDistKm = agentToStoreDistKm + storeToOrderDistKm;
-    const travelTimeHours = totalTravelDistKm / (agentEffectiveSpeed * effectiveTraffic); // Use agentEffectiveSpeed
+    const travelTimeHours = totalTravelDistKm / (agentEffectiveSpeed * effectiveTraffic);
     const travelTimeMinutes = travelTimeHours * 60;
     return travelTimeMinutes + getSimParameter('handlingTime');
 }
@@ -704,117 +709,17 @@ function assignOrders() {
             order.status = 'assigned_to_agent_going_to_store';
             order.assignedAgentId = bestAgent.id;
             order.etaMinutes = shortestETA;
-            order.assignmentTime = currentSimulationTime;
+            order.assignmentTime = currentSimulationTime; // Record assignment time on the order
             const waitTime = order.assignmentTime - order.timePlaced;
             stats.sumOrderWaitTimes += waitTime;
             stats.countAssignedOrders++;
             bestAgent.assignedOrderId = order.id;
             bestAgent.status = 'to_store';
-            bestAgent.currentTaskStartTime = currentSimulationTime; // Task starts now
-            bestAgent.currentOrderETA = shortestETA; // Store calculated ETA
+            bestAgent.currentTaskStartTime = currentSimulationTime; 
+            bestAgent.currentOrderETA = shortestETA; 
             bestAgent.timeSpentIdle += (currentSimulationTime - bestAgent.timeBecameAvailableAt);
             bestAgent.timeContinuouslyActive = 0;
             logMessage(`Agent ${bestAgent.id} assigned Order ${order.id}. ETA: ${shortestETA.toFixed(1)} min. Wait: ${waitTime} min.`, 'AGENT_ASSIGN', simulationLogEl, currentSimulationTime);
-            const waypointsToStore = generateWaypoints(bestAgent.location, defaultDarkStoreLocationSim, getSimParameter('routeWaypoints'));
-            bestAgent.routePath = [bestAgent.location, ...waypointsToStore, defaultDarkStoreLocationSim];
-            bestAgent.currentLegIndex = 0;
-            bestAgent.legProgress = 0;
-            if (bestAgent.routePolyline && simulationMap) simulationMap.removeLayer(bestAgent.routePolyline);
-            if (simulationMap && bestAgent.routePath.length > 0) {
-                bestAgent.routePolyline = L.polyline(bestAgent.routePath.map(p => [p.lat, p.lng]), { color: '#0ea5e9', weight: 3, opacity: 0.7, dashArray: '5, 5' }).addTo(simulationMap);
-            }
-            if (orderMarkers[order.id]) {
-                orderMarkers[order.id].setIcon(createOrderIcon(order.id, 'assigned')).setPopupContent(`<b>Order ${order.id}</b><br>Status: Assigned (Agent ${bestAgent.id})<br>ETA: ${order.etaMinutes.toFixed(1)} min`);
-            }
-            updateAgentPopup(bestAgent);
-        } else {
-            if (!order.noAgentLogged) {
-                logMessage(`No available agent for Order ${order.id}. Order remains pending.`, 'SYS_WARN', simulationLogEl, currentSimulationTime);
-                order.noAgentLogged = true;
-            }
-        }
-    });
-}
-
-function updateAgentsMovementAndStatus() {
-    const effectiveTraffic = getSimParameter('enableDynamicTraffic') ? getSimParameter('currentDynamicTrafficFactor') : getSimParameter('baseTrafficFactor');
-    agents.forEach(agent => {
-        agent.totalTime += MINUTES_PER_SIMULATION_STEP;
-        if (agent.status !== 'available') {
-            agent.busyTime += MINUTES_PER_SIMULATION_STEP;
-            stats.totalAgentActiveTime += MINUTES_PER_SIMULATION_STEP;
-            agent.timeContinuouslyActive += MINUTES_PER_SIMULATION_STEP;
-        } else {
-            agent.timeSpentIdle += MINUTES_PER_SIMULATION_STEP;
-        }
-
-        updateAgentFatigue(agent);
-        const agentEffectiveSpeed = agent.baseSpeedKmph * agent.currentFatigueFactor;
-
-        if (agent.status === 'available') return;
-
-        if (agent.status === 'at_store') {
-            agent.timeSpentAtStore += MINUTES_PER_SIMULATION_STEP;
-            agent.timeSpentHandling += MINUTES_PER_SIMULATION_STEP;
-            stats.totalAgentHandlingTime += MINUTES_PER_SIMULATION_STEP;
-            if (agent.timeSpentAtStore >= getSimParameter('handlingTime')) {
-                const order = orders.find(o => o.id === agent.assignedOrderId);
-                if (order && order.location) {
-                    agent.status = 'to_customer';
-                    agent.currentTaskStartTime = currentSimulationTime; // New task starts
-                    const waypointsToCustomer = generateWaypoints(defaultDarkStoreLocationSim, order.location, getSimParameter('routeWaypoints'));
-                    agent.routePath = [defaultDarkStoreLocationSim, ...waypointsToCustomer, order.location];
-                    order.status = 'out_for_delivery';
-                    logMessage(`Agent ${agent.id} LEFT store with Order ${order.id}. En route to customer.`, 'AGENT_DEPART', simulationLogEl, currentSimulationTime);
-                    agent.currentLegIndex = 0; agent.legProgress = 0; agent.timeSpentAtStore = 0;
-                    if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline);
-                    if (simulationMap && agent.routePath.length > 1) {
-                        agent.routePolyline = L.polyline(agent.routePath.map(p => [p.lat, p.lng]), { color: '#16a34a', weight: 3, opacity: 0.8 }).addTo(simulationMap);
-                    }
-                    updateAgentPopup(agent);
-                    if (orderMarkers[order.id]) { orderMarkers[order.id].setIcon(createOrderIcon(order.id, 'assigned')); }
-                } else {
-                    logMessage(`Order ${agent.assignedOrderId} not found for Agent ${agent.id} at store. Agent becoming available.`, 'SYS_ERROR', simulationLogEl, currentSimulationTime);
-                    agent.status = 'available'; agent.assignedOrderId = null; agent.timeBecameAvailableAt = currentSimulationTime; agent.timeContinuouslyActive = 0; agent.consecutiveDeliveriesSinceRest = 0; agent.currentOrderETA = null;
-                    if (agent.routePolyline && simulationMap) { simulationMap.removeLayer(agent.routePolyline); agent.routePolyline = null; }
-                    updateAgentPopup(agent);
-                }
-            }
-            return;
-        }
-        if (agent.status === 'to_store' || agent.status === 'to_customer') {
-            stats.totalAgentTravelTime += MINUTES_PER_SIMULATION_STEP;
-            agent.timeSpentTraveling += MINUTES_PER_SIMULATION_STEP;
-        }
-        if (!agent.routePath || agent.routePath.length < 2 || agent.currentLegIndex >= agent.routePath.length - 1) return;
-        const startPoint = agent.routePath[agent.currentLegIndex];
-        const endPoint = agent.routePath[agent.currentLegIndex + 1];
-        if (!startPoint || !endPoint || typeof startPoint.lat !== 'number' || typeof endPoint.lat !== 'number') {
-            logMessage(`Invalid route for Agent ${agent.id}. Resetting agent.`, 'SYS_ERROR', simulationLogEl, currentSimulationTime);
-            agent.status = 'available'; agent.assignedOrderId = null; agent.timeBecameAvailableAt = currentSimulationTime; agent.timeContinuouslyActive = 0; agent.consecutiveDeliveriesSinceRest = 0; agent.currentOrderETA = null;
-            if (agent.routePolyline && simulationMap) simulationMap.removeLayer(agent.routePolyline); 
-            updateAgentPopup(agent);
-            return;
-        }
-        const legDistanceKm = getDistanceKm(startPoint, endPoint);
-        let distanceCoveredThisStepKm = 0;
-        if (legDistanceKm < 0.001) {
-            agent.legProgress = 1;
-        } else {
-            distanceCoveredThisStepKm = (agentEffectiveSpeed * effectiveTraffic / 60) * MINUTES_PER_SIMULATION_STEP;
-            agent.legProgress += (distanceCoveredThisStepKm / legDistanceKm);
-            agent.distanceTraveledThisSimKm += distanceCoveredThisStepKm;
-            stats.totalDistanceTraveledByAgentsKm += distanceCoveredThisStepKm;
-        }
-        if (agent.legProgress >= 1) {
-            agent.legProgress = 0;
-            agent.location = { ...endPoint };
-            agent.currentLegIndex++;
-            if (agent.status === 'to_store' && agent.currentLegIndex === agent.routePath.length - 1) {
-                agent.status = 'at_store';
-                agent.currentTaskStartTime = currentSimulationTime; // New task (handling) starts
-                agent.timeSpentAtStore = 0;
-                logMessage(`Agent ${bestAgent.id} assigned Order ${order.id}. ETA: ${shortestETA.toFixed(1)} min. Wait: ${waitTime} min.`, 'AGENT_ASSIGN', simulationLogEl, currentSimulationTime);
             const waypointsToStore = generateWaypoints(bestAgent.location, defaultDarkStoreLocationSim, getSimParameter('routeWaypoints'));
             bestAgent.routePath = [bestAgent.location, ...waypointsToStore, defaultDarkStoreLocationSim];
             bestAgent.currentLegIndex = 0;
@@ -912,7 +817,7 @@ function updateAgentsMovementAndStatus() {
             agent.currentLegIndex++;
             if (agent.status === 'to_store' && agent.currentLegIndex === agent.routePath.length - 1) {
                 agent.status = 'at_store';
-                agent.currentTaskStartTime = currentSimulationTime; // New task (handling) starts
+                agent.currentTaskStartTime = currentSimulationTime; 
                 agent.timeSpentAtStore = 0;
                 logMessage(`Agent ${agent.id} ARRIVED at Dark Store for Order ${agent.assignedOrderId}.`, 'AGENT_ARRIVE_STORE', simulationLogEl, currentSimulationTime);
                 const order = orders.find(o => o.id === agent.assignedOrderId);
@@ -974,8 +879,8 @@ function updateAgentsMovementAndStatus() {
 function simulationStep() {
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
-    updateSimTimeDisplayLocal(currentSimulationTime); // For stats total sim time
-    updateSimTimeDisplay(currentSimulationTime); // For main display from uiElements
+    updateSimTimeDisplayLocal(currentSimulationTime); 
+    updateSimTimeDisplay(currentSimulationTime); // This is the one from uiElements.js
 
     if (getSimParameter('enableDynamicTraffic') && (currentSimulationTime % DYNAMIC_TRAFFIC_UPDATE_INTERVAL === 0 || currentSimulationTime === MINUTES_PER_SIMULATION_STEP)) {
         const factors = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
@@ -995,7 +900,7 @@ function simulationStep() {
     updatePendingOrdersListUI();
     updateSimulationStatsUI();
     updateLiveCharts();
-    orders = orders.filter(o => o.status !== 'delivered'); // Keep only non-delivered orders in the active 'orders' array
+    orders = orders.filter(o => o.status !== 'delivered');
 }
 
 function initializeLiveCharts() {
@@ -1022,7 +927,6 @@ export function getCurrentSimulationParameters() {
     return { ...simParams };
 }
 export function getCurrentSimulationStats() {
-    // Final update to agent idle times if simulation just ended
     if (!isSimulationRunning && currentSimulationTime > 0) {
         agents.forEach(agent => {
             if (agent.status === 'available') {
@@ -1168,7 +1072,7 @@ function exportSimulationResultsToCSV() {
     }
     csvContent += "\r\n";
     csvContent += "Overall Statistics\r\n";
-    const currentStats = getCurrentSimulationStats(); // This now includes agentsData and allOrdersData
+    const currentStats = getCurrentSimulationStats();
     const overallStatDisplayOrder = [
         'currentSimTime', 'totalOrdersGenerated', 'totalOrdersDelivered',
         'sumDeliveryTimes', 'avgDeliveryTime', 'minDeliveryTime', 'maxDeliveryTime', 'stdDevDeliveryTime',
@@ -1178,13 +1082,11 @@ function exportSimulationResultsToCSV() {
         'totalAgentLaborCost', 'totalTravelCost', 'totalFixedDeliveryCosts',
         'overallTotalOperationalCost', 'averageCostPerOrder'
     ];
-    
     const avgDeliveryTime = currentStats.totalOrdersDelivered > 0 ? (currentStats.sumDeliveryTimes / currentStats.totalOrdersDelivered) : NaN;
     const minDeliveryTime = currentStats.allDeliveryTimes.length > 0 ? Math.min(...currentStats.allDeliveryTimes) : NaN;
     const maxDeliveryTime = currentStats.allDeliveryTimes.length > 0 ? Math.max(...currentStats.allDeliveryTimes) : NaN;
     const stdDevDeliveryTime = calculateStdDev(currentStats.allDeliveryTimes, avgDeliveryTime);
     const avgOrderWaitTime = currentStats.countAssignedOrders > 0 ? (currentStats.sumOrderWaitTimes / currentStats.countAssignedOrders) : NaN;
-    
     let totalAgentPossibleTime = 0;
     let totalAgentActualBusyTime = 0;
     currentStats.agentsData.forEach(agent => {
@@ -1192,14 +1094,11 @@ function exportSimulationResultsToCSV() {
         totalAgentActualBusyTime += agent.busyTime;
     });
     const avgAgentUtilization = totalAgentPossibleTime > 0 ? (totalAgentActualBusyTime / totalAgentPossibleTime) : NaN;
-
     const totalAgentLaborCost = (currentStats.totalAgentActiveTime / 60) * params.agentCostPerHour;
     const totalTravelCost = currentStats.totalDistanceTraveledByAgentsKm * params.costPerKmTraveled;
     const totalFixedDeliveryCosts = currentStats.totalOrdersDelivered * params.fixedCostPerDelivery;
     const overallTotalOperationalCost = totalAgentLaborCost + totalTravelCost + totalFixedDeliveryCosts;
     const averageCostPerOrder = currentStats.totalOrdersDelivered > 0 ? (overallTotalOperationalCost / currentStats.totalOrdersDelivered) : NaN;
-
-
     const derivedStats = {
         avgDeliveryTime: isNaN(avgDeliveryTime) ? "N/A" : avgDeliveryTime.toFixed(1),
         minDeliveryTime: isNaN(minDeliveryTime) ? "N/A" : minDeliveryTime.toFixed(1),
@@ -1213,37 +1112,29 @@ function exportSimulationResultsToCSV() {
         overallTotalOperationalCost: overallTotalOperationalCost.toFixed(2),
         averageCostPerOrder: isNaN(averageCostPerOrder) ? "N/A" : averageCostPerOrder.toFixed(2),
     };
-
     overallStatDisplayOrder.forEach(key => {
-        let value = currentStats[key]; // Direct value from stats object
-        if (derivedStats.hasOwnProperty(key)) { // Overwrite with calculated/formatted value if available
+        let value = currentStats[key];
+        if (derivedStats.hasOwnProperty(key)) {
             value = derivedStats[key];
         }
-        // Sanitize value for CSV
         if (value === undefined || value === null || (typeof value === 'number' && isNaN(value))) {
             value = "N/A";
         } else if (Array.isArray(value)) {
-            value = `"${value.join(';')}"`; // Example: join array elements
+            value = `"${value.join(';')}"`;
         }
         csvContent += `${key},${value}\r\n`;
     });
     csvContent += "\r\n";
-
-    // Agent Performance Details
     csvContent += "Agent Performance Details\r\n";
     csvContent += "Agent ID,Deliveries Made,Total Distance (km),Total Time (min),Busy Time (min),Idle Time (min),Traveling Time (min),Handling Time (min),Utilization (%),Final Fatigue Factor\r\n";
     currentStats.agentsData.forEach(agent => {
         const utilization = agent.totalTime > 0 ? (agent.busyTime / agent.totalTime * 100).toFixed(1) : "0.0";
-        // Ensure all time components are numbers before toFixed
         const timeSpentIdle = typeof agent.timeSpentIdle === 'number' ? agent.timeSpentIdle.toFixed(0) : '0';
         const timeSpentTraveling = typeof agent.timeSpentTraveling === 'number' ? agent.timeSpentTraveling.toFixed(0) : '0';
         const timeSpentHandling = typeof agent.timeSpentHandling === 'number' ? agent.timeSpentHandling.toFixed(0) : '0';
-
         csvContent += `${agent.id},${agent.deliveriesMade},${agent.distanceTraveledThisSimKm.toFixed(2)},${agent.totalTime},${agent.busyTime},${timeSpentIdle},${timeSpentHandling},${timeSpentTraveling},${utilization},${agent.currentFatigueFactor.toFixed(2)}\r\n`;
     });
     csvContent += "\r\n";
-
-    // Delivered Order Details
     csvContent += "Delivered Order Details\r\n";
     csvContent += "Order ID,Time Placed (min),Assignment Time (min),Delivery Time (min),Delivery Duration (min),Latitude,Longitude\r\n";
     currentStats.allOrdersData.filter(order => order.status === 'delivered').forEach(order => {
