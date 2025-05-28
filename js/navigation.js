@@ -3,7 +3,7 @@ import { initializeClusteringSection, globalClusteredDarkStores } from './module
 import { initializeDemandProfilesSection, getCustomDemandProfiles } from './modules/demandProfiles.js';
 // Import the functions that will be called
 import { initializeSimulationSection, populateOrderGenerationProfileSelectorSim } from './modules/simulation.js';
-import { initializeWorkforceOptimizationSection, populateDarkStoreSelectorForOpt } from './modules/workforceOpt.js'; // Assuming populateDarkStoreSelectorForOpt is exported
+import { initializeWorkforceOptimizationSection, populateDarkStoreSelectorForOpt } from './modules/workforceOpt.js';
 import { initializeScenarioAnalysisSection, loadSavedScenarios } from './modules/scenarioAnalysis.js';
 import { getMapInstance } from './mapUtils.js';
 
@@ -16,7 +16,8 @@ const sectionInitialized = {
     scenarioAnalysis: false,
 };
 
-export function showSection(sectionId, clickedLink, navLinks, contentSections) {
+// Declare showSection as an async function to allow 'await' for dynamic imports
+export async function showSection(sectionId, clickedLink, navLinks, contentSections) {
     console.log(`[Nav] Attempting to show section: ${sectionId}`);
 
     contentSections.forEach(section => {
@@ -57,7 +58,7 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
             case 'demandProfiles':
                 if (!sectionInitialized.demandProfiles) {
                     console.log("[Nav] Initializing Demand Profiles Section...");
-                    initializeDemandProfilesSection();
+                    initializeDemandProfilesSection(); // This calls populateOrderGenerationProfileSelectorSim internally
                     sectionInitialized.demandProfiles = true;
                 } else {
                     // If navigating back, ensure simulation's profile selector is up-to-date
@@ -66,21 +67,23 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
                          populateOrderGenerationProfileSelectorSim(getCustomDemandProfiles());
                     }
                     // Dynamically import workforceOpt.js only when needed to update its selectors
-                    import('./modules/workforceOpt.js').then(wfOptModule => {
+                    try {
+                        const wfOptModule = await import('./modules/workforceOpt.js');
                         if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
-                            wfOptModule.populateDemandProfileSelectorForOpt(); // This function needs to exist in workforceOpt.js
+                            wfOptModule.populateDemandProfileSelectorForOpt();
                         }
-                    }).catch(err => console.error("Error loading workforceOpt.js for demand profile update:", err));
+                    } catch (e) {
+                        console.error("[Nav] Error dynamically importing workforceOpt.js for demand profile update:", e);
+                    }
                 }
                 getMapInstance('demandProfiles')?.invalidateSize();
                 break;
             case 'simulation':
                 if (!sectionInitialized.simulation) {
                     console.log("[Nav] Initializing Simulation Section...");
-                    initializeSimulationSection(); // This should populate its own profile selector on init
+                    initializeSimulationSection();
                     sectionInitialized.simulation = true;
                 } else {
-                    // If navigating back, ensure its profile selector is up-to-date
                     if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
                         populateOrderGenerationProfileSelectorSim(getCustomDemandProfiles());
                     }
@@ -90,18 +93,20 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
             case 'workforceOptimization':
                 if (!sectionInitialized.workforceOptimization) {
                     console.log("[Nav] Initializing Workforce Optimization Section...");
-                    initializeWorkforceOptimizationSection(); // This should populate its selectors
+                    initializeWorkforceOptimizationSection();
                     sectionInitialized.workforceOptimization = true;
                 } else {
-                    // If returning, re-populate selectors in case data changed
                     if (typeof populateDarkStoreSelectorForOpt === 'function') {
                         populateDarkStoreSelectorForOpt(globalClusteredDarkStores);
                     }
-                    import('./modules/workforceOpt.js').then(wfOptModule => {
+                    try {
+                        const wfOptModule = await import('./modules/workforceOpt.js'); 
                         if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
                              wfOptModule.populateDemandProfileSelectorForOpt();
                         }
-                    }).catch(err => console.error("Error loading workforceOpt.js for selector update:", err));
+                    } catch (e) {
+                        console.error("[Nav] Error dynamically importing workforceOpt.js for selector update:", e);
+                    }
                 }
                 getMapInstance('workforceOptimization')?.invalidateSize();
                 break;
@@ -112,6 +117,11 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
                 } else {
                     loadSavedScenarios();
                 }
+                break;
+            case 'home': // Explicitly handle home or default
+            default:
+                // No complex JS initialization typically needed for the home section
+                console.log(`[Nav] Switched to simple section: ${sectionId}`);
                 break;
         }
     } catch (error) {
@@ -133,8 +143,9 @@ export function setupNavigation() {
 
     navLinks.forEach(link => {
         link.addEventListener('click', function(event) {
+            // event.preventDefault(); // Keep this commented unless you have a specific reason
             const sectionId = event.currentTarget.getAttribute('href').substring(1);
-            showSection(sectionId, event.currentTarget, navLinks, contentSections);
+            showSection(sectionId, event.currentTarget, navLinks, contentSections); // showSection is now async but doesn't need to be awaited here
         });
     });
 
@@ -144,5 +155,5 @@ export function setupNavigation() {
         initialSectionId = initialHash;
     }
     const initialActiveLink = document.querySelector(`.nav-link[href="#${initialSectionId}"]`);
-    showSection(initialSectionId, initialActiveLink, navLinks, contentSections);
+    showSection(initialSectionId, initialActiveLink, navLinks, contentSections); // Call for initial load
 }
