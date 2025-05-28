@@ -1,9 +1,13 @@
-// js/navigation.js (Simplified for Debugging)
+// js/navigation.js
+import { initializeClusteringSection, globalClusteredDarkStores } from './modules/clustering.js';
+import { initializeDemandProfilesSection, getCustomDemandProfiles } from './modules/demandProfiles.js';
+// Import the functions that will be called
+import { initializeSimulationSection, populateOrderGenerationProfileSelectorSim } from './modules/simulation.js';
+import { initializeWorkforceOptimizationSection, populateDarkStoreSelectorForOpt } from './modules/workforceOpt.js';
+import { initializeScenarioAnalysisSection, loadSavedScenarios } from './modules/scenarioAnalysis.js';
+import { getMapInstance } from './mapUtils.js';
 
-// We are not importing other modules here for now to isolate the issue.
-// We will add them back once basic navigation works.
-
-const sectionInitialized = { // Keep track, though we won't initialize yet
+const sectionInitialized = {
     home: true,
     clustering: false,
     demandProfiles: false,
@@ -25,8 +29,6 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
-        console.log(`[Nav] Section ${sectionId} classList:`, targetSection.classList);
-        console.log(`[Nav] Section ${sectionId} computed display: ${window.getComputedStyle(targetSection).display}`);
     } else {
         console.error(`[Nav] Target section with ID "${sectionId}" not found. Defaulting to home.`);
         document.getElementById('home')?.classList.add('active');
@@ -42,22 +44,75 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
         activeLink.classList.add('nav-active');
     }
 
-    // Log what would be initialized, but don't actually call the functions yet
-    console.log(`[Nav] Would initialize/update section: ${sectionId}`);
-    switch (sectionId) {
-        case 'clustering':
-            console.log("[Nav] Placeholder for initializeClusteringSection()");
-            // if (!sectionInitialized.clustering) sectionInitialized.clustering = true;
-            break;
-        case 'demandProfiles':
-            console.log("[Nav] Placeholder for initializeDemandProfilesSection()");
-            // if (!sectionInitialized.demandProfiles) sectionInitialized.demandProfiles = true;
-            break;
-        case 'simulation':
-            console.log("[Nav] Placeholder for initializeSimulationSection()");
-            // if (!sectionInitialized.simulation) sectionInitialized.simulation = true;
-            break;
-        // Add other cases similarly if needed for logging
+    try {
+        switch (sectionId) {
+            case 'clustering':
+                if (!sectionInitialized.clustering) {
+                    console.log("[Nav] Initializing Clustering Section...");
+                    initializeClusteringSection();
+                    sectionInitialized.clustering = true;
+                }
+                getMapInstance('clustering')?.invalidateSize();
+                break;
+            case 'demandProfiles':
+                if (!sectionInitialized.demandProfiles) {
+                    console.log("[Nav] Initializing Demand Profiles Section...");
+                    initializeDemandProfilesSection(); // This calls populateOrderGenerationProfileSelectorSim internally
+                    sectionInitialized.demandProfiles = true;
+                } else {
+                    // If navigating back, ensure simulation's profile selector is up-to-date
+                    if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
+                         populateOrderGenerationProfileSelectorSim(getCustomDemandProfiles());
+                    }
+                     // Also update workforce optimization's demand profile selector
+                    const wfOptModule = await import('./modules/workforceOpt.js');
+                    if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') { // Assuming this function name exists
+                        wfOptModule.populateDemandProfileSelectorForOpt();
+                    }
+                }
+                getMapInstance('demandProfiles')?.invalidateSize();
+                break;
+            case 'simulation':
+                if (!sectionInitialized.simulation) {
+                    console.log("[Nav] Initializing Simulation Section...");
+                    initializeSimulationSection();
+                    sectionInitialized.simulation = true;
+                } else {
+                    // If navigating back, ensure its profile selector is up-to-date
+                    if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
+                        populateOrderGenerationProfileSelectorSim(getCustomDemandProfiles());
+                    }
+                }
+                getMapInstance('simulation')?.invalidateSize();
+                break;
+            case 'workforceOptimization':
+                if (!sectionInitialized.workforceOptimization) {
+                    console.log("[Nav] Initializing Workforce Optimization Section...");
+                    initializeWorkforceOptimizationSection();
+                    sectionInitialized.workforceOptimization = true;
+                } else {
+                    if (typeof populateDarkStoreSelectorForOpt === 'function') {
+                        populateDarkStoreSelectorForOpt(globalClusteredDarkStores);
+                    }
+                    // Update its demand profile selector as well
+                    const wfOptModule = await import('./modules/workforceOpt.js'); // Use dynamic import
+                    if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
+                        wfOptModule.populateDemandProfileSelectorForOpt();
+                    }
+                }
+                getMapInstance('workforceOptimization')?.invalidateSize();
+                break;
+            case 'scenarioAnalysis':
+                if (!sectionInitialized.scenarioAnalysis) {
+                    initializeScenarioAnalysisSection();
+                    sectionInitialized.scenarioAnalysis = true;
+                } else {
+                    loadSavedScenarios();
+                }
+                break;
+        }
+    } catch (error) {
+        console.error(`[Nav] Error during initialization or update of section "${sectionId}":`, error);
     }
     console.log(`[Nav] Finished processing showSection for: ${sectionId}.`);
 }
@@ -76,7 +131,6 @@ export function setupNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', function(event) {
             const sectionId = event.currentTarget.getAttribute('href').substring(1);
-            console.log(`[NavClick] Link clicked for section: ${sectionId}`);
             showSection(sectionId, event.currentTarget, navLinks, contentSections);
         });
     });
@@ -86,7 +140,6 @@ export function setupNavigation() {
     if (initialHash && document.getElementById(initialHash)) {
         initialSectionId = initialHash;
     }
-    console.log(`[NavSetup] Initial section to show: ${initialSectionId}`);
     const initialActiveLink = document.querySelector(`.nav-link[href="#${initialSectionId}"]`);
     showSection(initialSectionId, initialActiveLink, navLinks, contentSections);
 }
