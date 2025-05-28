@@ -19,7 +19,6 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
-// getCustomDemandProfiles is imported here because populateOrderGenerationProfileSelectorSim might use it as a fallback
 import { getCustomDemandProfiles } from './demandProfiles.js';
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
@@ -29,8 +28,8 @@ import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 let simulationMap;
 let simDarkStoreMarker;
 let agents = [];
-let orders = []; // Holds active orders
-let allGeneratedOrdersThisRun = []; // Holds ALL orders generated in the current run, including delivered ones
+let orders = [];
+let allGeneratedOrdersThisRun = [];
 let agentMarkers = {};
 let orderMarkers = {};
 let simulationIntervalId;
@@ -48,6 +47,7 @@ const FATIGUE_REDUCTION_STEP = 0.1;
 const MIN_FATIGUE_FACTOR = 0.6;     
 const FATIGUE_RECOVERY_IDLE_TIME_MIN = 20; 
 const FATIGUE_RECOVERY_STEP = 0.05; 
+const FATIGUE_UPDATE_INTERVAL = 5; // ★★★ THIS WAS THE MISSING CONSTANT ★★★
 
 // --- Simulation Parameters (with defaults) ---
 let simParams = {
@@ -66,7 +66,7 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40, // Default for "Medium"
+    currentOrderGenerationProbability: 0.40,
 };
 
 export const orderGenerationProbabilities = {
@@ -82,10 +82,10 @@ let stats = {
     allDeliveryTimes: [],
     sumOrderWaitTimes: 0,
     countAssignedOrders: 0,
-    totalAgentTravelTime: 0, // Overall stat
-    totalAgentHandlingTime: 0, // Overall stat
-    totalAgentActiveTime: 0, // Overall stat for utilization calculation
-    totalDistanceTraveledByAgentsKm: 0, // Overall stat
+    totalAgentTravelTime: 0,
+    totalAgentHandlingTime: 0,
+    totalAgentActiveTime: 0,
+    totalDistanceTraveledByAgentsKm: 0,
 };
 
 // --- Live Chart Data ---
@@ -95,7 +95,7 @@ let liveChartData = {
     activeAgentsHistory: [],
 };
 
-// --- DOM Elements (will be cached in initializeSimulationSection) ---
+// --- DOM Elements ---
 let agentStatusListEl, pendingOrdersListEl, simulationLogEl;
 let startSimBtnEl, pauseSimBtnEl, resetSimBtnEl;
 let orderGenerationProfileSelectEl, uniformOrderRadiusContainerEl, defaultOrderFocusRadiusContainerEl, defaultOrderSpreadContainerEl;
@@ -108,8 +108,6 @@ let toggleDeliveryTimeHeatmapCheckboxEl;
 let exportSimResultsBtnEl;
 
 
-// --- Function Definitions ---
-
 export function setSimParameter(key, value) {
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
@@ -120,7 +118,6 @@ export function setSimParameter(key, value) {
         console.warn(`[Sim] Attempted to set unknown simulation parameter: ${key}`);
     }
 }
-
 export function getSimParameter(key) {
     return simParams.hasOwnProperty(key) ? simParams[key] : undefined;
 }
@@ -185,7 +182,8 @@ function updateAgentPopup(agent) {
     if (agent.assignedOrderId !== null) {
         popupContent += ` (Order: ${agent.assignedOrderId})`;
         if (agent.currentOrderETA !== null) {
-            const assignmentTimeForETA = agent.assignmentTime !== null ? agent.assignmentTime : agent.currentTaskStartTime;
+            // Ensure assignmentTime is valid before using it in ETA calculation
+            const assignmentTimeForETA = agent.assignmentTime !== null && agent.assignmentTime !== undefined ? agent.assignmentTime : agent.currentTaskStartTime;
             const remainingETA = Math.max(0, agent.currentOrderETA - (currentSimulationTime - assignmentTimeForETA)).toFixed(1);
             popupContent += `<br>Order ETA: ${remainingETA} min (Original: ${agent.currentOrderETA.toFixed(1)} min)`;
         }
@@ -369,7 +367,7 @@ function resetSimulationState() {
         createAgent();
     }
 
-    updateSimTimeDisplayLocal(currentSimulationTime);
+    updateSimTimeDisplayLocal(currentSimulationTime); 
     updateSimTimeDisplay(currentSimulationTime); 
     updateTrafficStatusDisplay(getSimParameter('baseTrafficFactor'));
     updateAgentStatusListUI();
@@ -709,7 +707,7 @@ function assignOrders() {
             order.status = 'assigned_to_agent_going_to_store';
             order.assignedAgentId = bestAgent.id;
             order.etaMinutes = shortestETA;
-            order.assignmentTime = currentSimulationTime; // Record assignment time on the order
+            order.assignmentTime = currentSimulationTime; 
             const waitTime = order.assignmentTime - order.timePlaced;
             stats.sumOrderWaitTimes += waitTime;
             stats.countAssignedOrders++;
@@ -880,7 +878,7 @@ function simulationStep() {
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
     updateSimTimeDisplayLocal(currentSimulationTime); 
-    updateSimTimeDisplay(currentSimulationTime); // This is the one from uiElements.js
+    updateSimTimeDisplay(currentSimulationTime); 
 
     if (getSimParameter('enableDynamicTraffic') && (currentSimulationTime % DYNAMIC_TRAFFIC_UPDATE_INTERVAL === 0 || currentSimulationTime === MINUTES_PER_SIMULATION_STEP)) {
         const factors = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
@@ -953,7 +951,7 @@ export function populateOrderGenerationProfileSelectorSim(customProfilesFromDema
     orderGenerationProfileSelectEl.innerHTML = '';
     defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
 
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // getCustomDemandProfiles is imported
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles();
     
     profilesToUse.forEach(profile => {
         const option = document.createElement('option');
