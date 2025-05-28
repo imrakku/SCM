@@ -3,7 +3,7 @@ import { initializeClusteringSection, globalClusteredDarkStores } from './module
 import { initializeDemandProfilesSection, getCustomDemandProfiles } from './modules/demandProfiles.js';
 // Import the functions that will be called
 import { initializeSimulationSection, populateOrderGenerationProfileSelectorSim } from './modules/simulation.js';
-import { initializeWorkforceOptimizationSection, populateDarkStoreSelectorForOpt } from './modules/workforceOpt.js';
+import { initializeWorkforceOptimizationSection, populateDarkStoreSelectorForOpt } from './modules/workforceOpt.js'; // Assuming populateDarkStoreSelectorForOpt is exported
 import { initializeScenarioAnalysisSection, loadSavedScenarios } from './modules/scenarioAnalysis.js';
 import { getMapInstance } from './mapUtils.js';
 
@@ -57,25 +57,27 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
             case 'demandProfiles':
                 if (!sectionInitialized.demandProfiles) {
                     console.log("[Nav] Initializing Demand Profiles Section...");
-                    initializeDemandProfilesSection(); // This calls populateOrderGenerationProfileSelectorSim internally
+                    initializeDemandProfilesSection();
                     sectionInitialized.demandProfiles = true;
                 } else {
                     // If navigating back, ensure simulation's profile selector is up-to-date
+                    // and workforce opt's profile selector is also updated
                     if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
                          populateOrderGenerationProfileSelectorSim(getCustomDemandProfiles());
                     }
-                     // Also update workforce optimization's demand profile selector
-                    const wfOptModule = await import('./modules/workforceOpt.js');
-                    if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') { // Assuming this function name exists
-                        wfOptModule.populateDemandProfileSelectorForOpt();
-                    }
+                    // Dynamically import workforceOpt.js only when needed to update its selectors
+                    import('./modules/workforceOpt.js').then(wfOptModule => {
+                        if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
+                            wfOptModule.populateDemandProfileSelectorForOpt(); // This function needs to exist in workforceOpt.js
+                        }
+                    }).catch(err => console.error("Error loading workforceOpt.js for demand profile update:", err));
                 }
                 getMapInstance('demandProfiles')?.invalidateSize();
                 break;
             case 'simulation':
                 if (!sectionInitialized.simulation) {
                     console.log("[Nav] Initializing Simulation Section...");
-                    initializeSimulationSection();
+                    initializeSimulationSection(); // This should populate its own profile selector on init
                     sectionInitialized.simulation = true;
                 } else {
                     // If navigating back, ensure its profile selector is up-to-date
@@ -88,17 +90,18 @@ export function showSection(sectionId, clickedLink, navLinks, contentSections) {
             case 'workforceOptimization':
                 if (!sectionInitialized.workforceOptimization) {
                     console.log("[Nav] Initializing Workforce Optimization Section...");
-                    initializeWorkforceOptimizationSection();
+                    initializeWorkforceOptimizationSection(); // This should populate its selectors
                     sectionInitialized.workforceOptimization = true;
                 } else {
+                    // If returning, re-populate selectors in case data changed
                     if (typeof populateDarkStoreSelectorForOpt === 'function') {
                         populateDarkStoreSelectorForOpt(globalClusteredDarkStores);
                     }
-                    // Update its demand profile selector as well
-                    const wfOptModule = await import('./modules/workforceOpt.js'); // Use dynamic import
-                    if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
-                        wfOptModule.populateDemandProfileSelectorForOpt();
-                    }
+                    import('./modules/workforceOpt.js').then(wfOptModule => {
+                        if (typeof wfOptModule.populateDemandProfileSelectorForOpt === 'function') {
+                             wfOptModule.populateDemandProfileSelectorForOpt();
+                        }
+                    }).catch(err => console.error("Error loading workforceOpt.js for selector update:", err));
                 }
                 getMapInstance('workforceOptimization')?.invalidateSize();
                 break;
