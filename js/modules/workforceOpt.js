@@ -893,7 +893,7 @@ async function handleWorkforceOptAiAnalysisRequest() {
         const payload = { contents: chatHistory };
         // IMPORTANT: The API key should ideally be handled securely, not hardcoded.
         // For this environment, it's provided, but in a real app, use environment variables or a backend proxy.
-        const apiKey = ""; // Per instructions, leave empty for Canvas to inject.
+        const apiKey = "AIzaSyDwjlcdDvgre9mLWR7abRx2qta_NFLISuI"; // Per instructions, leave empty for Canvas to inject.
         
         const modelName = "gemini-2.0-flash"; // Using the specified model
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
