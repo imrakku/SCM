@@ -81,13 +81,162 @@
 
     <main class="container mx-auto p-4 md:p-8 mt-8">
         <section id="home" class="content-section active">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Welcome to the Quick Commerce Optimization Simulator!</h2>
+                <p class="mb-4 text-lg leading-relaxed text-slate-600">
+                    This interactive tool is designed to help understand and optimize last-mile delivery operations for quick commerce. It allows you to explore different aspects of logistics planning, from identifying ideal locations for dark stores to simulating daily delivery activities and determining optimal workforce sizes.
+                </p>
+                <details class="mb-6 text-lg text-slate-600">
+                    <summary class="font-semibold text-blue-600 hover:text-blue-700">Learn more about the modules...</summary>
+                    <p class="mt-2 mb-2 leading-relaxed">
+                        Navigate through the tabs above to access different modules:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-3 leading-relaxed">
+                        <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
+                        <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
+                        <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs. This section now includes AI-powered analysis of your simulation results.</li>
+                         <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization, using realistic demand patterns. This section also includes AI-powered analysis.</li>
+                         <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
+                    </ol>
+                </details>
+                <p class="mb-8 text-lg leading-relaxed text-slate-600">
+                    The goal is to provide data-driven insights for better resource allocation, faster deliveries, and improved customer satisfaction.
+                </p>
+                <div class="bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-8 rounded-xl border border-blue-200 shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-2 text-blue-800">Project Lead</h3>
+                    <ul class="list-none space-y-1 text-slate-700 text-lg">
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6 mr-3 text-blue-600">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            Rakshit Monga
+                        </li>
+                    </ul>
+                    <p class="mt-1 text-sm text-slate-500 italic">Indian Institute of Management Sirmaur</p>
+                    
+                    <h3 class="text-2xl font-semibold mb-2 mt-6 text-blue-800">Project Mentor</h3>
+                    <ul class="list-none space-y-1 text-slate-700 text-lg">
+                        <li class="flex items-center">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 text-blue-600">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                <path d="M0 0h24v24H0z" fill="none"/>
+                            </svg>
+                            Professor Bhavin Shaha
+                        </li>
+                    </ul>
+                     <p class="mt-1 text-sm text-slate-500 italic">IIM Sirmaur</p>
+                </div>
+            </div>
+        </section>
 
         <section id="clustering" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Dark Store Placement</h2>
+                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <details>
+                        <summary class="font-bold text-lg text-blue-700 hover:text-blue-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section helps identify potentially optimal locations for "dark stores" based on simulated customer order locations, grouping them to find central points.</p>
+                        </div>
+                    </details>
+                </div>
+                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
+                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="input-group">
+                            <label for="numBackgroundOrders">Background Orders:</label>
+                            <input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="numHotspotOrders">Hotspot Orders:</label>
+                            <input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="numDarkStoresForClustering">Number of Dark Stores:</label>
+                            <input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full">
+                        </div>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 mb-10">
+                    <div class="stat-card text-center p-8">
+                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Total Orders Simulated</h4>
+                        <p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p>
+                    </div>
+                    <div class="stat-card text-center p-8">
+                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Dark Stores Identified</h4>
+                        <p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p>
+                    </div>
+                </div>
+                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200">
+                    <div id="clusteringMapViz" class="w-full h-[500px]"></div>
+                </div>
+                 <div class="mb-4 text-center">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections
+                    </label>
+                </div>
+                <p class="text-md text-slate-500 mb-6 italic text-center">
+                    Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).
+                </p>
+                 <div class="text-center">
+                    <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
+                 </div>
+                 <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm bg-slate-100 p-6 rounded-lg border border-slate-200 shadow-inner">
+                    <p class="italic text-slate-500 md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
+                 </div>
+                 <div id="overallClusteringStats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                     <p><strong class="text-blue-700">Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Min Distance:</strong> <span id="overallMinClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Max Distance:</strong> <span id="overallMaxClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Std. Dev. Distance:</strong> <span id="overallStdDevClusterDistance" class="font-semibold">N/A</span></p>
+                 </div>
+            </div>
+        </section>
 
         <section id="demandProfiles" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
+                <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <details>
+                        <summary class="font-bold text-lg text-sky-700 hover:text-sky-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section allows you to create and save different "demand profiles" – patterns of how customer orders might arise across Chandigarh.</p>
+                        </div>
+                    </details>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
+                        <div class="input-group">
+                            <label for="profileNameInput">Profile Name:</label>
+                            <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
+                        </div>
+                        <div id="profileZonesContainer" class="space-y-4 mb-4">
+                        </div>
+                        <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
+                        <div class="flex space-x-2">
+                            <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+                            <button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button>
+                        </div>
+                         <div id="profileCreationMapContainer" class="mt-6 hidden">
+                            <h4 class="text-lg font-semibold text-center mb-2 text-slate-600">Set Hotspot/Route Point</h4>
+                            <div id="profileCreationMap" class="w-full h-[300px]"></div>
+                            <p class="text-sm text-center text-slate-500 mt-2">Click on map to set hotspot center or route points.</p>
+                            <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Profiles</h3>
+                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <ul id="savedProfilesList" class="list-none space-y-2">
+                                <li class="italic text-slate-500">No custom profiles saved yet.</li>
+                            </ul>
+                        </div>
+                         <p class="text-sm text-slate-500 mt-4 italic">Note: Profiles are stored for the current session only using browser's session storage.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section id="simulation" class="content-section">
             <div class="card">
@@ -96,14 +245,13 @@
                      <details>
                         <summary class="font-bold text-lg text-indigo-700 hover:text-indigo-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
-                            <p class="text-base leading-relaxed">This is the heart of the simulator! Here, you can run a live simulation of delivery operations. You'll see orders appear on the map, delivery agents pick them up from a central dark store, and deliver them to customers.</p>
+                            <p class="text-base leading-relaxed">Run a live simulation of delivery operations. Observe orders, agent movements, and real-time performance metrics.</p>
                             <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
                             <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
-                                <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
-                                <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
+                                <li>Configure Parameters.</li>
+                                <li>Click "Start Simulation".</li>
                                 <li>After a simulation, click "Analyze Simulation Results with AI" for AI-powered insights.</li>
-                                <li>"Save Current Scenario Results" to compare different setups later. You can also "Export Results (CSV)" for analysis in tools like Excel.</li>
+                                <li>"Save Current Scenario Results" or "Export Results (CSV)".</li>
                             </ul>
                         </div>
                     </details>
@@ -418,7 +566,6 @@
                         <canvas id="ordersWithinSlaChart"></canvas>
                     </div>
                 </div>
-
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
                     <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
@@ -447,7 +594,7 @@
                         <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
                     </div>
                     <div class="mt-6 text-center">
-                         <button id="analyzeWorkforceOptAI" class="btn btn-primary w-full sm:w-auto bg-sky-500 hover:bg-sky-600 border-sky-500 hover:border-sky-600">
+                         <button id="analyzeWorkforceOptAI" class="btn btn-primary w-full sm:w-auto bg-sky-500 hover:bg-sky-600 border-sky-500 hover:border-sky-600" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stars mr-2" viewBox="0 0 16 16">
                                 <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828l.645-1.937zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.734 1.734 0 0 0 4.593 5.31l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.31A1.734 1.734 0 0 0 2.31 4.213l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.734 1.734 0 0 0 3.407 2.31l.387-1.162zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L10.863.1z"/>
                             </svg>
@@ -470,7 +617,46 @@
         </section>
 
         <section id="scenarioAnalysis" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
+                 <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-md shadow" role="alert">
+                     <details>
+                        <summary class="font-bold text-lg text-purple-700 hover:text-purple-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section allows you to compare the results of different simulation runs side-by-side. After running various simulations with different parameters, you can save those results and then come here to analyze their impact on performance and cost.</p>
+                        </div>
+                    </details>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1">
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
+                        <div id="savedScenariosListContainer">
+                            <ul id="savedScenariosList">
+                                <li class="italic text-slate-500">No scenarios saved yet.</li>
+                            </ul>
+                        </div>
+                        <div class="mt-4 flex flex-col space-y-2">
+                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
+                            <button id="clearAllScenariosBtn" class="btn btn-danger">Clear All Saved Scenarios</button>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
+                        <div id="scenarioComparisonResultsContainer" class="hidden">
+                             <div class="comparison-table-container">
+                                <table id="scenarioComparisonTable" class="comparison-table">
+                                    <thead>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                         <p id="scenarioComparisonPlaceholder" class="italic text-slate-500 mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
