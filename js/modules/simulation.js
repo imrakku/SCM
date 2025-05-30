@@ -522,7 +522,6 @@ function generateUniformPointInChd(numPoints, polygonCoords) {
 }
 
 function generateOrder() {
-    // console.log("[Sim] generateOrder called. Current Profile:", getSimParameter('orderGenerationProfile'));
     stats.totalOrdersGenerated++;
     const orderId = orderIdCounter++;
     let newOrderLocation;
@@ -542,7 +541,6 @@ function generateOrder() {
                 const endTime = zone.endTime !== undefined ? zone.endTime : Infinity;
                 return currentSimulationTime >= startTime && currentSimulationTime <= endTime;
             });
-            // console.log(`[Sim] Custom Profile '${profileName}', Active Zones:`, activeZones.length); 
 
             if (activeZones.length > 0) {
                 let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (zone.maxOrders > 0 ? (zone.minOrders + zone.maxOrders) / 2 : 1), 0);
@@ -557,7 +555,6 @@ function generateOrder() {
                 if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)];
 
                 if (selectedZone) {
-                    // console.log(`[Sim] Selected Zone for order:`, selectedZone); 
                     profileSourceInfo += ` (Zone Type: ${selectedZone.type})`;
                     if (selectedZone.type === 'uniform') {
                         const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
@@ -606,9 +603,9 @@ function generateOrder() {
                             }
                         } else { newOrderLocation = generateUniformPointInChd(1, chandigarhGeoJsonPolygon)[0] || {...defaultDarkStoreLocationSim}; }
                     } else { newOrderLocation = { ...defaultDarkStoreLocationSim }; }
-                } else { console.log("[Sim] No zone selected for custom profile order gen."); stats.totalOrdersGenerated--; return; }
-            } else { console.log("[Sim] No active zones for custom profile."); stats.totalOrdersGenerated--; return; }
-        } else { console.log("[Sim] Custom profile selected but no zones found."); stats.totalOrdersGenerated--; return; }
+                } else { stats.totalOrdersGenerated--; return; }
+            } else { stats.totalOrdersGenerated--; return; }
+        } else { stats.totalOrdersGenerated--; return; }
     } else if (selectedProfileId === 'default_focused') {
         profileSourceInfo = "Default Focused";
         const focusRadiusDeg = getSimParameter('defaultFocusRadiusKm') / 111;
@@ -648,11 +645,9 @@ function generateOrder() {
     }
 
     if (!newOrderLocation) {
-        console.log("[Sim] Failed to determine newOrderLocation."); 
         stats.totalOrdersGenerated--;
         return;
     }
-    // console.log("[Sim] New Order Location:", newOrderLocation); 
 
     const newOrder = {
         id: orderId, location: newOrderLocation, status: 'pending',
@@ -866,7 +861,6 @@ function updateAgentsMovementAndStatus() {
 }
 
 function simulationStep() {
-    // console.log(`[Sim Step] Time: ${currentSimulationTime}`); // DEBUG
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
     updateSimTimeDisplayLocal(currentSimulationTime); 
@@ -1043,8 +1037,16 @@ async function handleAiAnalysisRequest() {
     try {
         let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
         const payload = { contents: chatHistory };
-        const apiKey = ""; 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        // ★★★ API KEY INSERTED HERE ★★★
+        const apiKey = "AIzaSyDwjlcdDvgre9mLWR7abRx2qta_NFLISuI"; 
+        
+        if (!apiKey) { // This check is now less critical if you've hardcoded it, but good practice
+            throw new Error("API Key is missing. Please add your API key to the simulation.js file.");
+        }
+
+        const modelName = "gemini-2.0-flash"; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -1072,7 +1074,11 @@ async function handleAiAnalysisRequest() {
             result.candidates[0].content.parts.length > 0) {
             const analysisText = result.candidates[0].content.parts[0].text;
             simulationAiAnalysisContentEl.textContent = analysisText;
-        } else {
+        } else if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason) {
+            simulationAiAnalysisContentEl.textContent = `AI model finished with reason: ${result.candidates[0].finishReason}. No content generated. Check prompt or model settings. Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings || {})}`;
+            console.warn("AI Analysis - Model finished with reason:", result.candidates[0].finishReason, result.candidates[0].safetyRatings);
+        }
+         else {
             console.error("Unexpected API response structure:", result);
             simulationAiAnalysisContentEl.textContent = "Could not retrieve analysis. The API response structure was unexpected.";
         }
