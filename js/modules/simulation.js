@@ -47,7 +47,7 @@ const FATIGUE_REDUCTION_STEP = 0.1;
 const MIN_FATIGUE_FACTOR = 0.6;     
 const FATIGUE_RECOVERY_IDLE_TIME_MIN = 20; 
 const FATIGUE_RECOVERY_STEP = 0.05; 
-const FATIGUE_UPDATE_INTERVAL = 5; // Ensure this is defined
+const FATIGUE_UPDATE_INTERVAL = 5;
 
 // --- Simulation Parameters (with defaults) ---
 let simParams = {
@@ -66,7 +66,7 @@ let simParams = {
     agentCostPerHour: 150,
     costPerKmTraveled: 5,
     fixedCostPerDelivery: 10,
-    currentOrderGenerationProbability: 0.40, // Default for "Medium"
+    currentOrderGenerationProbability: 0.40,
 };
 
 export const orderGenerationProbabilities = {
@@ -82,9 +82,9 @@ let stats = {
     allDeliveryTimes: [],
     sumOrderWaitTimes: 0,
     countAssignedOrders: 0,
-    totalAgentTravelTime: 0, 
-    totalAgentHandlingTime: 0, 
-    totalAgentActiveTime: 0, 
+    totalAgentTravelTime: 0,
+    totalAgentHandlingTime: 0,
+    totalAgentActiveTime: 0,
     totalDistanceTraveledByAgentsKm: 0,
 };
 
@@ -111,7 +111,6 @@ let analyzeSimResultsAIButtonEl, simulationAiAnalysisContainerEl,
 
 
 export function setSimParameter(key, value) {
-    // console.log(`[SimParams] Setting ${key} to ${value}`);
     if (simParams.hasOwnProperty(key)) {
         simParams[key] = value;
         if (key === 'orderGenerationProfile') {
@@ -129,7 +128,7 @@ function toggleProfileSpecificControlsUI() {
     const selectedProfile = getSimParameter('orderGenerationProfile');
     if(uniformOrderRadiusContainerEl) uniformOrderRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_uniform');
     if(defaultOrderFocusRadiusContainerEl) defaultOrderFocusRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_focused');
-    if(defaultOrderSpreadContainerEl) defaultOrderSpreadContainerEl.classList.toggle('hidden', true); // Assuming this is always hidden for now
+    if(defaultOrderSpreadContainerEl) defaultOrderSpreadContainerEl.classList.toggle('hidden', true);
 }
 
 function createAgent() {
@@ -523,7 +522,7 @@ function generateUniformPointInChd(numPoints, polygonCoords) {
 }
 
 function generateOrder() {
-    console.log("[Sim] generateOrder called. Current Profile:", getSimParameter('orderGenerationProfile')); // DEBUG
+    // console.log("[Sim] generateOrder called. Current Profile:", getSimParameter('orderGenerationProfile'));
     stats.totalOrdersGenerated++;
     const orderId = orderIdCounter++;
     let newOrderLocation;
@@ -543,7 +542,7 @@ function generateOrder() {
                 const endTime = zone.endTime !== undefined ? zone.endTime : Infinity;
                 return currentSimulationTime >= startTime && currentSimulationTime <= endTime;
             });
-            console.log(`[Sim] Custom Profile '${profileName}', Active Zones:`, activeZones.length); // DEBUG
+            // console.log(`[Sim] Custom Profile '${profileName}', Active Zones:`, activeZones.length); 
 
             if (activeZones.length > 0) {
                 let totalOrderWeight = activeZones.reduce((sum, zone) => sum + (zone.maxOrders > 0 ? (zone.minOrders + zone.maxOrders) / 2 : 1), 0);
@@ -558,7 +557,7 @@ function generateOrder() {
                 if (!selectedZone && activeZones.length > 0) selectedZone = activeZones[Math.floor(Math.random() * activeZones.length)];
 
                 if (selectedZone) {
-                    console.log(`[Sim] Selected Zone for order:`, selectedZone); // DEBUG
+                    // console.log(`[Sim] Selected Zone for order:`, selectedZone); 
                     profileSourceInfo += ` (Zone Type: ${selectedZone.type})`;
                     if (selectedZone.type === 'uniform') {
                         const uniformPoints = generateUniformPointInChd(1, chandigarhGeoJsonPolygon);
@@ -649,11 +648,11 @@ function generateOrder() {
     }
 
     if (!newOrderLocation) {
-        console.log("[Sim] Failed to determine newOrderLocation."); // DEBUG
+        console.log("[Sim] Failed to determine newOrderLocation."); 
         stats.totalOrdersGenerated--;
         return;
     }
-    console.log("[Sim] New Order Location:", newOrderLocation); // DEBUG
+    // console.log("[Sim] New Order Location:", newOrderLocation); 
 
     const newOrder = {
         id: orderId, location: newOrderLocation, status: 'pending',
@@ -867,6 +866,7 @@ function updateAgentsMovementAndStatus() {
 }
 
 function simulationStep() {
+    // console.log(`[Sim Step] Time: ${currentSimulationTime}`); // DEBUG
     if (!isSimulationRunning) return;
     currentSimulationTime += MINUTES_PER_SIMULATION_STEP;
     updateSimTimeDisplayLocal(currentSimulationTime); 
@@ -880,13 +880,11 @@ function simulationStep() {
     }
 
     const orderGenProb = getSimParameter('currentOrderGenerationProbability');
-    // console.log(`[Sim Step] Time: ${currentSimulationTime}, OrderGenProb: ${orderGenProb}`); // DEBUG
     if (Math.random() < orderGenProb) {
-        // console.log("[Sim Step] Attempting to generate order..."); // DEBUG
         generateOrder();
     }
 
-    updateAgentsMovementAndStatus();
+    updateAgentsMovementAndStatus(); 
     assignOrders();
     updateAgentStatusListUI();
     updatePendingOrdersListUI();
@@ -1055,9 +1053,16 @@ async function handleAiAnalysisRequest() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Gemini API Error:", errorData);
-            throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || response.statusText}`);
+            const errorText = await response.text(); 
+            let detailedErrorMessage = `API request failed with status ${response.status}: ${response.statusText}.`;
+            try {
+                const parsedError = JSON.parse(errorText);
+                detailedErrorMessage = `API request failed with status ${response.status}: ${parsedError.error?.message || response.statusText}. Full response: ${errorText}`;
+            } catch (e) {
+                detailedErrorMessage += ` Raw response: ${errorText}`;
+            }
+            console.error("Gemini API Error Details:", detailedErrorMessage);
+            throw new Error(detailedErrorMessage);
         }
 
         const result = await response.json();
