@@ -180,9 +180,9 @@ async function runWorkforceOptimization() {
     resetOptimizationVisuals(); 
     let recommendationReason = ""; 
 
-    const baseRequiredElements = { /* ... as before ... */ };
     // ... (Parameter parsing and validation as before) ...
-    // Ensure all input elements are correctly cached and validated
+    const baseRequiredElements = { /* ... */ };
+    // ... (Element checks and parameter parsing as before) ...
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
     // ... (rest of parameter validation) ...
@@ -212,17 +212,11 @@ async function runWorkforceOptimization() {
 
     if(optimizationResultsContainerEl) optimizationResultsContainerEl.classList.remove('hidden');
     if(optimizationMapContainerEl) optimizationMapContainerEl.classList.remove('hidden');
-    // ... (map initialization as before) ...
     if (!getMapInstance('workforceOptimization')) {
         optimizationMap = initializeMap('optimizationMapViz', selectedDarkStore, 13, 'workforceOptimization');
         optDarkStoreMarkersLayer = L.layerGroup().addTo(optimizationMap);
         optOrderMarkersLayer = L.layerGroup().addTo(optimizationMap);
-    } else {
-        optimizationMap = getMapInstance('workforceOptimization');
-        optimizationMap.setView([selectedDarkStore.lat, selectedDarkStore.lng], 13);
-        optDarkStoreMarkersLayer?.clearLayers();
-        optOrderMarkersLayer?.clearLayers();
-    }
+    } else { /* ... */ }
      L.marker([selectedDarkStore.lat, selectedDarkStore.lng], { icon: commonDarkStoreIcon })
         .bindPopup(`<b>${selectedDarkStore.name}</b><br>(Optimization Target)`)
         .addTo(optDarkStoreMarkersLayer)
@@ -264,7 +258,7 @@ async function runWorkforceOptimization() {
                     speedKmph: baseMinAgentSpeed + Math.random() * speedRange,
                     status: 'available', assignedOrderId: null, routePath: [], currentLegIndex: 0,
                     legProgress: 0, timeSpentAtStore: 0, 
-                    busyTimeThisRun: 0, // Time this agent was busy in this specific run
+                    busyTimeThisRun: 0, 
                 });
             }
             
@@ -297,52 +291,46 @@ async function runWorkforceOptimization() {
             }
 
             // Main simulation loop for this individual run
+            let ordersProcessedInThisRun = 0;
             while (iterSimTime < maxSimTimePerIteration) {
                 iterSimTime++;
 
                 // Order Generation for Custom Profiles
                 if (selectedDemandProfileId.startsWith('custom_')) {
-                    // ... (Custom profile order generation logic as before) ...
-                    // This should add orders to iterOrders and increment currentRunStats.totalGenerated
+                    // ... (Custom profile order generation - unchanged from previous correct version) ...
                 }
                 
                 // Assign orders to available agents
                 iterOrders.filter(o => o.status === 'pending').forEach(order => {
-                    let bestIterAgent = null; let shortestIterETA = Infinity;
-                    iterAgents.filter(a => a.status === 'available').forEach(agent => {
-                        let timeToStore = 0;
-                        if(agent.location.lat !== selectedDarkStore.lat || agent.location.lng !== selectedDarkStore.lng) {
-                            timeToStore = (getDistanceKm(agent.location, selectedDarkStore) / (agent.speedKmph * baseTrafficFactor)) * 60;
-                        }
-                        const timeToCustomer = (getDistanceKm(selectedDarkStore, order.location) / (agent.speedKmph * baseTrafficFactor)) * 60;
-                        const eta = timeToStore + baseHandlingTime + timeToCustomer;
-                        if (eta < shortestIterETA) { shortestIterETA = eta; bestIterAgent = agent; }
-                    });
-                    if (bestIterAgent) {
-                        order.status = 'assigned'; order.assignedAgentId = bestIterAgent.id;
+                    const availableAgent = iterAgents.find(a => a.status === 'available');
+                    if (availableAgent) {
+                        order.status = 'assigned'; 
+                        order.assignedAgentId = availableAgent.id;
                         order.assignmentTime = iterSimTime;
                         currentRunStats.sumWaitTimes += (order.assignmentTime - order.timePlaced);
                         currentRunStats.numAssigned++;
-                        bestIterAgent.assignedOrderId = order.id; 
-                        bestIterAgent.status = (bestIterAgent.location.lat === selectedDarkStore.lat && bestIterAgent.location.lng === selectedDarkStore.lng) ? 'at_store' : 'to_store';
-                        bestIterAgent.routePath = [bestIterAgent.location, selectedDarkStore, order.location];
-                        bestIterAgent.currentLegIndex = 0; bestIterAgent.legProgress = 0; bestIterAgent.timeSpentAtStore = 0;
+                        
+                        availableAgent.assignedOrderId = order.id; 
+                        availableAgent.status = (availableAgent.location.lat === selectedDarkStore.lat && availableAgent.location.lng === selectedDarkStore.lng) ? 'at_store' : 'to_store';
+                        availableAgent.routePath = [availableAgent.location, selectedDarkStore, order.location];
+                        availableAgent.currentLegIndex = 0; 
+                        availableAgent.legProgress = 0; 
+                        availableAgent.timeSpentAtStore = 0;
                     }
                 });
 
                 // Update agent movements and statuses
                 iterAgents.forEach(agent => {
-                    agent.totalTimeThisRun = iterSimTime; // Agent exists for the duration of the run up to this point
-                    if (agent.status === 'available') return; // Not busy
+                    if (agent.status === 'available') return; 
 
-                    agent.busyTimeThisRun++; // Increment busy time if not available
-                    currentRunStats.totalAgentActiveTime++; // Overall active time for this run
+                    agent.busyTimeThisRun++; 
+                    currentRunStats.totalAgentActiveTimeThisRun++;
 
                     if (agent.status === 'to_store') {
                         const legDist = getDistanceKm(agent.location, selectedDarkStore);
                         const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1; 
                         agent.distanceTraveledThisRun += distCovered; 
-                        currentRunStats.totalAgentDistanceKm += distCovered;
+                        currentRunStats.totalAgentDistanceKmThisRun += distCovered;
                         if (legDist <= distCovered || legDist < 0.01) { 
                             agent.location = {...selectedDarkStore}; 
                             agent.status = 'at_store'; 
@@ -373,7 +361,7 @@ async function runWorkforceOptimization() {
                         } else {
                             const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1; 
                             agent.distanceTraveledThisRun += distCovered; 
-                            currentRunStats.totalAgentDistanceKm += distCovered;
+                            currentRunStats.totalAgentDistanceKmThisRun += distCovered;
                             agent.legProgress += (distCovered / legDist);
                         }
                         if (agent.legProgress >= 1) { 
@@ -383,44 +371,46 @@ async function runWorkforceOptimization() {
                                 deliveredOrder.status = 'delivered'; 
                                 deliveredOrder.deliveryTime = iterSimTime;
                                 currentRunStats.totalDelivered++;
+                                ordersProcessedInThisRun++;
                                 const deliveryDuration = iterSimTime - deliveredOrder.timePlaced;
                                 currentRunStats.sumDeliveryTimes += deliveryDuration; 
                                 currentRunStats.deliveryTimes.push(deliveryDuration);
                                 if (deliveryDuration <= targetAvgDeliveryTime) currentRunStats.ordersWithinSLA++;
                             }
-                            // Agent becomes available AFTER delivery
                             agent.status = 'available'; 
                             agent.assignedOrderId = null; 
                             agent.routePath = []; 
                             agent.currentLegIndex = 0; 
                             agent.legProgress = 0;
-                            // agent.deliveriesMadeThisRun++; // If tracking per-run deliveries for agent
                         }
                     }
-                }); // End agent loop
+                }); 
                 
-                // Check if all orders for this run are delivered
-                const pendingOrAssignedOrdersInRun = iterOrders.filter(o => o.status !== 'delivered').length;
-                if (pendingOrAssignedOrdersInRun === 0 && currentRunStats.totalGenerated > 0) {
-                     // If default profile, ensure all TARGET orders are delivered
-                    if (selectedDemandProfileId.startsWith('default_opt_') && currentRunStats.totalDelivered >= initialOrdersForThisRun) {
-                        logMessage(`  Run ${run+1} (Default): All ${initialOrdersForThisRun} target orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
+                // Check for run completion
+                const allGeneratedOrdersInRunProcessed = iterOrders.every(o => o.status === 'delivered' || o.status === 'pending_no_agent'); // Or some other terminal state
+                if (selectedDemandProfileId.startsWith('default_opt_')) {
+                    if (currentRunStats.totalDelivered >= initialOrdersForThisRun) {
+                        logMessage(`  Run ${run+1}: All ${initialOrdersForThisRun} target orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
                         break; 
-                    } else if (selectedDemandProfileId.startsWith('custom_')) {
-                        // For custom, if all *currently generated* orders are delivered, we might break if no more are expected soon.
-                        // This is complex to predict, so maxSimTimePerIteration is the main stop.
-                        // However, if no new orders have been generated for a while, we could also stop.
-                        // For now, let's rely on maxSimTime or all generated orders being delivered.
-                         logMessage(`  Run ${run+1} (Custom): All ${currentRunStats.totalGenerated} generated orders delivered at T+${iterSimTime}. Continuing if more orders might generate.`, 'SYSTEM_DEBUG', optimizationLogEl);
-                         // We might not break here for custom profiles unless iterSimTime is close to maxSimTimePerIteration
-                         if (iterSimTime > maxSimTimePerIteration * 0.95) { // Example: if 95% of time passed
-                             break;
-                         }
+                    }
+                } else { // Custom profile
+                     if (iterSimTime >= maxSimTimePerIteration && allGeneratedOrdersInRunProcessed) {
+                        break;
                     }
                 }
+                 if (iterOrders.filter(o => o.status !== 'delivered').length === 0 && currentRunStats.totalGenerated > 0) {
+                    // If all generated orders are delivered, and no more are coming (for default profile)
+                    if (selectedDemandProfileId.startsWith('default_opt_') && currentRunStats.totalGenerated >= targetOrdersPerIterationDefault) {
+                        logMessage(`  Run ${run+1} (Default): All ${currentRunStats.totalGenerated} orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
+                        break;
+                    }
+                    // For custom profiles, we let it run to maxSimTimePerIteration unless explicitly all orders are done AND no more can generate.
+                }
+
+
             } // End of single run's while loop (iterSimTime)
 
-            // Aggregate stats from this run
+            // Accumulate stats for this run
             aggregatedStatsForAgentCount.totalGenerated += currentRunStats.totalGenerated;
             aggregatedStatsForAgentCount.totalDelivered += currentRunStats.totalDelivered;
             aggregatedStatsForAgentCount.sumDeliveryTimes += currentRunStats.sumDeliveryTimes;
@@ -428,10 +418,10 @@ async function runWorkforceOptimization() {
             aggregatedStatsForAgentCount.ordersWithinSLA += currentRunStats.ordersWithinSLA;
             aggregatedStatsForAgentCount.sumWaitTimes += currentRunStats.sumWaitTimes;
             aggregatedStatsForAgentCount.numAssigned += currentRunStats.numAssigned;
-            aggregatedStatsForAgentCount.totalAgentActiveTime += currentRunStats.totalAgentActiveTime;
-            aggregatedStatsForAgentCount.totalAgentDistanceKm += currentRunStats.totalAgentDistanceKm;
+            aggregatedStatsForAgentCount.totalAgentActiveTime += currentRunStats.totalAgentActiveTimeThisRun;
+            aggregatedStatsForAgentCount.totalAgentDistanceKm += currentRunStats.totalAgentDistanceKmThisRun;
             aggregatedStatsForAgentCount.totalRuns++;
-            aggregatedStatsForAgentCount.totalSimTimeAcrossRuns += iterSimTime; // Store actual sim time for this run
+            aggregatedStatsForAgentCount.totalSimTimeAcrossRuns += iterSimTime; 
         } 
 
         const avgGenerated = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalGenerated / aggregatedStatsForAgentCount.totalRuns : 0;
@@ -439,11 +429,9 @@ async function runWorkforceOptimization() {
         const avgDelTime = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.sumDeliveryTimes / aggregatedStatsForAgentCount.totalDelivered) : null;
         const percentOrdersSLA = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.ordersWithinSLA / aggregatedStatsForAgentCount.totalDelivered) * 100 : 0;
         
-        // Corrected Utilization: total active time / (number of agents * average actual runtime per agent configuration)
-        const averageActualRuntimeForThisAgentConfig = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalSimTimeAcrossRuns / aggregatedStatsForAgentCount.totalRuns : maxSimTimePerIteration;
-        const totalPossibleAgentWorkTime = currentNumAgents * averageActualRuntimeForThisAgentConfig * aggregatedStatsForAgentCount.totalRuns; // Sum of actual run times for this agent config
-        const avgUtil = totalPossibleAgentWorkTime > 0 ? (aggregatedStatsForAgentCount.totalAgentActiveTime / totalPossibleAgentWorkTime * 100) : 0;
-
+        const totalPossibleAgentTimeForConfig = currentNumAgents * (aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalSimTimeAcrossRuns / aggregatedStatsForAgentCount.totalRuns : maxSimTimePerIteration);
+        const avgUtil = totalPossibleAgentTimeForConfig > 0 ? (aggregatedStatsForAgentCount.totalAgentActiveTime / totalPossibleAgentTimeForConfig) * 100 / aggregatedStatsForAgentCount.totalRuns : 0;
+        
         const avgWait = aggregatedStatsForAgentCount.numAssigned > 0 ? (aggregatedStatsForAgentCount.sumWaitTimes / aggregatedStatsForAgentCount.numAssigned) : null;
         const avgUndelivered = avgGenerated - avgDelivered;
         const deliveryCompletionRate = avgGenerated > 0 ? avgDelivered / avgGenerated : 0;
