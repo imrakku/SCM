@@ -40,7 +40,7 @@
             margin-bottom: 0.75rem;
         }
         .ai-analysis-content {
-            white-space: pre-wrap; /* Preserve line breaks and spacing from AI response */
+            white-space: pre-wrap; 
             font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             line-height: 1.6;
@@ -130,10 +130,113 @@
         </section>
 
         <section id="clustering" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Dark Store Placement</h2>
+                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <details>
+                        <summary class="font-bold text-lg text-blue-700 hover:text-blue-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section helps identify potentially optimal locations for "dark stores" based on simulated customer order locations, grouping them to find central points.</p>
+                        </div>
+                    </details>
+                </div>
+                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
+                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="input-group">
+                            <label for="numBackgroundOrders">Background Orders:</label>
+                            <input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="numHotspotOrders">Hotspot Orders:</label>
+                            <input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="numDarkStoresForClustering">Number of Dark Stores:</label>
+                            <input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full">
+                        </div>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 mb-10">
+                    <div class="stat-card text-center p-8">
+                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Total Orders Simulated</h4>
+                        <p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p>
+                    </div>
+                    <div class="stat-card text-center p-8">
+                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Dark Stores Identified</h4>
+                        <p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p>
+                    </div>
+                </div>
+                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200">
+                    <div id="clusteringMapViz" class="w-full h-[500px]"></div>
+                </div>
+                 <div class="mb-4 text-center">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections
+                    </label>
+                </div>
+                <p class="text-md text-slate-500 mb-6 italic text-center">
+                    Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).
+                </p>
+                 <div class="text-center">
+                    <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
+                 </div>
+                 <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm bg-slate-100 p-6 rounded-lg border border-slate-200 shadow-inner">
+                    <p class="italic text-slate-500 md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
+                 </div>
+                 <div id="overallClusteringStats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                     <p><strong class="text-blue-700">Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Min Distance:</strong> <span id="overallMinClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Max Distance:</strong> <span id="overallMaxClusterDistance" class="font-semibold">N/A</span></p>
+                     <p><strong class="text-blue-700">Overall Std. Dev. Distance:</strong> <span id="overallStdDevClusterDistance" class="font-semibold">N/A</span></p>
+                 </div>
+            </div>
+        </section>
 
         <section id="demandProfiles" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
+                <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-700 p-4 mb-6 rounded-md shadow" role="alert">
+                    <details>
+                        <summary class="font-bold text-lg text-sky-700 hover:text-sky-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section allows you to create and save different "demand profiles" – patterns of how customer orders might arise across Chandigarh.</p>
+                        </div>
+                    </details>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
+                        <div class="input-group">
+                            <label for="profileNameInput">Profile Name:</label>
+                            <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
+                        </div>
+                        <div id="profileZonesContainer" class="space-y-4 mb-4">
+                        </div>
+                        <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
+                        <div class="flex space-x-2">
+                            <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+                            <button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button>
+                        </div>
+                         <div id="profileCreationMapContainer" class="mt-6 hidden">
+                            <h4 class="text-lg font-semibold text-center mb-2 text-slate-600">Set Hotspot/Route Point</h4>
+                            <div id="profileCreationMap" class="w-full h-[300px]"></div>
+                            <p class="text-sm text-center text-slate-500 mt-2">Click on map to set hotspot center or route points.</p>
+                            <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Profiles</h3>
+                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <ul id="savedProfilesList" class="list-none space-y-2">
+                                <li class="italic text-slate-500">No custom profiles saved yet.</li>
+                            </ul>
+                        </div>
+                         <p class="text-sm text-slate-500 mt-4 italic">Note: Profiles are stored for the current session only using browser's session storage.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section id="simulation" class="content-section">
             <div class="card">
@@ -142,15 +245,7 @@
                      <details>
                         <summary class="font-bold text-lg text-indigo-700 hover:text-indigo-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
-                            <p class="text-base leading-relaxed">This is the heart of the simulator! Here, you can run a live simulation of delivery operations. You'll see orders appear on the map, delivery agents pick them up from a central dark store, and deliver them to customers.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
-                                <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
-                                <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
-                                <li>After a simulation, click "Analyze Simulation Results with AI" for AI-powered insights.</li>
-                                <li>"Save Current Scenario Results" to compare different setups later. You can also "Export Results (CSV)" for analysis in tools like Excel.</li>
-                            </ul>
+                            <p class="text-base leading-relaxed">Run a live simulation of delivery operations. Observe orders, agent movements, and real-time performance metrics.</p>
                         </div>
                     </details>
                 </div>
@@ -251,13 +346,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="text-center text-slate-600 mb-4">
+                 <div class="text-center text-slate-600 mb-4">
                     Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl text-slate-800">0</span> minutes
                     (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)
                 </div>
                 <div class="grid lg:grid-cols-3 gap-x-8 gap-y-8">
                     <div class="lg:col-span-2 space-y-6">
-                        <div id="simulationMap" class="w-full shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
+                        <div id="simulationMap" class="w-full h-[500px] shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
                         <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                             <button id="startSimBtn" class="btn btn-primary w-full sm:flex-1">Start Simulation</button>
                             <button id="pauseSimBtn" class="btn btn-secondary w-full sm:flex-1">Pause Simulation</button>
@@ -299,7 +394,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div id="simulationOverallStats" class="simulation-stats-container">
                     <h4 class="text-2xl font-semibold text-center">Simulation Statistics</h4>
                     <div class="simulation-stats-grid">
@@ -344,10 +438,197 @@
         </section>
 
         <section id="workforceOptimization" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
+                <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
+                     <details>
+                        <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This tool helps find a balance for delivery team size by analyzing how different team sizes impact delivery speed, service levels, agent utilization, and costs, using realistic demand patterns.</p>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
+                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label>
+                            <input type="number" id="optTargetDeliveryTime" value="15" min="5" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optSelectDarkStore">Select Dark Store for Scenario:</label>
+                            <select id="optSelectDarkStore" class="w-full">
+                                <option value="">-- Run Clustering First --</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="optDemandProfileSelect">Select Demand Profile for Optimization:</label>
+                            <select id="optDemandProfileSelect" class="w-full">
+                                <option value="default_opt_uniform">Default: Uniform around Store</option>
+                                <option value="default_opt_focused">Default: Focused around Store</option>
+                            </select>
+                        </div>
+                         <div class="input-group" id="optOrderRadiusContainer">
+                            <label for="optOrderGenerationRadius">Order Generation Radius (km - for default profiles):</label>
+                            <input type="number" id="optOrderGenerationRadius" value="3" min="0.5" step="0.5" class="w-full">
+                        </div>
+                        <div class="input-group" id="optTargetOrdersContainer">
+                            <label for="optTargetOrdersPerIteration">Target Orders per Iteration (for default profiles):</label>
+                            <input type="number" id="optTargetOrdersPerIteration" value="20" min="5" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optMinAgents">Min Agents to Test:</label>
+                            <input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optMaxAgents">Max Agents to Test:</label>
+                            <input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optNumRunsPerAgentCount">Number of Simulation Runs per Agent Count:</label>
+                            <input type="number" id="optNumRunsPerAgentCount" value="3" min="1" max="10" step="1" class="w-full">
+                        </div>
+                         <div class="input-group">
+                            <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
+                            <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button>
+                    </div>
+                </div>
+                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden">
+                     <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Optimal Configuration)</h4>
+                    <div id="optimizationMapViz" class="w-full h-[400px]"></div>
+                </div>
+                <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-2xl font-semibold">Iteration Comparison Table (Averaged Results)</h4>
+                        <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary btn-sm">Export Table (CSV)</button>
+                    </div>
+                    <div class="comparison-table-container">
+                        <table id="optimizationComparisonTable" class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Agents</th>
+                                    <th>Avg. Generated Orders</th>
+                                    <th>Avg. Delivered Orders</th>
+                                    <th>Avg. Delivery Time (min)</th>
+                                    <th>Avg. % Orders within Target</th>
+                                    <th>Avg. Min Delivery Time (min)</th>
+                                    <th>Avg. Max Delivery Time (min)</th>
+                                    <th>Avg. Std. Dev. Delivery Time (min)</th>
+                                    <th>Avg. Agent Utilization (%)</th>
+                                    <th>Avg. Order Wait Time (min)</th>
+                                    <th>Avg. Undelivered Orders</th>
+                                    <th>Avg. Total Op. Cost (₹)</th>
+                                    <th>Avg. Cost/Order (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <div id="optimizationChartsContainer" class="hidden mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4>
+                        <canvas id="deliveryTimeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Utilization</h4>
+                        <canvas id="utilizationChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Total Delivered Orders</h4>
+                        <canvas id="totalDeliveredOrdersChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
+                        <canvas id="avgOrderWaitTimeChart"></canvas>
+                    </div>
+                    <div class="chart-container md:col-span-2">
+                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. % Orders within Target Time</h4>
+                        <canvas id="ordersWithinSlaChart"></canvas>
+                    </div>
+                </div>
+                <div id="optimizationResultsContainer" class="optimization-results-container hidden">
+                    <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
+                    <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
+                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization.</p>
+                    </div>
+                    <div class="optimization-results-grid">
+                        <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
+                        <p><strong >Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
+                        <p><strong >Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
+                        <p><strong >% Orders within Target:</strong> <span id="optResultSlaMet">N/A</span></p>
+                        <p><strong >Avg. Agent Utilization:</strong> <span id="optResultAvgUtilization">N/A</span></p>
+                        <p><strong >Avg. Order Wait Time:</strong> <span id="optResultAvgWaitTime">N/A</span></p>
+                        <p><strong >Undelivered Orders:</strong> <span id="optResultUndelivered">N/A</span></p>
+                    </div>
+                    <div class="cost-kpi-grid">
+                        <p><strong>Total Agent Labor Cost:</strong> <span id="optResultTotalAgentLaborCost">₹0.00</span></p>
+                        <p><strong>Total Travel Cost:</strong> <span id="optResultTotalTravelCost">₹0.00</span></p>
+                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="optResultTotalFixedDeliveryCosts">₹0.00</span></p>
+                        <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
+                        <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
+                    </div>
+                    <div class="mt-4">
+                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Recommended Scenario):</h5>
+                        <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
+                        </ul>
+                        <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
+                    </div>
+                    <h5 class="text-xl font-semibold text-slate-700 mt-6 mb-2">Optimization Log:</h5>
+                    <div id="optimizationLog" class="optimization-log">
+                        <p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section id="scenarioAnalysis" class="content-section">
-            </section>
+            <div class="card">
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
+                 <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-md shadow" role="alert">
+                     <details>
+                        <summary class="font-bold text-lg text-purple-700 hover:text-purple-800">What is this section for? (Click to expand)</summary>
+                        <div class="mt-2">
+                            <p class="text-base leading-relaxed">This section allows you to compare the results of different simulation runs side-by-side. After running various simulations with different parameters, you can save those results and then come here to analyze their impact on performance and cost.</p>
+                        </div>
+                    </details>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1">
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
+                        <div id="savedScenariosListContainer">
+                            <ul id="savedScenariosList">
+                                <li class="italic text-slate-500">No scenarios saved yet.</li>
+                            </ul>
+                        </div>
+                        <div class="mt-4 flex flex-col space-y-2">
+                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
+                            <button id="clearAllScenariosBtn" class="btn btn-danger">Clear All Saved Scenarios</button>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
+                        <div id="scenarioComparisonResultsContainer" class="hidden">
+                             <div class="comparison-table-container">
+                                <table id="scenarioComparisonTable" class="comparison-table">
+                                    <thead>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                         <p id="scenarioComparisonPlaceholder" class="italic text-slate-500 mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
