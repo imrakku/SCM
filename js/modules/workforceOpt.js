@@ -12,7 +12,7 @@ let optimizationMap;
 let optDarkStoreMarkersLayer;
 let optOrderMarkersLayer;
 let allOptimizationIterationsData = []; 
-let bestIterationResult = null; // ★★★ Initialize bestIterationResult to null ★★★
+let bestIterationResult = null; 
 
 // Chart Instances
 let optDeliveryTimeChartInstance, optUtilizationChartInstance,
@@ -43,11 +43,11 @@ let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDe
     optResultOverallTotalOperationalCostEl, optResultAverageCostPerOrderEl,
     optResultSlaMetEl;
 
-const MIN_DELIVERY_COMPLETION_RATE = 0.80;
-const TARGET_SLA_PERCENTAGE = 0.75;
-const IDEAL_AGENT_UTILIZATION_MIN = 60;
-const IDEAL_AGENT_UTILIZATION_MAX = 90;
-const COST_PER_ORDER_TOLERANCE = 0.10;
+const MIN_DELIVERY_COMPLETION_RATE = 0.85; // Slightly higher emphasis on completion
+const TARGET_SLA_PERCENTAGE = 0.80;      // Stricter SLA target
+const IDEAL_AGENT_UTILIZATION_MIN = 55;  // Adjusted ideal range
+const IDEAL_AGENT_UTILIZATION_MAX = 85;  // Avoid over-utilization
+const COST_PER_ORDER_TOLERANCE = 0.05; // 5% tolerance for considering similar costs
 
 export function initializeWorkforceOptimizationSection() {
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
@@ -80,7 +80,19 @@ export function initializeWorkforceOptimizationSection() {
     optResultAvgTimeEl = document.getElementById('optResultAvgTime');
     optResultTargetTimeEl = document.getElementById('optResultTargetTime');
     optResultSlaMetEl = document.getElementById('optResultSlaMet');
-    // ... (rest of optResult elements)
+    optResultMinDelTimeEl = document.getElementById('optResultMinDelTime');
+    optResultMaxDelTimeEl = document.getElementById('optResultMaxDelTime');
+    optResultStdDevDelTimeEl = document.getElementById('optResultStdDevDelTime');
+    optResultAvgUtilizationEl = document.getElementById('optResultAvgUtilization');
+    optResultAvgWaitTimeEl = document.getElementById('optResultAvgWaitTime');
+    optResultUndeliveredEl = document.getElementById('optResultUndelivered');
+    optDarkStoreDistancesEl = document.getElementById('optDarkStoreDistances');
+    optOverallAvgDistanceEl = document.getElementById('optOverallAvgDistance');
+    optResultTotalAgentLaborCostEl = document.getElementById('optResultTotalAgentLaborCost');
+    optResultTotalTravelCostEl = document.getElementById('optResultTotalTravelCost');
+    optResultTotalFixedDeliveryCostsEl = document.getElementById('optResultTotalFixedDeliveryCosts');
+    optResultOverallTotalOperationalCostEl = document.getElementById('optResultOverallTotalOperationalCost');
+    optResultAverageCostPerOrderEl = document.getElementById('optResultAverageCostPerOrder');
 
     runOptimizationBtnEl?.addEventListener('click', runWorkforceOptimization);
     exportWorkforceOptResultsBtnEl?.addEventListener('click', exportWorkforceOptResultsToCSV);
@@ -160,7 +172,7 @@ function resetOptimizationVisuals() {
     if (analyzeWorkforceOptAIButtonEl) analyzeWorkforceOptAIButtonEl.disabled = true;
     if (workforceOptAiAnalysisContainerEl) workforceOptAiAnalysisContainerEl.classList.add('hidden');
     if (workforceOptAiAnalysisContentEl) workforceOptAiAnalysisContentEl.textContent = 'Click "Analyze Optimization with AI" to get insights.';
-    bestIterationResult = null; // ★★★ Reset bestIterationResult ★★★
+    bestIterationResult = null; 
 }
 
 async function runWorkforceOptimization() {
@@ -267,8 +279,6 @@ async function runWorkforceOptimization() {
         .openPopup();
 
     if(optResultTargetTimeEl) optResultTargetTimeEl.textContent = targetAvgDeliveryTime + " min";
-
-    // bestIterationResult is already initialized to null globally
 
     const customProfiles = getCustomDemandProfiles();
 
@@ -481,73 +491,64 @@ async function runWorkforceOptimization() {
         await new Promise(resolve => setTimeout(resolve, 10));
     } 
 
-    let qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(
-        iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE
+    // --- REFINED RECOMMENDATION LOGIC ---
+    bestIterationResult = null; // Reset before finding new best
+    let candidates = allOptimizationIterationsData.filter(
+        iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && 
+                iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE &&
+                (iter.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MAX // Avoid over-utilization if possible
     );
+    recommendationReason = `Initial candidates meet >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion, >=${TARGET_SLA_PERCENTAGE}% SLA, and <${IDEAL_AGENT_UTILIZATION_MAX}% utilization.`;
 
-    let recommendationReason = "";
+    if (candidates.length === 0) { // Relaxation Step 1: Loosen SLA and Utilization Max
+        candidates = allOptimizationIterationsData.filter(
+            iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE &&
+                    iter.percentOrdersSLA >= (TARGET_SLA_PERCENTAGE * 0.8) // e.g., 80% of target SLA
+        );
+        recommendationReason = `Target SLA not fully met by any configuration. Considering options meeting >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion and at least 80% of target SLA.`;
+    }
 
-    if (qualifiedByCompletionAndSLA.length === 0) {
-        qualifiedByCompletionAndSLA = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE);
-        if (qualifiedByCompletionAndSLA.length > 0) {
-            recommendationReason = `No iterations met the target SLA of ${TARGET_SLA_PERCENTAGE * 100}%. Recommendation is based on highest completion rate, then lowest cost per order. Consider increasing agent count or adjusting target delivery time.`;
+    if (candidates.length === 0) { // Relaxation Step 2: Only Completion Rate
+        candidates = allOptimizationIterationsData.filter(
+            iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE
+        );
+        recommendationReason = `Target SLA significantly missed. Considering options meeting only >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion.`;
+    }
+    
+    if (candidates.length === 0) { // Relaxation Step 3: All data if no one meets completion
+        candidates = [...allOptimizationIterationsData];
+        recommendationReason = "Warning: No iterations met minimum completion targets. Recommendation based on best effort from all data, results may be unreliable.";
+    }
+
+    if (candidates.length > 0) {
+        // Prioritize solutions within the ideal utilization range first, then by cost
+        let idealUtilCandidates = candidates.filter(iter => 
+            (iter.avgAgentUtilization ?? 0) >= IDEAL_AGENT_UTILIZATION_MIN &&
+            (iter.avgAgentUtilization ?? 0) <= IDEAL_AGENT_UTILIZATION_MAX
+        );
+
+        if (idealUtilCandidates.length > 0) {
+            idealUtilCandidates.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity)); // Sort by cost
+            bestIterationResult = idealUtilCandidates[0];
+            recommendationReason += ` Selected best cost option within ideal utilization range (${IDEAL_AGENT_UTILIZATION_MIN}-${IDEAL_AGENT_UTILIZATION_MAX}%).`;
         } else {
-            qualifiedByCompletionAndSLA = [...allOptimizationIterationsData];
-            recommendationReason = "No iterations met minimum completion rate or SLA. Showing best attempt based on cost per order among all iterations. Results may not be reliable.";
-        }
-        logMessage(`Warning: ${recommendationReason}`, 'WARNING', optimizationLogEl);
-    } else {
-        recommendationReason = `Selected from iterations meeting >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% order completion and >=${(TARGET_SLA_PERCENTAGE*100).toFixed(0)}% orders within target delivery time. Prioritized lowest cost per order, then optimal utilization.`;
-    }
-
-    if (qualifiedByCompletionAndSLA.length > 0) {
-        qualifiedByCompletionAndSLA.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
-        
-        const lowestCostPerOrder = qualifiedByCompletionAndSLA[0].avgCostPerOrder ?? Infinity;
-        const similarCostIterations = qualifiedByCompletionAndSLA.filter(
-            iter => (iter.avgCostPerOrder ?? Infinity) <= lowestCostPerOrder * (1 + COST_PER_ORDER_TOLERANCE)
-        );
-
-        let bestUtilIterations = similarCostIterations.filter(
-            iter => (iter.avgAgentUtilization ?? 0) >= IDEAL_AGENT_UTILIZATION_MIN &&
-                    (iter.avgAgentUtilization ?? 0) <= IDEAL_AGENT_UTILIZATION_MAX
-        );
-
-        if (bestUtilIterations.length > 0) {
-            bestUtilIterations.sort((a,b) => {
-                if (Math.abs((b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0)) > 1.0) {
-                    return (b.avgAgentUtilization ?? 0) - (a.avgAgentUtilization ?? 0);
+            // If no candidates in ideal utilization, pick the lowest cost from the current 'candidates' set
+            // but add a note about utilization.
+            candidates.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
+            bestIterationResult = candidates[0];
+            if (bestIterationResult) { // Ensure there's at least one candidate
+                if ((bestIterationResult.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN) {
+                    recommendationReason += ` Selected lowest cost option meeting service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is below ideal.`;
+                } else if ((bestIterationResult.avgAgentUtilization ?? 0) > IDEAL_AGENT_UTILIZATION_MAX) {
+                    recommendationReason += ` Selected lowest cost option meeting service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is above ideal (potentially overworked).`;
+                } else {
+                     recommendationReason += ` Selected lowest cost option meeting service criteria. Utilization is acceptable.`;
                 }
-                return a.agents - b.agents;
-            });
-            bestIterationResult = bestUtilIterations[0]; // ★★★ Assign to the module-scoped variable ★★★
-            recommendationReason += ` Preferred configuration within ideal utilization range (${IDEAL_AGENT_UTILIZATION_MIN}-${IDEAL_AGENT_UTILIZATION_MAX}%).`;
-        } else if (similarCostIterations.length > 0) {
-            similarCostIterations.sort((a,b) => {
-                const aIsBelowMin = (a.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN;
-                const bIsBelowMin = (b.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN;
-                if (aIsBelowMin && !bIsBelowMin) return 1;
-                if (!aIsBelowMin && bIsBelowMin) return -1;
-                if (aIsBelowMin && bIsBelowMin) {
-                    return Math.abs((a.avgAgentUtilization ?? 0) - IDEAL_AGENT_UTILIZATION_MIN) - Math.abs((b.avgAgentUtilization ?? 0) - IDEAL_AGENT_UTILIZATION_MIN);
-                }
-                return (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity);
-            });
-            bestIterationResult = similarCostIterations[0]; // ★★★ Assign to the module-scoped variable ★★★
-            if ((bestIterationResult.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN) {
-                recommendationReason += ` Selected best cost option. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is below the ideal minimum of ${IDEAL_AGENT_UTILIZATION_MIN}%, suggesting potential overstaffing for this scenario.`;
-            } else if ((bestIterationResult.avgAgentUtilization ?? 0) > IDEAL_AGENT_UTILIZATION_MAX) {
-                 recommendationReason += ` Selected best cost option. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is above the ideal maximum of ${IDEAL_AGENT_UTILIZATION_MAX}%, suggesting agents might be overworked.`;
-            } else {
-                recommendationReason += ` Selected best cost option. Agent utilization is within an acceptable range.`;
             }
-        } else { 
-            bestIterationResult = qualifiedByCompletionAndSLA[0]; // ★★★ Assign to the module-scoped variable ★★★
         }
-    } else if (allOptimizationIterationsData.length > 0) {
-        allOptimizationIterationsData.sort((a,b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
-        bestIterationResult = allOptimizationIterationsData[0]; // ★★★ Assign to the module-scoped variable ★★★
     }
+    // --- End Refined Recommendation Logic ---
+
 
     displayOptimizationResults(bestIterationResult, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
@@ -556,7 +557,7 @@ async function runWorkforceOptimization() {
     if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden');
     if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden');
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = false;
-    if(analyzeWorkforceOptAIButtonEl && bestIterationResult) analyzeWorkforceOptAIButtonEl.disabled = false; // ★★★ Enable AI button only if results exist ★★★
+    if(analyzeWorkforceOptAIButtonEl && bestIterationResult) analyzeWorkforceOptAIButtonEl.disabled = false;
 
 
     let finalRecommendationMessage = "No suitable configuration found based on current criteria and simulation runs. Please review the iteration table and charts for insights, or adjust parameters and re-run.";
@@ -576,12 +577,27 @@ async function runWorkforceOptimization() {
 }
 
 function displayOptimizationResults(bestResult, targetTime) {
-    // ... (rest of displayOptimizationResults as before)
     if (!bestResult) {
         if(optResultAgentsEl) optResultAgentsEl.textContent = "Not Found";
-        // ... (clear other fields) ...
+        if(optResultAvgTimeEl) optResultAvgTimeEl.textContent = "N/A";
+        if(optResultSlaMetEl) optResultSlaMetEl.textContent = "N/A";
+        if(optResultMinDelTimeEl) optResultMinDelTimeEl.textContent = "N/A";
+        if(optResultMaxDelTimeEl) optResultMaxDelTimeEl.textContent = "N/A";
+        if(optResultStdDevDelTimeEl) optResultStdDevDelTimeEl.textContent = "N/A";
+        if(optResultAvgUtilizationEl) optResultAvgUtilizationEl.textContent = "N/A";
+        if(optResultAvgWaitTimeEl) optResultAvgWaitTimeEl.textContent = "N/A";
+        if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = "N/A";
+        if(optResultTotalAgentLaborCostEl) optResultTotalAgentLaborCostEl.textContent = "₹0.00";
+        if(optResultTotalTravelCostEl) optResultTotalTravelCostEl.textContent = "₹0.00";
+        if(optResultTotalFixedDeliveryCostsEl) optResultTotalFixedDeliveryCostsEl.textContent = "₹0.00";
+        if(optResultOverallTotalOperationalCostEl) optResultOverallTotalOperationalCostEl.textContent = "₹0.00";
+        if(optResultAverageCostPerOrderEl) optResultAverageCostPerOrderEl.textContent = "N/A";
+        if(optDarkStoreDistancesEl) optDarkStoreDistancesEl.innerHTML = "";
+        if(optOverallAvgDistanceEl) optOverallAvgDistanceEl.textContent = "N/A";
+        if(optimizationMap && optOrderMarkersLayer) optOrderMarkersLayer.clearLayers();
         return;
     }
+
     if(optResultAgentsEl) optResultAgentsEl.textContent = bestResult.agents;
     if(optResultAvgTimeEl) optResultAvgTimeEl.textContent = bestResult.avgDeliveryTime !== null ? bestResult.avgDeliveryTime.toFixed(1) + " min" : "N/A";
     if(optResultTargetTimeEl) optResultTargetTimeEl.textContent = targetTime + " min";
@@ -727,8 +743,7 @@ function exportWorkforceOptResultsToCSV() {
 
 // --- AI Analysis Functions for Workforce Optimization ---
 function prepareWorkforceOptDataForAI() {
-    // ★★★ Add check for bestIterationResult ★★★
-    if (!bestIterationResult && allOptimizationIterationsData.length === 0) {
+    if (!bestIterationResult && allOptimizationIterationsData.length === 0) { // Check both
         return "No optimization data available to analyze. Please run an optimization first.";
     }
 
@@ -749,17 +764,16 @@ function prepareWorkforceOptDataForAI() {
         dataString += `${iter.agents}, ${iter.deliveredOrders?.toFixed(1) ?? 'N/A'}, ${iter.avgDeliveryTime?.toFixed(1) ?? 'N/A'}, ${iter.percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, ${iter.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%, ${iter.avgCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
     });
 
-    if (bestIterationResult) { // Check if bestIterationResult is populated
+    if (bestIterationResult) { 
         dataString += "\nRecommended Scenario Details:\n";
         dataString += `Recommended Agents: ${bestIterationResult.agents}\n`;
         dataString += `Achieved Avg. Delivery Time: ${bestIterationResult.avgDeliveryTime?.toFixed(1) ?? 'N/A'} min\n`;
         dataString += `Avg. % Orders within Target: ${bestIterationResult.percentOrdersSLA?.toFixed(1) ?? 'N/A'}%\n`;
         dataString += `Avg. Agent Utilization: ${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%\n`;
         dataString += `Avg. Cost per Order: ₹${bestIterationResult.avgCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
-        // Extract rationale from the displayed text if possible, or provide a summary.
-        // For simplicity, we'll just note that the rationale is displayed separately.
-        if(optimizationRecommendationTextEl && optimizationRecommendationTextEl.innerHTML.includes("Selection Rationale")){
-            dataString += `Rationale: ${optimizationRecommendationTextEl.innerHTML.substring(optimizationRecommendationTextEl.innerHTML.indexOf("Selection Rationale:")).replace(/<[^>]*>/g, '').trim()}\n`;
+        if(optimizationRecommendationTextEl && optimizationRecommendationTextEl.innerHTML.includes("Selection Rationale:")){
+            const rationaleText = optimizationRecommendationTextEl.innerHTML.substring(optimizationRecommendationTextEl.innerHTML.indexOf("Selection Rationale:")).replace(/<[^>]*>/g, '').trim();
+            dataString += `${rationaleText}\n`;
         } else {
              dataString += `Rationale: Based on balancing service, cost, and utilization as displayed.\n`;
         }
@@ -776,7 +790,7 @@ async function handleWorkforceOptAiAnalysisRequest() {
         return;
     }
 
-    if (allOptimizationIterationsData.length === 0) { // Check if any data exists
+    if (allOptimizationIterationsData.length === 0) {
         workforceOptAiAnalysisContentEl.textContent = "Please run a workforce optimization first to generate data for analysis.";
         workforceOptAiAnalysisContainerEl.classList.remove('hidden');
         return;
