@@ -4,15 +4,15 @@ import { initializeMap, getMapInstance, getDistanceKm, isPointInPolygon, darkSto
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
 import { globalClusteredDarkStores } from './clustering.js';
-import { getSimParameter as getMainSimParameter } from './simulation.js'; 
+import { getSimParameter as getMainSimParameter } from './simulation.js';
 import { getCustomDemandProfiles } from './demandProfiles.js';
 
 // Module-specific state
 let optimizationMap;
 let optDarkStoreMarkersLayer;
 let optOrderMarkersLayer;
-let allOptimizationIterationsData = []; 
-let bestIterationResult = null; 
+let allOptimizationIterationsData = [];
+let bestIterationResult = null;
 
 // Chart Instances
 let optDeliveryTimeChartInstance;
@@ -22,7 +22,7 @@ let optAvgOrderWaitTimeChartInstance;
 let optOrdersWithinSlaChartInstance;
 
 // DOM Elements
-let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
+let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl,
     optDemandProfileSelectEl, optOrderGenerationRadiusInputEl,
     optTargetOrdersPerIterationInputEl,
     optMinAgentsInputEl, optMaxAgentsInputEl,
@@ -43,11 +43,11 @@ let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl, optResultMinDe
     optResultOverallTotalOperationalCostEl, optResultAverageCostPerOrderEl,
     optResultSlaMetEl;
 
-const MIN_DELIVERY_COMPLETION_RATE = 0.85; 
-const TARGET_SLA_PERCENTAGE = 0.80;      
-const IDEAL_AGENT_UTILIZATION_MIN = 55;  
-const IDEAL_AGENT_UTILIZATION_MAX = 85;  
-const COST_PER_ORDER_TOLERANCE = 0.05; 
+const MIN_DELIVERY_COMPLETION_RATE = 0.85;
+const TARGET_SLA_PERCENTAGE = 0.80;
+const IDEAL_AGENT_UTILIZATION_MIN = 55;
+const IDEAL_AGENT_UTILIZATION_MAX = 85;
+const COST_PER_ORDER_TOLERANCE = 0.05;
 
 export function initializeWorkforceOptimizationSection() {
     optTargetDeliveryTimeInputEl = document.getElementById('optTargetDeliveryTime');
@@ -103,14 +103,14 @@ export function initializeWorkforceOptimizationSection() {
     populateDemandProfileSelectorForOpt();
     initializeOptimizationChartsLocal();
     toggleOptProfileSpecificInputs();
-    if (analyzeWorkforceOptAIButtonEl) analyzeWorkforceOptAIButtonEl.disabled = true; 
+    if (analyzeWorkforceOptAIButtonEl) analyzeWorkforceOptAIButtonEl.disabled = true;
 }
 
 function toggleOptProfileSpecificInputs() {
     if (!optDemandProfileSelectEl || !optOrderRadiusContainerEl || !optTargetOrdersContainerEl) return;
     const selectedProfile = optDemandProfileSelectEl.value;
     const showDefaultInputs = selectedProfile.startsWith('default_opt_');
-    
+
     optOrderRadiusContainerEl.classList.toggle('hidden', !showDefaultInputs);
     optTargetOrdersContainerEl.classList.toggle('hidden', !showDefaultInputs);
 }
@@ -172,34 +172,44 @@ function resetOptimizationVisuals() {
     if (analyzeWorkforceOptAIButtonEl) analyzeWorkforceOptAIButtonEl.disabled = true;
     if (workforceOptAiAnalysisContainerEl) workforceOptAiAnalysisContainerEl.classList.add('hidden');
     if (workforceOptAiAnalysisContentEl) workforceOptAiAnalysisContentEl.textContent = 'Click "Analyze Optimization with AI" to get insights.';
-    bestIterationResult = null; 
+    bestIterationResult = null;
 }
 
 async function runWorkforceOptimization() {
     allOptimizationIterationsData = [];
-    resetOptimizationVisuals(); 
-    let recommendationReason = ""; 
+    resetOptimizationVisuals();
+    let recommendationReason = "";
 
-    // ... (Parameter parsing and validation as before) ...
-    const baseRequiredElements = { /* ... */ };
-    // ... (Element checks and parameter parsing as before) ...
+    // Basic element check
+    const requiredElements = {
+        optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, optDemandProfileSelectEl,
+        optOrderGenerationRadiusInputEl, optTargetOrdersPerIterationInputEl,
+        optMinAgentsInputEl, optMaxAgentsInputEl, optNumRunsPerAgentCountInputEl,
+        optMaxSimTimePerIterationInputEl, runOptimizationBtnEl, optimizationLogEl
+    };
+    for (const elName in requiredElements) {
+        if (!requiredElements[elName]) {
+            console.error(`Workforce Optimization: Missing critical DOM element: ${elName}`);
+            logMessage(`Error: Missing critical UI element for optimization. Setup incomplete.`, 'ERROR', optimizationLogEl);
+            if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+            return;
+        }
+    }
+
     const selectedDarkStoreId = parseInt(optSelectDarkStoreEl.value);
+    if (isNaN(selectedDarkStoreId)) {
+        logMessage('Error: No dark store selected for optimization.', 'ERROR', optimizationLogEl);
+        if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+        return;
+    }
     const selectedDarkStore = globalClusteredDarkStores.find(ds => ds.id === selectedDarkStoreId);
-    // ... (rest of parameter validation) ...
+    if (!selectedDarkStore) {
+        logMessage(`Error: Selected dark store (ID: ${selectedDarkStoreId}) not found in clustered data.`, 'ERROR', optimizationLogEl);
+        if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+        return;
+    }
 
-    runOptimizationBtnEl.disabled = true;
-    runOptimizationBtnEl.textContent = "Optimizing...";
-    if (optimizationLogEl) optimizationLogEl.innerHTML = "";
-    logMessage(`Starting workforce optimization for Dark Store: ${selectedDarkStore.name}`, 'SYSTEM', optimizationLogEl);
-    // ... (other initial log messages) ...
-
-    const baseMinAgentSpeed = getMainSimParameter('agentMinSpeed');
-    const baseMaxAgentSpeed = getMainSimParameter('agentMaxSpeed');
-    const baseHandlingTime = getMainSimParameter('handlingTime');
-    const baseTrafficFactor = getMainSimParameter('baseTrafficFactor');
-    const iterAgentCostPerHour = getMainSimParameter('agentCostPerHour');
-    const iterCostPerKm = getMainSimParameter('costPerKmTraveled');
-    const iterFixedCostPerDelivery = getMainSimParameter('fixedCostPerDelivery');
+    // Parameter Parsing and Validation
     const targetAvgDeliveryTime = parseInt(optTargetDeliveryTimeInputEl.value);
     const numRunsPerAgentCount = parseInt(optNumRunsPerAgentCountInputEl.value);
     const maxSimTimePerIteration = parseInt(optMaxSimTimePerIterationInputEl.value);
@@ -209,30 +219,71 @@ async function runWorkforceOptimization() {
     const orderRadiusKm = parseFloat(optOrderGenerationRadiusInputEl.value);
     const targetOrdersPerIterationDefault = parseInt(optTargetOrdersPerIterationInputEl.value);
 
+    if (isNaN(targetAvgDeliveryTime) || targetAvgDeliveryTime <= 0 ||
+        isNaN(numRunsPerAgentCount) || numRunsPerAgentCount <= 0 ||
+        isNaN(maxSimTimePerIteration) || maxSimTimePerIteration <= 0 ||
+        isNaN(minAgentsToTest) || minAgentsToTest <= 0 ||
+        isNaN(maxAgentsToTest) || maxAgentsToTest < minAgentsToTest ||
+        (selectedDemandProfileId.startsWith('default_opt_') && (isNaN(orderRadiusKm) || orderRadiusKm <= 0)) ||
+        (selectedDemandProfileId.startsWith('default_opt_') && (isNaN(targetOrdersPerIterationDefault) || targetOrdersPerIterationDefault <= 0))) {
+        logMessage('Error: Invalid optimization parameters. Please check inputs.', 'ERROR', optimizationLogEl);
+        if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
+        return;
+    }
+
+
+    runOptimizationBtnEl.disabled = true;
+    runOptimizationBtnEl.textContent = "Optimizing...";
+    if (optimizationLogEl) optimizationLogEl.innerHTML = "";
+    logMessage(`Starting workforce optimization for Dark Store: ${selectedDarkStore.name}`, 'SYSTEM', optimizationLogEl);
+    logMessage(`Target Avg Delivery Time: ${targetAvgDeliveryTime} min. Demand Profile: ${selectedDemandProfileId}. Runs per agent count: ${numRunsPerAgentCount}.`, 'SYSTEM', optimizationLogEl);
+    logMessage(`Testing agents from ${minAgentsToTest} to ${maxAgentsToTest}. Max sim time per iter: ${maxSimTimePerIteration} min.`, 'SYSTEM', optimizationLogEl);
+
+
+    const baseMinAgentSpeed = getMainSimParameter('agentMinSpeed');
+    const baseMaxAgentSpeed = getMainSimParameter('agentMaxSpeed');
+    const baseHandlingTime = getMainSimParameter('handlingTime');
+    const baseTrafficFactor = getMainSimParameter('baseTrafficFactor');
+    const iterAgentCostPerHour = getMainSimParameter('agentCostPerHour');
+    const iterCostPerKm = getMainSimParameter('costPerKmTraveled');
+    const iterFixedCostPerDelivery = getMainSimParameter('fixedCostPerDelivery');
+
 
     if(optimizationResultsContainerEl) optimizationResultsContainerEl.classList.remove('hidden');
     if(optimizationMapContainerEl) optimizationMapContainerEl.classList.remove('hidden');
     if (!getMapInstance('workforceOptimization')) {
         optimizationMap = initializeMap('optimizationMapViz', selectedDarkStore, 13, 'workforceOptimization');
-        optDarkStoreMarkersLayer = L.layerGroup().addTo(optimizationMap);
-        optOrderMarkersLayer = L.layerGroup().addTo(optimizationMap);
-    } else { /* ... */ }
-     L.marker([selectedDarkStore.lat, selectedDarkStore.lng], { icon: commonDarkStoreIcon })
-        .bindPopup(`<b>${selectedDarkStore.name}</b><br>(Optimization Target)`)
-        .addTo(optDarkStoreMarkersLayer)
-        .openPopup();
+        if (optimizationMap) { // Check if map initialized successfully
+            optDarkStoreMarkersLayer = L.layerGroup().addTo(optimizationMap);
+            optOrderMarkersLayer = L.layerGroup().addTo(optimizationMap);
+        } else {
+            logMessage('Error: Could not initialize optimization map.', 'ERROR', optimizationLogEl);
+        }
+    } else {
+        optimizationMap = getMapInstance('workforceOptimization');
+        if (optDarkStoreMarkersLayer) optDarkStoreMarkersLayer.clearLayers(); else optDarkStoreMarkersLayer = L.layerGroup().addTo(optimizationMap);
+        if (optOrderMarkersLayer) optOrderMarkersLayer.clearLayers(); else optOrderMarkersLayer = L.layerGroup().addTo(optimizationMap);
+        optimizationMap.setView([selectedDarkStore.lat, selectedDarkStore.lng], 13);
+    }
+    if (optDarkStoreMarkersLayer) { // Check if layer exists
+        L.marker([selectedDarkStore.lat, selectedDarkStore.lng], { icon: commonDarkStoreIcon })
+            .bindPopup(`<b>${selectedDarkStore.name}</b><br>(Optimization Target)`)
+            .addTo(optDarkStoreMarkersLayer)
+            .openPopup();
+    }
+
 
     if(optResultTargetTimeEl) optResultTargetTimeEl.textContent = targetAvgDeliveryTime + " min";
 
     const customProfiles = getCustomDemandProfiles();
-    bestIterationResult = null; 
+    bestIterationResult = null;
 
     for (let currentNumAgents = minAgentsToTest; currentNumAgents <= maxAgentsToTest; currentNumAgents++) {
         logMessage(`Testing with ${currentNumAgents} agent(s) across ${numRunsPerAgentCount} runs...`, 'ITERATION', optimizationLogEl);
-        
+
         let aggregatedStatsForAgentCount = {
             totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
-            ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0, 
+            ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0,
             totalAgentActiveTime: 0, totalAgentDistanceKm: 0,
             totalOpCost: 0, totalRuns: 0, totalSimTimeAcrossRuns: 0
         };
@@ -242,26 +293,27 @@ async function runWorkforceOptimization() {
             if (optimizationLogEl) optimizationLogEl.scrollTop = optimizationLogEl.scrollHeight;
 
             let iterSimTime = 0;
-            let iterOrders = []; 
+            let iterOrders = [];
             let iterAgents = [];
             let iterOrderIdCounter = 0;
             let currentRunStats = {
                 totalGenerated: 0, totalDelivered: 0, sumDeliveryTimes: 0, deliveryTimes: [],
-                ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0, 
-                totalAgentActiveTimeThisRun: 0, totalAgentDistanceKmThisRun: 0
+                ordersWithinSLA: 0, sumWaitTimes: 0, numAssigned: 0,
+                totalAgentActiveTimeThisRun: 0, totalAgentDistanceKmThisRun: 0 // Initialized
             };
-            
+
             for (let i = 0; i < currentNumAgents; i++) {
                 const speedRange = baseMaxAgentSpeed - baseMinAgentSpeed;
                 iterAgents.push({
-                    id: i, location: { ...selectedDarkStore }, 
+                    id: i, location: { ...selectedDarkStore },
                     speedKmph: baseMinAgentSpeed + Math.random() * speedRange,
                     status: 'available', assignedOrderId: null, routePath: [], currentLegIndex: 0,
-                    legProgress: 0, timeSpentAtStore: 0, 
-                    busyTimeThisRun: 0, 
+                    legProgress: 0, timeSpentAtStore: 0,
+                    busyTimeThisRun: 0,
+                    distanceTraveledThisRun: 0, // Initialized
                 });
             }
-            
+
             if (selectedDemandProfileId.startsWith('default_opt_')) {
                 for (let i = 0; i < targetOrdersPerIterationDefault; i++) {
                     const orderId = iterOrderIdCounter++;
@@ -274,13 +326,14 @@ async function runWorkforceOptimization() {
                         attempts++;
                     } while (!isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon) && attempts < 100);
                     if (attempts >= 100 && !isPointInPolygon([orderLocation.lng, orderLocation.lat], chandigarhGeoJsonPolygon)) {
-                        orderLocation = { ...selectedDarkStore };
+                        orderLocation = { ...selectedDarkStore }; // Fallback to store if valid point not found
+                        logMessage(`Warning: Could not find point in polygon for order ${orderId} after ${attempts} attempts. Using store location.`, 'WARNING_DEBUG', optimizationLogEl);
                     }
-                    iterOrders.push({ 
-                        id: orderId, 
-                        location: orderLocation, 
-                        status: 'pending', 
-                        timePlaced: 0, 
+                    iterOrders.push({
+                        id: orderId,
+                        location: orderLocation,
+                        status: 'pending',
+                        timePlaced: 0, // For default, assume all placed at T=0 of the run
                         assignedAgentId: null,
                         assignmentTime: null,
                         deliveryTime: null
@@ -291,122 +344,161 @@ async function runWorkforceOptimization() {
             }
 
             // Main simulation loop for this individual run
-            let ordersProcessedInThisRun = 0;
+            // let ordersProcessedInThisRun = 0; // Declared in original, not strictly necessary for current logic
             while (iterSimTime < maxSimTimePerIteration) {
                 iterSimTime++;
 
                 // Order Generation for Custom Profiles
                 if (selectedDemandProfileId.startsWith('custom_')) {
-                    // ... (Custom profile order generation - unchanged from previous correct version) ...
+                    const profileName = selectedDemandProfileId.replace('custom_', '');
+                    const customProfile = customProfiles.find(p => p.name === profileName);
+                    if (customProfile && customProfile.orders) { // Ensure orders array exists
+                        const ordersToGenerateThisTick = customProfile.orders.filter(po => po.time === iterSimTime);
+                        ordersToGenerateThisTick.forEach(po => {
+                            const orderId = iterOrderIdCounter++;
+                            let orderLocation = po.location; // Expect {lat, lng} in profile data
+                            if (!orderLocation) { // Fallback if location is missing in profile
+                                logMessage(`Warning: Custom profile '${profileName}' order at T=${po.time} missing location. Using store location.`, 'WARNING_DEBUG', optimizationLogEl);
+                                orderLocation = { ...selectedDarkStore };
+                            }
+                            iterOrders.push({
+                                id: orderId,
+                                location: orderLocation,
+                                status: 'pending',
+                                timePlaced: iterSimTime, // Order placed at current sim time
+                                assignedAgentId: null,
+                                assignmentTime: null,
+                                deliveryTime: null
+                            });
+                        });
+                        if (ordersToGenerateThisTick.length > 0) {
+                            currentRunStats.totalGenerated += ordersToGenerateThisTick.length;
+                            logMessage(`  Custom profile '${profileName}': Generated ${ordersToGenerateThisTick.length} orders at T+${iterSimTime}. Total generated in run: ${currentRunStats.totalGenerated}`, 'SYSTEM_DEBUG', optimizationLogEl);
+                        }
+                    }
                 }
-                
+
                 // Assign orders to available agents
                 iterOrders.filter(o => o.status === 'pending').forEach(order => {
                     const availableAgent = iterAgents.find(a => a.status === 'available');
                     if (availableAgent) {
-                        order.status = 'assigned'; 
+                        order.status = 'assigned';
                         order.assignedAgentId = availableAgent.id;
                         order.assignmentTime = iterSimTime;
                         currentRunStats.sumWaitTimes += (order.assignmentTime - order.timePlaced);
                         currentRunStats.numAssigned++;
-                        
-                        availableAgent.assignedOrderId = order.id; 
+
+                        availableAgent.assignedOrderId = order.id;
                         availableAgent.status = (availableAgent.location.lat === selectedDarkStore.lat && availableAgent.location.lng === selectedDarkStore.lng) ? 'at_store' : 'to_store';
                         availableAgent.routePath = [availableAgent.location, selectedDarkStore, order.location];
-                        availableAgent.currentLegIndex = 0; 
-                        availableAgent.legProgress = 0; 
+                        availableAgent.currentLegIndex = 0;
+                        availableAgent.legProgress = 0;
                         availableAgent.timeSpentAtStore = 0;
                     }
                 });
 
                 // Update agent movements and statuses
                 iterAgents.forEach(agent => {
-                    if (agent.status === 'available') return; 
+                    if (agent.status === 'available') return;
 
-                    agent.busyTimeThisRun++; 
+                    agent.busyTimeThisRun++;
                     currentRunStats.totalAgentActiveTimeThisRun++;
 
                     if (agent.status === 'to_store') {
-                        const legDist = getDistanceKm(agent.location, selectedDarkStore);
-                        const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1; 
-                        agent.distanceTraveledThisRun += distCovered; 
-                        currentRunStats.totalAgentDistanceKmThisRun += distCovered;
-                        if (legDist <= distCovered || legDist < 0.01) { 
-                            agent.location = {...selectedDarkStore}; 
-                            agent.status = 'at_store'; 
+                        const legTarget = selectedDarkStore;
+                        const legDist = getDistanceKm(agent.location, legTarget);
+                        const distCoveredThisTick = (agent.speedKmph * baseTrafficFactor / 60) * 1;
+
+                        if (legDist <= distCoveredThisTick || legDist < 0.01) {
+                            agent.distanceTraveledThisRun += legDist; // Add remaining distance
+                            currentRunStats.totalAgentDistanceKmThisRun += legDist;
+                            agent.location = {...legTarget};
+                            agent.status = 'at_store';
                             agent.timeSpentAtStore = 0;
+                        } else {
+                            agent.distanceTraveledThisRun += distCoveredThisTick;
+                            currentRunStats.totalAgentDistanceKmThisRun += distCoveredThisTick;
+                            const fractionMoved = distCoveredThisTick / legDist;
+                            agent.location.lat += (legTarget.lat - agent.location.lat) * fractionMoved;
+                            agent.location.lng += (legTarget.lng - agent.location.lng) * fractionMoved;
                         }
                     } else if (agent.status === 'at_store') {
                         agent.timeSpentAtStore++;
                         if (agent.timeSpentAtStore >= baseHandlingTime) {
-                            agent.status = 'to_customer'; 
+                            agent.status = 'to_customer';
                             agent.timeSpentAtStore = 0;
                             const currentOrder = iterOrders.find(o=>o.id === agent.assignedOrderId);
                             if (currentOrder) {
-                                agent.routePath = [selectedDarkStore, currentOrder.location]; 
+                                agent.routePath = [selectedDarkStore, currentOrder.location];
                                 agent.currentLegIndex = 0; agent.legProgress = 0;
-                            } else { 
-                                agent.status = 'available'; 
+                                agent.location = {...selectedDarkStore};
+                            } else {
+                                agent.status = 'available';
                                 agent.assignedOrderId = null;
                             }
                         }
                     } else if (agent.status === 'to_customer') {
-                        if (!agent.routePath || agent.routePath.length < 2) { 
+                        if (!agent.routePath || agent.routePath.length < 2) {
                             agent.status = 'available'; agent.assignedOrderId = null; return;
                         }
-                        const customerLocation = agent.routePath[1]; 
-                        const legDist = getDistanceKm(agent.location, customerLocation);
-                        if (legDist === 0 || agent.legProgress >= 1) { 
-                             agent.legProgress = 1; 
+                        const originOfLeg = agent.routePath[0]; // Store
+                        const customerLocation = agent.routePath[1]; // Customer
+                        const totalLegDistanceToCustomer = getDistanceKm(originOfLeg, customerLocation);
+                        const distCoveredThisTick = (agent.speedKmph * baseTrafficFactor / 60) * 1;
+                        const currentDistToCustomer = getDistanceKm(agent.location, customerLocation);
+
+                        if (currentDistToCustomer <= distCoveredThisTick || currentDistToCustomer < 0.01) {
+                            agent.distanceTraveledThisRun += currentDistToCustomer;
+                            currentRunStats.totalAgentDistanceKmThisRun += currentDistToCustomer;
+                            agent.location = {...customerLocation};
+                            agent.legProgress = 1;
                         } else {
-                            const distCovered = (agent.speedKmph * baseTrafficFactor / 60) * 1; 
-                            agent.distanceTraveledThisRun += distCovered; 
-                            currentRunStats.totalAgentDistanceKmThisRun += distCovered;
-                            agent.legProgress += (distCovered / legDist);
+                            agent.distanceTraveledThisRun += distCoveredThisTick;
+                            currentRunStats.totalAgentDistanceKmThisRun += distCoveredThisTick;
+                            const fractionOfRemainingToMove = distCoveredThisTick / currentDistToCustomer;
+                            agent.location.lat += (customerLocation.lat - agent.location.lat) * fractionOfRemainingToMove;
+                            agent.location.lng += (customerLocation.lng - agent.location.lng) * fractionOfRemainingToMove;
+                            if (totalLegDistanceToCustomer > 0) {
+                                agent.legProgress = getDistanceKm(originOfLeg, agent.location) / totalLegDistanceToCustomer;
+                            } else {
+                                agent.legProgress = 1; // Avoid division by zero if store and customer are same
+                            }
                         }
-                        if (agent.legProgress >= 1) { 
+
+                        if (agent.legProgress >= 1) {
                             agent.location = {...customerLocation};
                             const deliveredOrder = iterOrders.find(o => o.id === agent.assignedOrderId);
-                            if (deliveredOrder && deliveredOrder.status !== 'delivered') { 
-                                deliveredOrder.status = 'delivered'; 
+                            if (deliveredOrder && deliveredOrder.status !== 'delivered') {
+                                deliveredOrder.status = 'delivered';
                                 deliveredOrder.deliveryTime = iterSimTime;
                                 currentRunStats.totalDelivered++;
-                                ordersProcessedInThisRun++;
+                                // ordersProcessedInThisRun++; // from original
                                 const deliveryDuration = iterSimTime - deliveredOrder.timePlaced;
-                                currentRunStats.sumDeliveryTimes += deliveryDuration; 
+                                currentRunStats.sumDeliveryTimes += deliveryDuration;
                                 currentRunStats.deliveryTimes.push(deliveryDuration);
                                 if (deliveryDuration <= targetAvgDeliveryTime) currentRunStats.ordersWithinSLA++;
                             }
-                            agent.status = 'available'; 
-                            agent.assignedOrderId = null; 
-                            agent.routePath = []; 
-                            agent.currentLegIndex = 0; 
+                            agent.status = 'available';
+                            agent.assignedOrderId = null;
+                            agent.routePath = [];
+                            agent.currentLegIndex = 0;
                             agent.legProgress = 0;
                         }
                     }
-                }); 
-                
-                // Check for run completion
-                const allGeneratedOrdersInRunProcessed = iterOrders.every(o => o.status === 'delivered' || o.status === 'pending_no_agent'); // Or some other terminal state
-                if (selectedDemandProfileId.startsWith('default_opt_')) {
-                    if (currentRunStats.totalDelivered >= initialOrdersForThisRun) {
-                        logMessage(`  Run ${run+1}: All ${initialOrdersForThisRun} target orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
-                        break; 
-                    }
-                } else { // Custom profile
-                     if (iterSimTime >= maxSimTimePerIteration && allGeneratedOrdersInRunProcessed) {
-                        break;
-                    }
-                }
-                 if (iterOrders.filter(o => o.status !== 'delivered').length === 0 && currentRunStats.totalGenerated > 0) {
-                    // If all generated orders are delivered, and no more are coming (for default profile)
-                    if (selectedDemandProfileId.startsWith('default_opt_') && currentRunStats.totalGenerated >= targetOrdersPerIterationDefault) {
-                        logMessage(`  Run ${run+1} (Default): All ${currentRunStats.totalGenerated} orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
-                        break;
-                    }
-                    // For custom profiles, we let it run to maxSimTimePerIteration unless explicitly all orders are done AND no more can generate.
-                }
+                });
 
+                // Check for run completion for default profiles (early exit if all orders delivered)
+                if (selectedDemandProfileId.startsWith('default_opt_')) {
+                    // currentRunStats.totalGenerated is set at the start of the run for default profiles.
+                    // This is the number of orders we expect to deliver for this run.
+                    if (currentRunStats.totalGenerated > 0 && currentRunStats.totalDelivered >= currentRunStats.totalGenerated) {
+                        logMessage(`  Run ${run + 1} (Default): All ${currentRunStats.totalGenerated} target orders delivered at T+${iterSimTime}.`, 'SYSTEM_DEBUG', optimizationLogEl);
+                        break; // Exit this run's simulation loop
+                    }
+                }
+                // For custom profiles, the loop continues until maxSimTimePerIteration.
+                // No specific early break condition for custom profiles based on delivered orders,
+                // as more orders might be generated later in the simulation time.
 
             } // End of single run's while loop (iterSimTime)
 
@@ -421,27 +513,31 @@ async function runWorkforceOptimization() {
             aggregatedStatsForAgentCount.totalAgentActiveTime += currentRunStats.totalAgentActiveTimeThisRun;
             aggregatedStatsForAgentCount.totalAgentDistanceKm += currentRunStats.totalAgentDistanceKmThisRun;
             aggregatedStatsForAgentCount.totalRuns++;
-            aggregatedStatsForAgentCount.totalSimTimeAcrossRuns += iterSimTime; 
-        } 
+            aggregatedStatsForAgentCount.totalSimTimeAcrossRuns += iterSimTime;
+        }
 
         const avgGenerated = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalGenerated / aggregatedStatsForAgentCount.totalRuns : 0;
         const avgDelivered = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalDelivered / aggregatedStatsForAgentCount.totalRuns : 0;
-        const avgDelTime = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.sumDeliveryTimes / aggregatedStatsForAgentCount.totalDelivered) : null;
-        const percentOrdersSLA = aggregatedStatsForAgentCount.totalDelivered > 0 ? (aggregatedStatsForAgentCount.ordersWithinSLA / aggregatedStatsForAgentCount.totalDelivered) * 100 : 0;
-        
-        const totalPossibleAgentTimeForConfig = currentNumAgents * (aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalSimTimeAcrossRuns / aggregatedStatsForAgentCount.totalRuns : maxSimTimePerIteration);
-        const avgUtil = totalPossibleAgentTimeForConfig > 0 ? (aggregatedStatsForAgentCount.totalAgentActiveTime / totalPossibleAgentTimeForConfig) * 100 / aggregatedStatsForAgentCount.totalRuns : 0;
-        
+        const avgDelTime = avgDelivered > 0 ? (aggregatedStatsForAgentCount.sumDeliveryTimes / avgDelivered) : null; // Use avgDelivered here
+        const percentOrdersSLA = avgDelivered > 0 ? (aggregatedStatsForAgentCount.ordersWithinSLA / avgDelivered) * 100 : 0; // Use avgDelivered here
+
+        const avgSimTimePerRun = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalSimTimeAcrossRuns / aggregatedStatsForAgentCount.totalRuns : maxSimTimePerIteration;
+        const totalPossibleAgentTimeForConfig = currentNumAgents * avgSimTimePerRun; // Total available time across all agents for an average run
+        const avgAgentActiveTimeAcrossRuns = aggregatedStatsForAgentCount.totalRuns > 0 ? aggregatedStatsForAgentCount.totalAgentActiveTime / aggregatedStatsForAgentCount.totalRuns : 0;
+
+        const avgUtil = totalPossibleAgentTimeForConfig > 0 ? (avgAgentActiveTimeAcrossRuns / totalPossibleAgentTimeForConfig) * 100 : 0;
+
         const avgWait = aggregatedStatsForAgentCount.numAssigned > 0 ? (aggregatedStatsForAgentCount.sumWaitTimes / aggregatedStatsForAgentCount.numAssigned) : null;
         const avgUndelivered = avgGenerated - avgDelivered;
         const deliveryCompletionRate = avgGenerated > 0 ? avgDelivered / avgGenerated : 0;
 
-        const avgLaborCost = (aggregatedStatsForAgentCount.totalAgentActiveTime / aggregatedStatsForAgentCount.totalRuns / 60) * iterAgentCostPerHour;
+        const avgTotalAgentActiveTimeInHours = (aggregatedStatsForAgentCount.totalAgentActiveTime / aggregatedStatsForAgentCount.totalRuns / 60);
+        const avgLaborCost = avgTotalAgentActiveTimeInHours * iterAgentCostPerHour;
         const avgTravelCost = (aggregatedStatsForAgentCount.totalAgentDistanceKm / aggregatedStatsForAgentCount.totalRuns) * iterCostPerKm;
         const avgFixedDelCosts = avgDelivered * iterFixedCostPerDelivery;
         const avgTotalOpCost = avgLaborCost + avgTravelCost + avgFixedDelCosts;
         const avgCostPerOrder = avgDelivered > 0 ? avgTotalOpCost / avgDelivered : null;
-        
+
         const allDeliveryTimesForThisAgentCount = aggregatedStatsForAgentCount.deliveryTimes;
         const minDelTime = allDeliveryTimesForThisAgentCount.length > 0 ? Math.min(...allDeliveryTimesForThisAgentCount) : null;
         const maxDelTime = allDeliveryTimesForThisAgentCount.length > 0 ? Math.max(...allDeliveryTimesForThisAgentCount) : null;
@@ -456,55 +552,65 @@ async function runWorkforceOptimization() {
             avgAgentUtilization: avgUtil, avgOrderWaitTime: avgWait,
             undeliveredOrders: avgUndelivered, deliveryCompletionRate: deliveryCompletionRate,
             totalOpCost: avgTotalOpCost, avgCostPerOrder: avgCostPerOrder,
-            orderLocations: [], 
+            orderLocations: [], // This was not populated in the original logic for aggregated results, keep as is or decide if needed
             totalLaborCost: avgLaborCost, totalTravelCost: avgTravelCost, totalFixedDelCosts: avgFixedDelCosts,
         });
         logMessage(`  Avg for ${currentNumAgents} Agents: Gen: ${avgGenerated.toFixed(1)}, Del: ${avgDelivered.toFixed(1)}, AvgDelTime: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, SLA Met: ${percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, Util: ${avgUtil?.toFixed(1) ?? 'N/A'}%, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
-        await new Promise(resolve => setTimeout(resolve, 10));
-    } 
+        await new Promise(resolve => setTimeout(resolve, 10)); // Small delay for UI to update
+    }
 
-    bestIterationResult = null; 
-    recommendationReason = ""; 
+    bestIterationResult = null;
+    recommendationReason = "";
 
     let candidates = allOptimizationIterationsData.filter(
-        iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && 
-                iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE &&
-                (iter.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MAX 
+        iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE &&
+                (iter.percentOrdersSLA / 100) >= TARGET_SLA_PERCENTAGE && // Ensure comparison is correct (0-100 vs 0-1)
+                (iter.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MAX
     );
     if (candidates.length > 0) {
-        recommendationReason = `Initial candidates meet >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion, >=${TARGET_SLA_PERCENTAGE}% SLA, and <${IDEAL_AGENT_UTILIZATION_MAX}% utilization.`;
+        recommendationReason = `Initial candidates meet >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion, >=${(TARGET_SLA_PERCENTAGE*100).toFixed(0)}% SLA, and <${IDEAL_AGENT_UTILIZATION_MAX}% utilization.`;
     } else {
         candidates = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE);
         if (candidates.length > 0) {
-            recommendationReason = `Target SLA not fully met by any configuration. Considering options meeting >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion.`;
+            recommendationReason = `Target SLA or utilization constraints not fully met by any configuration. Considering options meeting >=${(MIN_DELIVERY_COMPLETION_RATE*100).toFixed(0)}% completion.`;
         } else {
-            candidates = [...allOptimizationIterationsData];
+            candidates = [...allOptimizationIterationsData]; // Consider all if no one meets basic completion
             recommendationReason = "Warning: No iterations met minimum completion targets. Recommendation based on best effort from all data, results may be unreliable.";
         }
         logMessage(`Warning: ${recommendationReason}`, 'WARNING', optimizationLogEl);
     }
 
     if (candidates.length > 0) {
-        let idealUtilCandidates = candidates.filter(iter => 
+        let idealUtilCandidates = candidates.filter(iter =>
             (iter.avgAgentUtilization ?? 0) >= IDEAL_AGENT_UTILIZATION_MIN &&
             (iter.avgAgentUtilization ?? 0) <= IDEAL_AGENT_UTILIZATION_MAX
         );
 
         if (idealUtilCandidates.length > 0) {
-            idealUtilCandidates.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
+            // Sort by cost per order, then by delivery time (lower is better for both)
+            idealUtilCandidates.sort((a, b) => {
+                const costDiff = (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity);
+                if (costDiff !== 0) return costDiff;
+                return (a.avgDeliveryTime ?? Infinity) - (b.avgDeliveryTime ?? Infinity);
+            });
             bestIterationResult = idealUtilCandidates[0];
-            recommendationReason += ` Selected best cost option within ideal utilization range (${IDEAL_AGENT_UTILIZATION_MIN}-${IDEAL_AGENT_UTILIZATION_MAX}%).`;
+            recommendationReason += ` Selected best cost/service option within ideal utilization range (${IDEAL_AGENT_UTILIZATION_MIN}-${IDEAL_AGENT_UTILIZATION_MAX}%).`;
         } else {
-            candidates.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity));
+            // If no candidates in ideal utilization, sort all current candidates by cost/service
+             candidates.sort((a, b) => {
+                const costDiff = (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity);
+                if (costDiff !== 0) return costDiff;
+                return (a.avgDeliveryTime ?? Infinity) - (b.avgDeliveryTime ?? Infinity);
+            });
             if (candidates.length > 0) {
                 bestIterationResult = candidates[0];
-                if (bestIterationResult) { 
+                if (bestIterationResult) {
                     if ((bestIterationResult.avgAgentUtilization ?? 0) < IDEAL_AGENT_UTILIZATION_MIN) {
-                        recommendationReason += ` Selected lowest cost option meeting service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is below ideal.`;
+                        recommendationReason += ` Selected lowest cost/best service option meeting primary service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is below ideal.`;
                     } else if ((bestIterationResult.avgAgentUtilization ?? 0) > IDEAL_AGENT_UTILIZATION_MAX) {
-                        recommendationReason += ` Selected lowest cost option meeting service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is above ideal (potentially overworked).`;
+                        recommendationReason += ` Selected lowest cost/best service option meeting primary service criteria. Note: Agent utilization (${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%) is above ideal (potentially overworked).`;
                     } else {
-                         recommendationReason += ` Selected lowest cost option meeting service criteria. Utilization is acceptable.`;
+                         recommendationReason += ` Selected lowest cost/best service option meeting primary service criteria. Utilization is acceptable.`;
                     }
                 }
             }
@@ -524,10 +630,10 @@ async function runWorkforceOptimization() {
 
     let finalRecommendationMessage = "No suitable configuration found based on current criteria and simulation runs. Please review the iteration table and charts for insights, or adjust parameters and re-run.";
     if (bestIterationResult) {
-        finalRecommendationMessage = `Based on the simulations, using <strong>${bestIterationResult.agents} agents</strong> is recommended. 
-        This configuration achieved an average delivery time of ${bestIterationResult.avgDeliveryTime ? bestIterationResult.avgDeliveryTime.toFixed(1) : 'N/A'} min, 
-        with ${bestIterationResult.percentOrdersSLA ? bestIterationResult.percentOrdersSLA.toFixed(1) : 'N/A'}% of orders delivered within the target time. 
-        The average agent utilization was ${bestIterationResult.avgAgentUtilization ? bestIterationResult.avgAgentUtilization.toFixed(1) : 'N/A'}%, 
+        finalRecommendationMessage = `Based on the simulations, using <strong>${bestIterationResult.agents} agents</strong> is recommended.
+        This configuration achieved an average delivery time of ${bestIterationResult.avgDeliveryTime ? bestIterationResult.avgDeliveryTime.toFixed(1) : 'N/A'} min,
+        with ${bestIterationResult.percentOrdersSLA ? bestIterationResult.percentOrdersSLA.toFixed(1) : 'N/A'}% of orders delivered within the target time.
+        The average agent utilization was ${bestIterationResult.avgAgentUtilization ? bestIterationResult.avgAgentUtilization.toFixed(1) : 'N/A'}%,
         and the average cost per order was ₹${bestIterationResult.avgCostPerOrder ? bestIterationResult.avgCostPerOrder.toFixed(2) : 'N/A'}.
         <br><small class="text-slate-500 mt-2 block"><em>Selection Rationale: ${recommendationReason}</em></small>`;
     }
@@ -538,8 +644,6 @@ async function runWorkforceOptimization() {
     if (runOptimizationBtnEl) { runOptimizationBtnEl.disabled = false; runOptimizationBtnEl.textContent = "Run Workforce Optimization"; }
 }
 
-// ... (displayOptimizationResults, populateOptimizationComparisonTable, initializeOptimizationChartsLocal, renderOptimizationChartsLocal, exportWorkforceOptResultsToCSV, prepareWorkforceOptDataForAI, handleWorkforceOptAiAnalysisRequest functions remain largely the same as in project_workforce_opt_ai_analysis_fixes) ...
-// Ensure these functions are complete in your actual file. The display functions will now show averaged data.
 function displayOptimizationResults(bestResult, targetTime) {
     if (!bestResult) {
         if(optResultAgentsEl) optResultAgentsEl.textContent = "Not Found";
@@ -579,6 +683,10 @@ function displayOptimizationResults(bestResult, targetTime) {
     if(optResultOverallTotalOperationalCostEl) optResultOverallTotalOperationalCostEl.textContent = `₹${(bestResult.totalOpCost || 0).toFixed(2)}`;
     if(optResultAverageCostPerOrderEl) optResultAverageCostPerOrderEl.textContent = bestResult.avgCostPerOrder === null || isNaN(bestResult.avgCostPerOrder) ? "N/A" : `₹${bestResult.avgCostPerOrder.toFixed(2)}`;
 
+    // Displaying order locations for the 'bestIterationResult' might be misleading as it's aggregated data.
+    // The original 'bestResult.orderLocations' would have been from a single run.
+    // For aggregated results, this section might need rethinking or removal if not applicable.
+    // For now, it will likely show empty or 'N/A' as `orderLocations` is empty in `allOptimizationIterationsData`.
     if (optDarkStoreDistancesEl) optDarkStoreDistancesEl.innerHTML = "";
     const selectedDarkStoreObj = globalClusteredDarkStores.find(ds => ds.id === parseInt(optSelectDarkStoreEl.value));
     if (selectedDarkStoreObj && bestResult.orderLocations && bestResult.orderLocations.length > 0) {
@@ -586,15 +694,20 @@ function displayOptimizationResults(bestResult, targetTime) {
         bestResult.orderLocations.forEach(ol => sumDist += getDistanceKm(ol, selectedDarkStoreObj));
         const avgDist = (sumDist / bestResult.orderLocations.length).toFixed(2);
         const li = document.createElement('li');
-        li.textContent = `${selectedDarkStoreObj.name}: Avg. Dist. ${avgDist} km (${bestResult.orderLocations.length} delivered orders from one sample run)`;
+        li.textContent = `${selectedDarkStoreObj.name}: Avg. Dist. ${avgDist} km (${bestResult.orderLocations.length} delivered orders from one sample run)`; // Clarify source
         optDarkStoreDistancesEl.appendChild(li);
         if(optOverallAvgDistanceEl) optOverallAvgDistanceEl.textContent = avgDist + " km";
     } else {
-        if(optOverallAvgDistanceEl) optOverallAvgDistanceEl.textContent = "N/A";
+        if(optOverallAvgDistanceEl) optOverallAvgDistanceEl.textContent = "N/A (Aggregated)";
     }
 
     if (optimizationMap && optOrderMarkersLayer) {
-        optOrderMarkersLayer.clearLayers();
+        optOrderMarkersLayer.clearLayers(); // Clear previous markers
+        // Displaying individual orders on the map for an *aggregated* best result is complex.
+        // The map was originally for a single simulation run.
+        // If you want to show example orders, you'd need to pick a representative run's data,
+        // or not show them for the aggregated optimization view.
+        // For now, clearing markers is the safest.
     }
 }
 
@@ -605,7 +718,7 @@ function populateOptimizationComparisonTable(iterationData) {
     iterationData.forEach(iter => {
         const row = optimizationComparisonTableBodyEl.insertRow();
         row.insertCell().textContent = iter.agents;
-        row.insertCell().textContent = iter.generatedOrders?.toFixed(1) ?? 'N/A'; 
+        row.insertCell().textContent = iter.generatedOrders?.toFixed(1) ?? 'N/A';
         row.insertCell().textContent = iter.deliveredOrders?.toFixed(1) ?? 'N/A';
         row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
         row.insertCell().textContent = iter.percentOrdersSLA !== null ? iter.percentOrdersSLA.toFixed(1) + "%" : "N/A";
@@ -633,7 +746,7 @@ function renderOptimizationChartsLocal(iterationData, targetTime) {
     const labels = iterationData.map(iter => iter.agents);
     const avgDeliveryTimes = iterationData.map(iter => iter.avgDeliveryTime);
     const avgUtilizations = iterationData.map(iter => iter.avgAgentUtilization);
-    const totalDelivered = iterationData.map(iter => iter.deliveredOrders);
+    const totalDelivered = iterationData.map(iter => iter.deliveredOrders); // This is avg. delivered
     const avgWaitTimes = iterationData.map(iter => iter.avgOrderWaitTime);
     const percentSlaMet = iterationData.map(iter => iter.percentOrdersSLA);
 
@@ -657,7 +770,10 @@ function renderOptimizationChartsLocal(iterationData, targetTime) {
 
 function exportWorkforceOptResultsToCSV() {
     if (allOptimizationIterationsData.length === 0) {
-        alert("No optimization data to export. Please run an optimization first.");
+        // Use a custom modal or non-blocking notification instead of alert
+        logMessage("No optimization data to export. Please run an optimization first.", "WARNING", optimizationLogEl);
+        // Example: display a message in a dedicated UI element
+        // if(document.getElementById('exportMessage')) document.getElementById('exportMessage').textContent = "No data to export.";
         return;
     }
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -686,7 +802,7 @@ function exportWorkforceOptResultsToCSV() {
 }
 
 function prepareWorkforceOptDataForAI() {
-    if (allOptimizationIterationsData.length === 0) { 
+    if (allOptimizationIterationsData.length === 0) {
         return "No optimization data available to analyze. Please run an optimization first.";
     }
 
@@ -707,16 +823,16 @@ function prepareWorkforceOptDataForAI() {
         dataString += `${iter.agents}, ${iter.deliveredOrders?.toFixed(1) ?? 'N/A'}, ${iter.avgDeliveryTime?.toFixed(1) ?? 'N/A'}, ${iter.percentOrdersSLA?.toFixed(1) ?? 'N/A'}%, ${iter.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%, ${iter.avgCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
     });
 
-    if (bestIterationResult) { 
+    if (bestIterationResult) {
         dataString += "\nRecommended Scenario Details:\n";
         dataString += `Recommended Agents: ${bestIterationResult.agents}\n`;
         dataString += `Achieved Avg. Delivery Time: ${bestIterationResult.avgDeliveryTime?.toFixed(1) ?? 'N/A'} min\n`;
         dataString += `Avg. % Orders within Target: ${bestIterationResult.percentOrdersSLA?.toFixed(1) ?? 'N/A'}%\n`;
         dataString += `Avg. Agent Utilization: ${bestIterationResult.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%\n`;
         dataString += `Avg. Cost per Order: ₹${bestIterationResult.avgCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
-        
+
         const recommendationTextElement = document.getElementById('optimizationRecommendationText');
-        let currentRationale = 'See detailed recommendation text in UI.'; 
+        let currentRationale = 'See detailed recommendation text in UI.';
         if (recommendationTextElement && recommendationTextElement.innerHTML.includes("Selection Rationale:")) {
             const rationaleHtml = recommendationTextElement.innerHTML.substring(recommendationTextElement.innerHTML.indexOf("Selection Rationale:"));
             const tempDiv = document.createElement('div');
@@ -735,11 +851,12 @@ function prepareWorkforceOptDataForAI() {
 async function handleWorkforceOptAiAnalysisRequest() {
     if (!workforceOptAiAnalysisContainerEl || !workforceOptAiAnalysisLoadingEl || !workforceOptAiAnalysisContentEl) {
         console.error("Workforce Opt AI Analysis UI elements not found.");
-        alert("AI Analysis UI components for Workforce Optimization are missing.");
+        // Use a custom modal or non-blocking notification
+        logMessage("AI Analysis UI components for Workforce Optimization are missing.", "ERROR", optimizationLogEl);
         return;
     }
 
-    if (allOptimizationIterationsData.length === 0) { 
+    if (allOptimizationIterationsData.length === 0) {
         workforceOptAiAnalysisContentEl.textContent = "Please run a workforce optimization first to generate data for analysis.";
         workforceOptAiAnalysisContainerEl.classList.remove('hidden');
         return;
@@ -774,13 +891,11 @@ async function handleWorkforceOptAiAnalysisRequest() {
     try {
         let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
         const payload = { contents: chatHistory };
-        const apiKey = "AIzaSyDwjlcdDvgre9mLWR7abRx2qta_NFLISuI"; 
+        // IMPORTANT: The API key should ideally be handled securely, not hardcoded.
+        // For this environment, it's provided, but in a real app, use environment variables or a backend proxy.
+        const apiKey = ""; // Per instructions, leave empty for Canvas to inject.
         
-        if (!apiKey) {
-            throw new Error("API Key is missing.");
-        }
-
-        const modelName = "gemini-2.0-flash"; 
+        const modelName = "gemini-2.0-flash"; // Using the specified model
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const response = await fetch(apiUrl, {
@@ -790,7 +905,7 @@ async function handleWorkforceOptAiAnalysisRequest() {
         });
 
         if (!response.ok) {
-            const errorText = await response.text(); 
+            const errorText = await response.text();
             let detailedErrorMessage = `API request failed with status ${response.status}: ${response.statusText}.`;
             try {
                 const parsedError = JSON.parse(errorText);
@@ -810,7 +925,11 @@ async function handleWorkforceOptAiAnalysisRequest() {
             const analysisText = result.candidates[0].content.parts[0].text;
             workforceOptAiAnalysisContentEl.textContent = analysisText;
         } else if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason) {
-            workforceOptAiAnalysisContentEl.textContent = `AI model finished with reason: ${result.candidates[0].finishReason}. No content generated. Check prompt or model settings. Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings || {})}`;
+            let finishMessage = `AI model finished with reason: ${result.candidates[0].finishReason}.`;
+            if(result.candidates[0].safetyRatings) {
+                finishMessage += ` Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`;
+            }
+            workforceOptAiAnalysisContentEl.textContent = finishMessage;
             console.warn("AI Analysis (Workforce Opt) - Model finished with reason:", result.candidates[0].finishReason, result.candidates[0].safetyRatings);
         } else {
             console.error("Unexpected API response structure (Workforce Opt):", result);
