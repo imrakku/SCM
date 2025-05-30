@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Commerce Optimization</title> <link rel="icon" href="images/favicon.ico" type="image/x-icon"> <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png"> <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png"> <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png"> <script src="https://cdn.tailwindcss.com"></script>
+    <title>Quick Commerce Optimization Simulator</title>
+
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon"> 
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://d3js.org/d3-delaunay.v7.min.js"></script>
@@ -13,11 +20,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Custom styles for <details> summary arrow */
         details > summary { list-style: none; cursor: pointer; }
         details > summary::-webkit-details-marker { display: none; }
         details > summary::before { content: '► '; font-size: 0.8em; margin-right: 4px; }
         details[open] > summary::before { content: '▼ '; }
+
+        /* AI Analysis Area Styling */
+        .ai-analysis-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #e0f2fe; /* Light blue background - Tailwind: bg-sky-100 */
+            border: 1px solid #7dd3fc; /* Tailwind: border-sky-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+        .ai-analysis-container h5 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            color: #0c4a6e; /* Tailwind: text-sky-800 */
+            margin-bottom: 0.75rem;
+        }
+        .ai-analysis-content {
+            white-space: pre-wrap; /* Preserve line breaks and spacing from AI response */
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #075985; /* Tailwind: text-sky-700 */
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -25,7 +66,8 @@
     <header class="bg-white shadow-xl sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">Quick Commerce Optimization</h1> <div class="flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
+                <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">Quick Commerce Optimization</h1>
+                <div class="flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
                     <a href="#home" class="nav-link px-3 py-2">Home</a>
                     <a href="#clustering" class="nav-link px-3 py-2">Clustering</a>
                     <a href="#demandProfiles" class="nav-link px-3 py-2">Demand Profiles</a>
@@ -40,8 +82,9 @@
     <main class="container mx-auto p-4 md:p-8 mt-8">
         <section id="home" class="content-section active">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Welcome to the Quick Commerce Optimization Simulator!</h2> <p class="mb-4 text-lg leading-relaxed text-slate-600">
-                    This tool is designed to help understand and optimize last-mile delivery operations for quick commerce. It allows you to explore different aspects of logistics planning, from identifying ideal locations for small warehouses (dark stores) to simulating daily delivery activities and figuring out the best number of delivery agents.
+                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Welcome to the Quick Commerce Optimization Simulator!</h2>
+                <p class="mb-4 text-lg leading-relaxed text-slate-600">
+                    This interactive tool is designed to help understand and optimize last-mile delivery operations for quick commerce. It allows you to explore different aspects of logistics planning, from identifying ideal locations for dark stores to simulating daily delivery activities and determining optimal workforce sizes.
                 </p>
                 <details class="mb-6 text-lg text-slate-600">
                     <summary class="font-semibold text-blue-600 hover:text-blue-700">Learn more about the modules...</summary>
@@ -51,7 +94,7 @@
                     <ol class="list-decimal list-inside space-y-3 leading-relaxed">
                         <li class="pl-2"><strong class="text-slate-700">Clustering:</strong> Find optimal dark store locations based on simulated customer demand.</li>
                         <li class="pl-2"><strong class="text-slate-700">Demand Profiles:</strong> Create and save different patterns of customer orders to test various scenarios.</li>
-                        <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs.</li>
+                        <li class="pl-2"><strong class="text-slate-700">Simulation:</strong> Watch a real-time simulation of deliveries, adjust parameters like agent numbers and order frequency, and see the impact on performance and costs. This section now includes AI-powered analysis of your simulation results.</li>
                          <li class="pl-2"><strong class="text-slate-700">Workforce Optimization:</strong> Analyze how many delivery agents you might need to meet service targets efficiently, considering costs and utilization, using realistic demand patterns.</li>
                          <li class="pl-2"><strong class="text-slate-700">Scenario Analysis:</strong> Compare the results from different simulation runs to make informed decisions.</li>
                     </ol>
@@ -71,153 +114,26 @@
                     </ul>
                     <p class="mt-1 text-sm text-slate-500 italic">Indian Institute of Management Sirmaur</p>
                     
-                    <h3 class="text-2xl font-semibold mb-2 mt-6 text-blue-800">Project Mentor</h3> <ul class="list-none space-y-1 text-slate-700 text-lg">
+                    <h3 class="text-2xl font-semibold mb-2 mt-6 text-blue-800">Project Mentor</h3>
+                    <ul class="list-none space-y-1 text-slate-700 text-lg">
                         <li class="flex items-center">
                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-3 text-blue-600">
                                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 <path d="M0 0h24v24H0z" fill="none"/>
                             </svg>
-                            Professor Bhavin Shah
+                            Professor Bhavin Shaha
                         </li>
                     </ul>
-                     <p class="mt-1 text-sm text-slate-500 italic">IIM Sirmaur</p> </div>
+                     <p class="mt-1 text-sm text-slate-500 italic">IIM Sirmaur</p>
+                </div>
             </div>
         </section>
 
         <section id="clustering" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Demand Clustering & Dark Store Placement</h2>
-                 <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
-                    <details>
-                        <summary class="font-bold text-lg text-blue-700 hover:text-blue-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section helps you identify potentially optimal locations for "dark stores" (small, local warehouses for quick delivery) within Chandigarh. It does this by simulating customer order locations and then grouping them to find central points for these stores.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Set the number of general "Background Orders" spread across the city.</li>
-                                <li>Set the number of "Hotspot Orders" concentrated in specific busy areas.</li>
-                                <li>Specify how many "Number of Dark Stores" you want the system to identify.</li>
-                                <li>Click "Regenerate Clustering Data". The map will show simulated orders (dots), identified dark store locations (red markers), and their approximate service areas (Voronoi cells).</li>
-                                <li>You can toggle "Show Order-to-Store Connections" to see which orders are assigned to which store.</li>
-                                <li>Review the statistics below the map for insights into order distribution and distances.</li>
-                            </ul>
-                            <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                            <p class="text-base leading-relaxed">The map visualizes potential dark store locations based on your inputs. The statistics provide data on how well these locations cover the simulated demand, helping you understand service efficiency. These dark stores can then be used in the "Workforce Optimization" section.</p>
-                        </div>
-                    </details>
-                </div>
-                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-slate-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <div class="input-group">
-                            <label for="numBackgroundOrders">Background Orders:</label>
-                            <input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="numHotspotOrders">Hotspot Orders:</label>
-                            <input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="numDarkStoresForClustering">Number of Dark Stores:</label>
-                            <input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full">
-                        </div>
-                    </div>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8 mb-10">
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Total Orders Simulated</h4>
-                        <p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p>
-                    </div>
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2 text-slate-500">Dark Stores Identified</h4>
-                        <p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p>
-                    </div>
-                </div>
-                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200">
-                    <div id="clusteringMapViz" class="w-full"></div>
-                </div>
-                 <div class="mb-4 text-center">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections
-                    </label>
-                </div>
-                <p class="text-md text-slate-500 mb-6 italic text-center">
-                    Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).
-                </p>
-                 <div class="text-center">
-                    <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
-                 </div>
-                 <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm bg-slate-100 p-6 rounded-lg border border-slate-200 shadow-inner">
-                    <p class="italic text-slate-500 md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
-                 </div>
-                 <div id="overallClusteringStats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                     <p><strong class="text-blue-700">Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Min Distance:</strong> <span id="overallMinClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Max Distance:</strong> <span id="overallMaxClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Std. Dev. Distance:</strong> <span id="overallStdDevClusterDistance" class="font-semibold">N/A</span></p>
-                 </div>
-            </div>
-        </section>
+            </section>
 
         <section id="demandProfiles" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Custom Demand Profiles</h2>
-                <div class="bg-sky-50 border-l-4 border-sky-500 text-sky-700 p-4 mb-6 rounded-md shadow" role="alert">
-                    <details>
-                        <summary class="font-bold text-lg text-sky-700 hover:text-sky-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section allows you to create and save different "demand profiles" – patterns of how customer orders might arise across Chandigarh. For example, you could create a profile for "Evening Rush in Sector 17" or "Weekend Orders City-Wide."</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Give your profile a unique "Profile Name".</li>
-                                <li>Click "Add Zone" to define areas and times for order generation. For each zone, you can specify:
-                                    <ul class="list-disc list-inside ml-6 text-sm">
-                                        <li><strong>Zone Type:</strong> Uniform (city-wide), Hotspot (around a point), Sector-based, or Route-based.</li>
-                                        <li><strong>Min/Max Orders:</strong> How many orders to generate in this zone during its active time.</li>
-                                        <li><strong>Start/End Time:</strong> When this zone is active during the simulation (in simulation minutes).</li>
-                                        <li>For Hotspots/Routes, you can click on the small map to define centers or points.</li>
-                                    </ul>
-                                </li>
-                                <li>Click "Save Profile". It will appear in the "Saved Profiles" list on the right.</li>
-                                <li>These custom profiles can then be selected in the "Simulation" tab to see how your logistics network performs under different demand conditions.</li>
-                            </ul>
-                            <p class="text-sm mt-2 italic">Note: Profiles are currently saved for your current browser session only.</p>
-                        </div>
-                    </details>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
-                        <div class="input-group">
-                            <label for="profileNameInput">Profile Name:</label>
-                            <input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full">
-                        </div>
-                        <div id="profileZonesContainer" class="space-y-4 mb-4">
-                        </div>
-                        <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
-                        <div class="flex space-x-2">
-                            <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
-                            <button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button>
-                        </div>
-                         <div id="profileCreationMapContainer" class="mt-6 hidden">
-                            <h4 class="text-lg font-semibold text-center mb-2 text-slate-600">Set Hotspot/Route Point</h4>
-                            <div id="profileCreationMap"></div>
-                            <p class="text-sm text-center text-slate-500 mt-2">Click on map to set hotspot center or route points.</p>
-                            <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Profiles</h3>
-                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg border border-slate-200">
-                            <ul id="savedProfilesList" class="list-none space-y-2">
-                                <li class="italic text-slate-500">No custom profiles saved yet.</li>
-                            </ul>
-                        </div>
-                         <p class="text-sm text-slate-500 mt-4 italic">Note: Profiles are stored for the current session only using browser's session storage.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
 
         <section id="simulation" class="content-section">
             <div class="card">
@@ -232,6 +148,7 @@
                                 <li><strong>Configure Parameters:</strong> Use the sliders and dropdowns to set various operational aspects.</li>
                                 <li>Click "Start Simulation". Observe the map and real-time updates in the panels.</li>
                                 <li>The "Simulation Statistics" and "Cost KPIs" will summarize performance.</li>
+                                <li>After a simulation, click "Analyze Simulation Results with AI" for AI-powered insights.</li>
                                 <li>"Save Current Scenario Results" to compare different setups later. You can also "Export Results (CSV)" for analysis in tools like Excel.</li>
                             </ul>
                         </div>
@@ -382,6 +299,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div id="simulationOverallStats" class="simulation-stats-container">
                     <h4 class="text-2xl font-semibold text-center">Simulation Statistics</h4>
                     <div class="simulation-stats-grid">
@@ -404,236 +322,32 @@
                         <p><strong>Overall Total Operational Cost:</strong> <span id="statsOverallTotalOperationalCost">₹0.00</span></p>
                         <p><strong>Average Cost per Order:</strong> <span id="statsAverageCostPerOrder">N/A</span></p>
                     </div>
-                    <div class="mt-6 flex justify-center space-x-3">
-                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button>
-                        <button id="exportSimResultsBtn" class="btn btn-primary">Export Results (CSV)</button>
+                    <div class="mt-6 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary w-full sm:w-auto">Save Current Scenario Results</button>
+                        <button id="exportSimResultsBtn" class="btn btn-primary w-full sm:w-auto">Export Results (CSV)</button>
+                        <button id="analyzeSimResultsAI" class="btn btn-primary w-full sm:w-auto bg-sky-500 hover:bg-sky-600 border-sky-500 hover:border-sky-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stars mr-2" viewBox="0 0 16 16">
+                                <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828l.645-1.937zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.734 1.734 0 0 0 4.593 5.31l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.31A1.734 1.734 0 0 0 2.31 4.213l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.734 1.734 0 0 0 3.407 2.31l.387-1.162zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L10.863.1z"/>
+                            </svg>
+                            Analyze with AI
+                        </button>
+                    </div>
+                </div>
+                <div id="simulationAiAnalysisContainer" class="ai-analysis-container hidden mt-6">
+                    <h5>AI-Powered Analysis & Insights:</h5>
+                    <div id="simulationAiAnalysisLoading" class="loading-spinner hidden"></div>
+                    <div id="simulationAiAnalysisContent" class="ai-analysis-content">
+                        Click "Analyze with AI" to get insights on your simulation results.
                     </div>
                 </div>
             </div>
         </section>
 
         <section id="workforceOptimization" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
-                <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
-                        <summary class="font-bold text-lg text-teal-700 hover:text-teal-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">
-                                This tool helps you find a smart balance for your delivery team size. It analyzes how different team sizes impact delivery speed, customer service (getting orders on time), agent workload (utilization), and overall costs, using realistic demand patterns.
-                            </p>
-                            <p class="font-bold text-lg mt-3 mb-2">How it Works:</p>
-                            <p class="text-base leading-relaxed">
-                                You set a target for average delivery time and select a demand profile (or use defaults). The tool then runs multiple quick simulations (you can set how many) for each different number of agents you want to test. For each agent count, it generates orders based on the chosen profile over a set simulation time and calculates the average performance across those runs.
-                            </p>
-                            <p class="text-base leading-relaxed mt-2">
-                                The "Best Scenario" is recommended by first ensuring a high percentage of orders are completed and meet your service level target. Then, it prioritizes the lowest cost per order. If costs are similar, it favors configurations where agents are well-utilized (not idle too often, nor overworked).
-                            </p>
-                             <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                             <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Ensure "Clustering" has been run if you want to optimize for a specific clustered dark store.</li>
-                                <li>Set your desired "Target Avg. Delivery Time".</li>
-                                <li>Choose a "Dark Store" to optimize for.</li>
-                                <li>Select a "Demand Profile for Optimization". Default profiles generate orders uniformly or focused around the selected store using the "Order Generation Radius" and "Target Orders per Iteration". Custom profiles use their own defined zones and rates.</li>
-                                <li>If using a default profile, set the "Order Generation Radius" and "Target Orders per Iteration".</li>
-                                <li>Specify the "Min Agents" and "Max Agents" to test.</li>
-                                <li>Set the "Number of Simulation Runs per Agent Count" for more stable average results.</li>
-                                <li>Set "Max Sim Time per Iteration" (how long each test run for a specific agent count can last).</li>
-                                <li>Click "Run Workforce Optimization".</li>
-                            </ul>
-                        </div>
-                    </details>
-                </div>
-
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div class="input-group">
-                            <label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label>
-                            <input type="number" id="optTargetDeliveryTime" value="15" min="5" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optSelectDarkStore">Select Dark Store for Scenario:</label>
-                            <select id="optSelectDarkStore" class="w-full">
-                                <option value="">-- Run Clustering First --</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="optDemandProfileSelect">Select Demand Profile for Optimization:</label>
-                            <select id="optDemandProfileSelect" class="w-full">
-                                <option value="default_opt_uniform">Default: Uniform around Store</option>
-                                <option value="default_opt_focused">Default: Focused around Store</option>
-                                </select>
-                        </div>
-                         <div class="input-group" id="optOrderRadiusContainer"> <label for="optOrderGenerationRadius">Order Generation Radius (km - for default profiles):</label>
-                            <input type="number" id="optOrderGenerationRadius" value="3" min="0.5" step="0.5" class="w-full">
-                        </div>
-                        <div class="input-group" id="optTargetOrdersContainer"> <label for="optTargetOrdersPerIteration">Target Orders per Iteration (for default profiles):</label>
-                            <input type="number" id="optTargetOrdersPerIteration" value="20" min="5" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optMinAgents">Min Agents to Test:</label>
-                            <input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optMaxAgents">Max Agents to Test:</label>
-                            <input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full">
-                        </div>
-                        <div class="input-group">
-                            <label for="optNumRunsPerAgentCount">Number of Simulation Runs per Agent Count:</label>
-                            <input type="number" id="optNumRunsPerAgentCount" value="3" min="1" max="10" step="1" class="w-full">
-                        </div>
-                         <div class="input-group">
-                            <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
-                            <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
-                        </div>
-                    </div>
-                    <div class="mt-6 text-center">
-                        <button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button>
-                    </div>
-                </div>
-                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden">
-                     <h4 class="text-xl font-semibold text-center p-4 bg-slate-100 border-b border-slate-300">Scenario Map (Optimal Configuration)</h4>
-                    <div id="optimizationMapViz" class="w-full"></div>
-                </div>
-                <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-2xl font-semibold">Iteration Comparison Table (Averaged Results)</h4>
-                        <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary btn-sm">Export Table (CSV)</button>
-                    </div>
-                    <div class="comparison-table-container">
-                        <table id="optimizationComparisonTable" class="comparison-table">
-                            <thead>
-                                <tr>
-                                    <th>Agents</th>
-                                    <th>Avg. Generated Orders</th>
-                                    <th>Avg. Delivered Orders</th>
-                                    <th>Avg. Delivery Time (min)</th>
-                                    <th>Avg. % Orders within Target</th>
-                                    <th>Avg. Min Delivery Time (min)</th>
-                                    <th>Avg. Max Delivery Time (min)</th>
-                                    <th>Avg. Std. Dev. Delivery Time (min)</th>
-                                    <th>Avg. Agent Utilization (%)</th>
-                                    <th>Avg. Order Wait Time (min)</th>
-                                    <th>Avg. Undelivered Orders</th>
-                                    <th>Avg. Total Op. Cost (₹)</th>
-                                    <th>Avg. Cost/Order (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                 <div id="optimizationChartsContainer" class="hidden mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4>
-                        <canvas id="deliveryTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Utilization</h4>
-                        <canvas id="utilizationChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Total Delivered Orders</h4>
-                        <canvas id="totalDeliveredOrdersChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4>
-                        <canvas id="avgOrderWaitTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container md:col-span-2">
-                        <h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. % Orders within Target Time</h4>
-                        <canvas id="ordersWithinSlaChart"></canvas>
-                    </div>
-                </div>
-                <div id="optimizationResultsContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
-                    <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
-                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization.</p>
-                    </div>
-                    <div class="optimization-results-grid">
-                        <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
-                        <p><strong >Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
-                        <p><strong >Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
-                        <p><strong >% Orders within Target:</strong> <span id="optResultSlaMet">N/A</span></p>
-                        <p><strong >Avg. Agent Utilization:</strong> <span id="optResultAvgUtilization">N/A</span></p>
-                        <p><strong >Avg. Order Wait Time:</strong> <span id="optResultAvgWaitTime">N/A</span></p>
-                        <p><strong >Undelivered Orders:</strong> <span id="optResultUndelivered">N/A</span></p>
-                    </div>
-                    <div class="cost-kpi-grid">
-                        <p><strong>Total Agent Labor Cost:</strong> <span id="optResultTotalAgentLaborCost">₹0.00</span></p>
-                        <p><strong>Total Travel Cost:</strong> <span id="optResultTotalTravelCost">₹0.00</span></p>
-                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="optResultTotalFixedDeliveryCosts">₹0.00</span></p>
-                        <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
-                        <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <div class="mt-4">
-                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Recommended Scenario):</h5>
-                        <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
-                        </ul>
-                        <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
-                    </div>
-                    <h5 class="text-xl font-semibold text-slate-700 mt-6 mb-2">Optimization Log:</h5>
-                    <div id="optimizationLog" class="optimization-log">
-                        <p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
 
         <section id="scenarioAnalysis" class="content-section">
-            <div class="card">
-                <h2 class="text-4xl font-bold mb-6 text-slate-800 border-b-4 border-blue-500 pb-4">Scenario Analysis & Comparison</h2>
-                 <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-md shadow" role="alert">
-                     <details>
-                        <summary class="font-bold text-lg text-purple-700 hover:text-purple-800">What is this section for? (Click to expand)</summary>
-                        <div class="mt-2">
-                            <p class="text-base leading-relaxed">This section allows you to compare the results of different simulation runs side-by-side. After running various simulations with different parameters (e.g., more agents, different order profiles, changed traffic), you can save those results and then come here to analyze their impact on performance and cost.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>First, run one or more simulations in the "Simulation" tab. At the end of each simulation (or when you're satisfied with its run), click the "Save Current Scenario Results" button there.</li>
-                                <li>Saved scenarios will appear in the "Saved Scenarios" list on the left of this page.</li>
-                                <li>Select the checkboxes next to the scenarios you want to compare.</li>
-                                <li>Click "Compare Selected". A table will appear on the right showing a detailed comparison of parameters and results for your chosen scenarios.</li>
-                                <li>You can "Clear All Saved Scenarios" if you want to start fresh.</li>
-                            </ul>
-                            <p class="font-bold text-lg mt-3 mb-2">What you'll see:</p>
-                            <p class="text-base leading-relaxed">A detailed table that helps you understand how changing different inputs (like number of agents or order arrival rates) affects outcomes like average delivery time, agent utilization, and total operational costs. This is useful for making strategic decisions about your logistics setup.</p>
-                             <p class="text-sm mt-2 italic">Note: Scenarios are saved in your browser's local storage, so they will persist even if you close and reopen your browser (unless you clear your browser data).</p>
-                        </div>
-                    </details>
-                </div>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="md:col-span-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
-                        <div id="savedScenariosListContainer">
-                            <ul id="savedScenariosList">
-                                <li class="italic text-slate-500">No scenarios saved yet.</li>
-                            </ul>
-                        </div>
-                        <div class="mt-4 flex flex-col space-y-2">
-                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
-                            <button id="clearAllScenariosBtn" class="btn btn-danger">Clear All Saved Scenarios</button>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
-                        <div id="scenarioComparisonResultsContainer" class="hidden">
-                             <div class="comparison-table-container">
-                                <table id="scenarioComparisonTable" class="comparison-table">
-                                    <thead>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                         <p id="scenarioComparisonPlaceholder" class="italic text-slate-500 mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
     </main>
 
     <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
