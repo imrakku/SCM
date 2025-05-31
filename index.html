@@ -255,10 +255,8 @@
                         <div>
                             <div class="control-label">
                                 <label for="numAgentsSlider" class="block text-md font-medium text-slate-700">Number of Agents:</label>
-                                <span id="numAgentsValue" class="font-bold text-xl text-blue-700">5</span>
-                            </div>
-                            <input type="range" id="numAgentsSlider" min="1" max="10" value="5" class="mt-2">
-                        </div>
+                                <span id="numAgentsValue" class="font-bold text-xl text-blue-700">10</span> </div>
+                            <input type="range" id="numAgentsSlider" min="1" max="30" value="10" class="mt-2"> </div>
                         <div class="input-group">
                             <label for="ordersPerMinuteInput" class="block text-md font-medium text-slate-700">Orders Generated per Minute (Avg):</label>
                             <input type="number" id="ordersPerMinuteInput" value="0.5" min="0.01" step="0.1" class="w-full mt-1">
@@ -582,12 +580,12 @@
                     </div>
                 </div>
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
+                    <h4 class="text-2xl font-semibold text-center">AI-Driven Optimization Recommendation</h4>
                     <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
-                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization. Click "Analyze Optimization with AI" for detailed insights.</p>
+                        <p>Run optimization to get AI-powered insights and recommendations.</p>
                     </div>
                     <div class="optimization-results-grid">
-                        <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
+                        <p><strong >Recommended Agents (by AI/Heuristic):</strong> <span id="optResultAgents">N/A</span></p>
                         <p><strong >Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
                         <p><strong >Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
                         <p><strong >% Orders within Target:</strong> <span id="optResultSlaMet">N/A</span></p>
@@ -602,18 +600,12 @@
                         <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
                         <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
                     </div>
-                    <div class="mt-4">
-                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Recommended Scenario):</h5>
-                        <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1">
-                        </ul>
-                        <p class="mt-2"><strong >Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
-                    </div>
                     <div class="mt-6 text-center">
                          <button id="analyzeWorkforceOptAI" class="btn btn-primary w-full sm:w-auto bg-sky-500 hover:bg-sky-600 border-sky-500 hover:border-sky-600" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stars mr-2" viewBox="0 0 16 16">
                                 <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828l.645-1.937zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.734 1.734 0 0 0 4.593 5.31l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.31A1.734 1.734 0 0 0 2.31 4.213l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.734 1.734 0 0 0 3.407 2.31l.387-1.162zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L10.863.1z"/>
                             </svg>
-                            Analyze Optimization with AI
+                            Re-Analyze with AI
                         </button>
                     </div>
                     <div id="workforceOptAiAnalysisContainer" class="ai-analysis-container hidden mt-6">
