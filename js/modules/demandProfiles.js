@@ -3,29 +3,25 @@ import { chandigarhSectors, chandigarhCenter } from '../data/chandigarhData.js';
 import { initializeMap, getMapInstance } from '../mapUtils.js';
 import { logMessage } from '../logger.js';
 // This import must match the export in simulation.js
-import { populateOrderGenerationProfileSelectorSim } from './simulation.js';
+import { populateOrderGenerationProfileSelectorSim } from './simulation.js'; // Path assumes it's in the same 'modules' folder
 
 
 // Module-specific state
 let demandProfilesMap;
-let customDemandProfiles = []; // Array to store saved profiles
-let zoneCounter = 0; // For uniquely identifying zones in the form
-let currentEditingZoneId = null; // Tracks which zone's hotspot/route is being edited on the map
-let tempProfileZoneMarkers = []; // Markers for hotspot centers or route points during creation
-let currentRoutePoints = []; // For drawing a route segment interactively
-let currentRoutePolylineLayer = null; // Leaflet layer for the current route being drawn
+let customDemandProfiles = []; 
+let zoneCounter = 0; 
+let currentEditingZoneId = null; 
+let tempProfileZoneMarkers = []; 
+let currentRoutePoints = []; 
+let currentRoutePolylineLayer = null; 
 
 // DOM Elements
 let profileNameInputEl, profileZonesContainerEl, addZoneToProfileBtnEl;
 let saveProfileBtnEl, clearProfileFormBtnEl, savedProfilesListEl;
 let profileCreationMapContainerEl, finishCurrentRouteBtnEl;
-let simulationLogEl; // For logging profile actions if no dedicated log area
+let simulationLogEl; 
 
-/**
- * Initializes the Demand Profiles section.
- */
 export function initializeDemandProfilesSection() {
-    // Cache DOM elements
     profileNameInputEl = document.getElementById('profileNameInput');
     profileZonesContainerEl = document.getElementById('profileZonesContainer');
     addZoneToProfileBtnEl = document.getElementById('addZoneToProfileBtn');
@@ -38,7 +34,7 @@ export function initializeDemandProfilesSection() {
 
 
     demandProfilesMap = initializeMap('profileCreationMap', chandigarhCenter, 12, 'demandProfiles');
-    if (demandProfilesMap) { // Ensure map was initialized before adding listener
+    if (demandProfilesMap) { 
         demandProfilesMap.on('click', handleProfileMapClick);
     } else {
         console.error("[DemandProfiles] Map failed to initialize!");
@@ -54,13 +50,10 @@ export function initializeDemandProfilesSection() {
     loadProfilesFromSessionStorage();
     updateSavedProfilesListUI();
     
-    // Call the imported function to update the selector in the simulation module
-    // This ensures that when this section is initialized (or re-initialized via navigation),
-    // the simulation tab's dropdown is aware of any custom profiles.
     if (typeof populateOrderGenerationProfileSelectorSim === 'function') {
         populateOrderGenerationProfileSelectorSim(customDemandProfiles);
     } else {
-        console.error("[DemandProfiles] populateOrderGenerationProfileSelectorSim is not available from simulation.js. This is a critical error for profile selection in simulation.");
+        console.error("[DemandProfiles] populateOrderGenerationProfileSelectorSim is not available from simulation.js.");
     }
 }
 
@@ -480,5 +473,5 @@ function loadProfilesFromSessionStorage() {
 }
 
 export function getCustomDemandProfiles() {
-    return [...customDemandProfiles]; // Return a copy to prevent direct modification
+    return [...customDemandProfiles]; 
 }
