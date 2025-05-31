@@ -1,13 +1,13 @@
 // js/uiElements.js
-import { setSimParameter } from './modules/simulation.js'; // Used for setting sim params from sliders
-import { orderGenerationProbabilities, orderSpreadFactors } from './modules/simulation.js'; // Import constants
+import { setSimParameter } from './modules/simulation.js'; // This import is fine and needed
+// REMOVED: import { orderGenerationProbabilities, orderSpreadFactors } from './modules/simulation.js'; // This line was causing the error
 import { chandigarhSectors } from './data/chandigarhData.js';
 
 // Cache DOM elements that are relatively static
 const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
 const currentTrafficStatusSpan = document.getElementById('currentTrafficStatus');
-const configLockOverlay = document.getElementById('configLockOverlay');
-const configLockMessage = document.getElementById('configLockMessage');
+const configLockOverlay = document.getElementById('configLockOverlay'); 
+const configLockMessage = document.getElementById('configLockMessage'); 
 
 const sliderConfig = [
     { sliderId: 'numAgentsSlider', displayId: 'numAgentsValue', paramKey: 'numAgents' },
@@ -16,8 +16,6 @@ const sliderConfig = [
     { sliderId: 'handlingTimeSlider', displayId: 'handlingTimeValue', paramKey: 'handlingTime' },
     { sliderId: 'uniformOrderRadiusKmSlider', displayId: 'uniformOrderRadiusKmValue', paramKey: 'uniformOrderRadiusKm', isFloat: true },
     { sliderId: 'defaultOrderFocusRadiusSlider', displayId: 'defaultOrderFocusRadiusValue', paramKey: 'defaultFocusRadiusKm', isFloat: true },
-    // The orderFrequencySlider is removed as it's replaced by a direct number input.
-    // The orderSpreadSlider was also removed as it was part of a less direct order generation approach.
 ];
 
 export function initializeSliders() {
@@ -25,51 +23,48 @@ export function initializeSliders() {
         const slider = document.getElementById(config.sliderId);
         const display = document.getElementById(config.displayId);
         if (slider && display) {
-            // Set initial display value
-            updateSliderValueDisplay(slider, display, config.paramKey, config.isFloat);
+            updateSliderValueDisplay(slider, display, config.isFloat); // Removed paramKey as it's not used for display mapping now
             
-            // Add event listener
             slider.addEventListener('input', () => {
-                updateSliderValueDisplay(slider, display, config.paramKey, config.isFloat);
-                if (typeof setSimParameter === 'function') { // Ensure setSimParameter is available
+                updateSliderValueDisplay(slider, display, config.isFloat);
+                if (typeof setSimParameter === 'function') { 
                     const value = config.isFloat ? parseFloat(slider.value) : parseInt(slider.value);
                     setSimParameter(config.paramKey, value);
                 }
             });
         } else {
-            // console.warn(`Slider or display element not found for config:`, config);
+            // console.warn(`Slider or display element not found for config:`, config.sliderId, config.displayId);
         }
     });
 
-    // Event listener for the new ordersPerMinuteInput
     const ordersPerMinuteInputEl = document.getElementById('ordersPerMinuteInput');
     if (ordersPerMinuteInputEl) {
+        // Set initial simParam from this input's default value
+        if (typeof setSimParameter === 'function') {
+             let initialValue = parseFloat(ordersPerMinuteInputEl.value);
+             if (isNaN(initialValue) || initialValue <= 0) {
+                initialValue = 0.5; // Default if HTML value is bad
+                ordersPerMinuteInputEl.value = initialValue;
+             }
+             setSimParameter('ordersPerMinute', initialValue);
+        }
+        // Add event listener for changes
         ordersPerMinuteInputEl.addEventListener('change', () => {
             let value = parseFloat(ordersPerMinuteInputEl.value);
             if (isNaN(value) || value <= 0) {
-                value = 0.1; // Default to a small positive if invalid
+                value = 0.1; 
                 ordersPerMinuteInputEl.value = value;
             }
             if (typeof setSimParameter === 'function') {
                 setSimParameter('ordersPerMinute', value);
             }
         });
-        // Set initial simParam from this input
-        if (typeof setSimParameter === 'function') {
-             let initialValue = parseFloat(ordersPerMinuteInputEl.value);
-             if (isNaN(initialValue) || initialValue <= 0) initialValue = 0.5;
-             setSimParameter('ordersPerMinute', initialValue);
-        }
     }
 }
 
-function updateSliderValueDisplay(slider, displayElement, paramKey, isFloat = false) {
+// paramKey is no longer needed here as we are not doing specific text mapping for sliders like "Low/Medium/High"
+function updateSliderValueDisplay(slider, displayElement, isFloat = false) {
     let value = isFloat ? parseFloat(slider.value).toFixed(1) : slider.value;
-    
-    // Specific formatting for certain sliders can be handled here if needed in the future
-    // For now, direct value display is fine for most.
-    // The orderFrequencySlider and orderSpreadSlider logic is removed.
-
     displayElement.textContent = value;
 }
 
@@ -106,22 +101,19 @@ export function updateSimTimeDisplay(time) {
 }
 
 export function toggleSimConfigLock(lock) {
-    if (configLockOverlay && configLockMessage) {
-        if (lock) {
-            configLockOverlay.classList.remove('hidden');
-            configLockMessage.classList.remove('hidden');
-        } else {
-            configLockOverlay.classList.add('hidden');
-            configLockMessage.classList.add('hidden');
-        }
-    }
-    // Disable/enable all relevant input controls
     const inputsToToggle = [
-        ...sliderConfig.map(c => c.sliderId),
+        ...sliderConfig.map(c => c.sliderId), 
         'orderGenerationProfileSelect', 'routeWaypointsSelect', 
         'manualTrafficControl', 'enableDynamicTraffic',
         'agentCostPerHour', 'costPerKmTraveled', 'fixedCostPerDelivery',
-        'ordersPerMinuteInput' // Add the new input here
+        'ordersPerMinuteInput', 
+
+        'optTargetDeliveryTime', 'optSelectDarkStore', 'optDemandProfileSelect',
+        'optOrderGenerationRadius', 'optTargetOrdersPerIteration',
+        'optMinAgents', 'optMaxAgents', 'optNumRunsPerAgentCount', 'optMaxSimTimePerIteration',
+        'optAgentMinSpeed', 'optAgentMaxSpeed', 'optHandlingTime', 
+        'optRouteWaypoints', 'optBaseTrafficFactor', 'optEnableDynamicTraffic',
+        'optOrdersPerMinute'
     ];
 
     inputsToToggle.forEach(id => {
@@ -130,4 +122,12 @@ export function toggleSimConfigLock(lock) {
             el.disabled = lock;
         }
     });
+
+    const clusteringBtn = document.getElementById('regenerateClusteringBtn');
+    const demandProfileSaveBtn = document.getElementById('saveProfileBtn');
+    const workforceOptRunBtn = document.getElementById('runOptimizationBtn');
+
+    if(clusteringBtn) clusteringBtn.disabled = lock;
+    if(demandProfileSaveBtn) demandProfileSaveBtn.disabled = lock;
+    if(workforceOptRunBtn) workforceOptRunBtn.disabled = lock;
 }
