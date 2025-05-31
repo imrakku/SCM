@@ -19,7 +19,7 @@ import {
 } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
-import { getCustomDemandProfiles } from './demandProfiles.js'; // Assuming this path is correct
+import { getCustomDemandProfiles } from './demandProfiles.js'; 
 import { updateTrafficStatusDisplay, updateSimTimeDisplay, toggleSimConfigLock } from '../uiElements.js';
 import { saveCurrentSimulationScenario } from './scenarioAnalysis.js';
 
@@ -126,8 +126,9 @@ function toggleProfileSpecificControlsUI() {
     if(uniformOrderRadiusContainerEl) uniformOrderRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_uniform');
     if(defaultOrderFocusRadiusContainerEl) defaultOrderFocusRadiusContainerEl.classList.toggle('hidden', selectedProfile !== 'default_focused');
     
-    // Show ordersPerMinute input only for default profiles
-    if(ordersPerMinuteElParent) ordersPerMinuteElParent.classList.toggle('hidden', !selectedProfile.startsWith('default_'));
+    if(ordersPerMinuteElParent) {
+        ordersPerMinuteElParent.classList.toggle('hidden', !selectedProfile.startsWith('default_'));
+    }
 }
 
 function createAgent() {
@@ -343,7 +344,7 @@ function resetSimulationState() {
     for (let key in liveChartData) {
         liveChartData[key] = [];
     }
-    updateLiveCharts();
+    updateLiveCharts(); // Update charts with empty data
 
     simParams = {
         numAgents: parseInt(document.getElementById('numAgentsSlider')?.value) || 10,
@@ -517,8 +518,8 @@ function generateOrder() {
                         if (attempts >= 100 && !isPointInPolygon([newOrderLocation.lng, newOrderLocation.lat], chandigarhGeoJsonPolygon)) {
                             newOrderLocation = { ...hotspotCenter };
                         }
-                    } else if (zone.type === 'sector') { // Corrected from selectedZone to zone
-                        if (zone.selectedSectors && zone.selectedSectors.length > 0) {
+                    } else if (zone.type === 'sector') {
+                        if (zone.selectedSectors && zone.selectedSectors.length > 0) { // Use 'zone' not 'selectedZone'
                             const randomSectorName = zone.selectedSectors[Math.floor(Math.random() * zone.selectedSectors.length)];
                             profileSourceInfo += ` - ${randomSectorName}`;
                             const sectorData = chandigarhSectors.find(s => s.name === randomSectorName);
@@ -535,7 +536,7 @@ function generateOrder() {
                             } else { newOrderLocation = { ...defaultDarkStoreLocationSim }; }
                         } else { newOrderLocation = { ...defaultDarkStoreLocationSim }; }
                     } else if (zone.type === 'route') {
-                         if (zone.routePoints && zone.routePoints.length >= 1) {
+                         if (zone.routePoints && zone.routePoints.length >= 1) { // Use 'zone' not 'selectedZone'
                             const routeBounds = L.latLngBounds(zone.routePoints); 
                             const routeSpreadDeg = (zone.routeSpreadKm || 0.5) / 111;
                             let attempts = 0;
@@ -735,7 +736,6 @@ function updateAgentsMovementAndStatus() {
         }
 
         if (!agent.routePath || agent.routePath.length < 2 || agent.currentLegIndex >= agent.routePath.length - 1) {
-            // This block handles arrival at the *final point of the current routePath*
             if (agent.status === 'to_store' && JSON.stringify(agent.location) === JSON.stringify(defaultDarkStoreLocationSim)) {
                  agent.status = 'at_store'; agent.currentTaskStartTime = currentSimulationTime; agent.timeSpentAtStore = 0;
             } else if (agent.status === 'to_customer' && agent.routePath.length > 0 && JSON.stringify(agent.location) === JSON.stringify(agent.routePath[agent.routePath.length - 1])) {
@@ -884,7 +884,6 @@ export function getCurrentSimulationStats() {
     return { ...stats, currentSimTime: currentSimulationTime, deliveredOrderLocationsForHeatmap: [...deliveredOrderDataForHeatmap], agentsData: [...agents], allOrdersData: [...allGeneratedOrdersThisRun] };
 }
 
-// ★★★ THIS IS THE FUNCTION THAT WAS MISSING FROM EXPORTS in some versions ★★★
 export function populateOrderGenerationProfileSelectorSim(customProfilesFromDemandModule) {
     if (!orderGenerationProfileSelectEl) {
         orderGenerationProfileSelectEl = document.getElementById('orderGenerationProfileSelect');
@@ -899,7 +898,7 @@ export function populateOrderGenerationProfileSelectorSim(customProfilesFromDema
     orderGenerationProfileSelectEl.innerHTML = '';
     defaultOptions.forEach(opt => orderGenerationProfileSelectEl.appendChild(opt.cloneNode(true)));
 
-    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); // Ensure getCustomDemandProfiles is available
+    const profilesToUse = customProfilesFromDemandModule || getCustomDemandProfiles(); 
     
     profilesToUse.forEach(profile => {
         const option = document.createElement('option');
@@ -931,7 +930,7 @@ function prepareSimulationDataForAI() {
     dataString += `Delivery Completion Rate: ${simStats.totalOrdersGenerated > 0 ? ((simStats.totalOrdersDelivered / simStats.totalOrdersGenerated) * 100).toFixed(1) + '%' : 'N/A'}\n`;
     dataString += `Average Delivery Time: ${simStats.allDeliveryTimes.length > 0 && simStats.totalOrdersDelivered > 0 ? (simStats.sumDeliveryTimes / simStats.totalOrdersDelivered).toFixed(1) : 'N/A'} min\n`;
     dataString += `Min Delivery Time: ${simStats.allDeliveryTimes.length > 0 ? Math.min(...simStats.allDeliveryTimes).toFixed(1) : 'N/A'} min\n`;
-    dataString += `Max Delivery Time: ${simStats.allDeliveryTimes.length > 0 ? Math.max(...stats.allDeliveryTimes).toFixed(1) : 'N/A'} min\n`;
+    dataString += `Max Delivery Time: ${simStats.allDeliveryTimes.length > 0 && stats.allDeliveryTimes.length > 0 ? Math.max(...stats.allDeliveryTimes).toFixed(1) : 'N/A'} min\n`; // Added check for stats.allDeliveryTimes
     dataString += `Average Order Wait Time (Assignment): ${simStats.countAssignedOrders > 0 ? (simStats.sumOrderWaitTimes / simStats.countAssignedOrders).toFixed(1) : 'N/A'} min\n`;
     
     let totalAgentPossibleTime = 0;
@@ -1144,7 +1143,7 @@ export function initializeSimulationSection() {
         }
     });
 
-    populateOrderGenerationProfileSelectorSim();
+    populateOrderGenerationProfileSelectorSim(); // Call without arguments, it will use getCustomDemandProfiles
     resetSimulationState();
     toggleSimConfigLock(false);
     if (pauseSimBtnEl) pauseSimBtnEl.disabled = true;
