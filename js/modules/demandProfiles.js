@@ -30,7 +30,7 @@ export function initializeDemandProfilesSection() {
     savedProfilesListEl = document.getElementById('savedProfilesList');
     profileCreationMapContainerEl = document.getElementById('profileCreationMapContainer');
     finishCurrentRouteBtnEl = document.getElementById('finishCurrentRouteBtn');
-    simulationLogEl = document.getElementById('simulationLog');
+    simulationLogEl = document.getElementById('simulationLog'); // Assuming this is the main simulation log for now
 
 
     demandProfilesMap = initializeMap('profileCreationMap', chandigarhCenter, 12, 'demandProfiles');
