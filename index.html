@@ -246,13 +246,6 @@
                         <summary class="font-bold text-lg text-indigo-700 hover:text-indigo-800">What is this section for? (Click to expand)</summary>
                         <div class="mt-2">
                             <p class="text-base leading-relaxed">Run a live simulation of delivery operations. Observe orders, agent movements, and real-time performance metrics.</p>
-                            <p class="font-bold text-lg mt-3 mb-2">How to use it:</p>
-                            <ul class="list-disc list-inside ml-4 text-base leading-relaxed space-y-1">
-                                <li>Configure Parameters.</li>
-                                <li>Click "Start Simulation".</li>
-                                <li>After a simulation, click "Analyze Simulation Results with AI" for AI-powered insights.</li>
-                                <li>"Save Current Scenario Results" or "Export Results (CSV)".</li>
-                            </ul>
                         </div>
                     </details>
                 </div>
@@ -266,13 +259,9 @@
                             </div>
                             <input type="range" id="numAgentsSlider" min="1" max="10" value="5" class="mt-2">
                         </div>
-                        <div>
-                             <div class="control-label">
-                                <label for="orderFrequencySlider" class="block text-md font-medium text-slate-700">Order Arrival Rate:</label>
-                                <span id="orderFrequencyValue" class="font-bold text-xl text-blue-700">Medium</span>
-                            </div>
-                            <input type="range" id="orderFrequencySlider" min="1" max="5" value="3" class="mt-2">
-                            <div class="text-sm text-slate-500 flex justify-between mt-1 px-1"><span>Slower</span><span></span><span>Faster</span></div>
+                        <div class="input-group">
+                            <label for="ordersPerMinuteInput" class="block text-md font-medium text-slate-700">Orders Generated per Minute (Avg):</label>
+                            <input type="number" id="ordersPerMinuteInput" value="0.5" min="0.01" step="0.1" class="w-full mt-1">
                         </div>
                         <div>
                             <div class="control-label">
@@ -307,13 +296,6 @@
                                 <span id="uniformOrderRadiusKmValue" class="font-bold text-xl text-blue-700">5</span>
                             </div>
                             <input type="range" id="uniformOrderRadiusKmSlider" min="1" max="10" value="5" step="0.5" class="mt-2">
-                        </div>
-                        <div id="defaultOrderSpreadContainer" class="hidden"> <div class="control-label">
-                                <label for="orderSpreadSlider" class="block text-md font-medium text-slate-700">Order Location Spread (Default):</label>
-                                <span id="orderSpreadValue" class="font-bold text-xl text-blue-700">Medium</span>
-                            </div>
-                            <input type="range" id="orderSpreadSlider" min="1" max="5" value="3" class="mt-2">
-                             <div class="text-xs text-slate-500 flex justify-between mt-1 px-1"><span>Closer</span><span></span><span>Wider</span></div>
                         </div>
                         <div id="defaultOrderFocusRadiusContainer" class="input-group hidden"> <div class="control-label">
                                 <label for="defaultOrderFocusRadiusSlider" class="block text-md font-medium text-slate-700">Focus Radius (km - Default):</label>
@@ -454,17 +436,13 @@
                             <p class="text-base leading-relaxed">
                                 This tool helps find a balance for delivery team size by analyzing how different team sizes impact delivery speed, service levels, agent utilization, and costs, using realistic demand patterns.
                             </p>
-                            <p class="font-bold text-lg mt-3 mb-2">How it Works:</p>
-                            <p class="text-base leading-relaxed">
-                                You set a target for average delivery time and select a demand profile. The tool then runs multiple quick simulations for each agent count. For each, it generates orders based on the chosen profile over a set simulation time and calculates the average performance. The "Best Scenario" is recommended by balancing service, cost, and utilization.
-                            </p>
                         </div>
                     </details>
                 </div>
 
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div class="input-group">
                             <label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label>
                             <input type="number" id="optTargetDeliveryTime" value="15" min="5" step="1" class="w-full">
@@ -488,7 +466,7 @@
                         </div>
                         <div class="input-group" id="optTargetOrdersContainer">
                             <label for="optTargetOrdersPerIteration">Target Orders per Iteration (for default profiles):</label>
-                            <input type="number" id="optTargetOrdersPerIteration" value="20" min="5" step="1" class="w-full">
+                            <input type="number" id="optTargetOrdersPerIteration" value="50" min="5" step="5" class="w-full">
                         </div>
                         <div class="input-group">
                             <label for="optMinAgents">Min Agents to Test:</label>
@@ -506,6 +484,43 @@
                             <label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label>
                             <input type="number" id="optMaxSimTimePerIteration" value="120" min="30" step="10" class="w-full">
                         </div>
+                        <div class="input-group">
+                            <label for="optAgentMinSpeed">Agent Min Speed (km/h):</label>
+                            <input type="number" id="optAgentMinSpeed" value="20" min="10" max="40" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optAgentMaxSpeed">Agent Max Speed (km/h):</label>
+                            <input type="number" id="optAgentMaxSpeed" value="30" min="15" max="60" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optHandlingTime">Store Handling Time (min):</label>
+                            <input type="number" id="optHandlingTime" value="5" min="1" max="15" step="1" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="optRouteWaypoints">Route Complexity (Waypoints):</label>
+                             <select id="optRouteWaypoints" class="w-full">
+                                <option value="0">0 (Straight Lines)</option>
+                                <option value="1" selected>1 Waypoint</option>
+                                <option value="2">2 Waypoints</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="optBaseTrafficFactor">Base Traffic Factor:</label>
+                             <select id="optBaseTrafficFactor" class="w-full">
+                                <option value="1.0" selected>Medium (Normal)</option>
+                                <option value="1.2">Light</option> 
+                                <option value="0.7">Heavy</option> 
+                            </select>
+                        </div>
+                         <div class="input-group checkbox-group items-center">
+                            <input type="checkbox" id="optEnableDynamicTraffic" class="mr-2">
+                            <label for="optEnableDynamicTraffic" class="text-md font-medium text-slate-700 cursor-pointer">Enable Dynamic Traffic (in Opt. Runs)</label>
+                        </div>
+                        <div class="input-group">
+                            <label for="optOrdersPerMinute">Orders/Min (Avg - for default opt. profiles):</label>
+                            <input type="number" id="optOrdersPerMinute" value="0.5" min="0.01" step="0.1" class="w-full">
+                        </div>
+
                     </div>
                     <div class="mt-6 text-center">
                         <button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button>
@@ -569,7 +584,7 @@
                 <div id="optimizationResultsContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Optimization Recommendation</h4>
                     <div id="optimizationRecommendationText" class="mb-4 p-4 bg-sky-100 border border-sky-300 rounded-md text-sky-700">
-                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization.</p>
+                        <p>Recommendation will appear here based on balancing service level, cost, and agent utilization. Click "Analyze Optimization with AI" for detailed insights.</p>
                     </div>
                     <div class="optimization-results-grid">
                         <p><strong >Recommended Agents:</strong> <span id="optResultAgents">N/A</span></p>
