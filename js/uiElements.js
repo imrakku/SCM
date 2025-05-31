@@ -1,68 +1,66 @@
 // js/uiElements.js
-import { setSimParameter } from './modules/simulation.js'; // This import is fine and needed
-// REMOVED: import { orderGenerationProbabilities, orderSpreadFactors } from './modules/simulation.js'; // This line was causing the error
-import { chandigarhSectors } from './data/chandigarhData.js';
+import { setSimParameter } from './modules/simulation.js'; // This import is correct and needed
+// REMOVED: import { orderGenerationProbabilities, orderSpreadFactors } from './modules/simulation.js'; // THIS LINE WAS THE ERROR
+import { chandigarhSectors } from '../data/chandigarhData.js';
 
 // Cache DOM elements that are relatively static
 const simTimeDisplaySpan = document.getElementById('simTimeDisplay');
 const currentTrafficStatusSpan = document.getElementById('currentTrafficStatus');
-const configLockOverlay = document.getElementById('configLockOverlay'); 
-const configLockMessage = document.getElementById('configLockMessage'); 
 
 const sliderConfig = [
-    { sliderId: 'numAgentsSlider', displayId: 'numAgentsValue', paramKey: 'numAgents' },
-    { sliderId: 'agentMinSpeedSlider', displayId: 'agentMinSpeedValue', paramKey: 'agentMinSpeed' },
-    { sliderId: 'agentMaxSpeedSlider', displayId: 'agentMaxSpeedValue', paramKey: 'agentMaxSpeed' },
-    { sliderId: 'handlingTimeSlider', displayId: 'handlingTimeValue', paramKey: 'handlingTime' },
-    { sliderId: 'uniformOrderRadiusKmSlider', displayId: 'uniformOrderRadiusKmValue', paramKey: 'uniformOrderRadiusKm', isFloat: true },
-    { sliderId: 'defaultOrderFocusRadiusSlider', displayId: 'defaultOrderFocusRadiusValue', paramKey: 'defaultFocusRadiusKm', isFloat: true },
+    { sliderId: 'numAgentsSlider', displayId: 'numAgentsValue', paramKey: 'numAgents', defaultVal: 10 },
+    { sliderId: 'agentMinSpeedSlider', displayId: 'agentMinSpeedValue', paramKey: 'agentMinSpeed', defaultVal: 20 },
+    { sliderId: 'agentMaxSpeedSlider', displayId: 'agentMaxSpeedValue', paramKey: 'agentMaxSpeed', defaultVal: 30 },
+    { sliderId: 'handlingTimeSlider', displayId: 'handlingTimeValue', paramKey: 'handlingTime', defaultVal: 5 },
+    { sliderId: 'uniformOrderRadiusKmSlider', displayId: 'uniformOrderRadiusKmValue', paramKey: 'uniformOrderRadiusKm', isFloat: true, defaultVal: 5 },
+    { sliderId: 'defaultOrderFocusRadiusSlider', displayId: 'defaultOrderFocusRadiusValue', paramKey: 'defaultFocusRadiusKm', isFloat: true, defaultVal: 3 },
 ];
 
 export function initializeSliders() {
+    console.log("[UI] Initializing sliders...");
     sliderConfig.forEach(config => {
         const slider = document.getElementById(config.sliderId);
         const display = document.getElementById(config.displayId);
         if (slider && display) {
-            updateSliderValueDisplay(slider, display, config.isFloat); // Removed paramKey as it's not used for display mapping now
+            // Set slider to default if not already matching simParams (which should be set by now)
+            // This is more for visual consistency if HTML defaults differ from JS defaults.
+            // The actual simParam is set in simulation.js's resetSimulationState.
+            slider.value = config.defaultVal; 
+            updateSliderValueDisplay(slider, display, config.isFloat);
             
             slider.addEventListener('input', () => {
                 updateSliderValueDisplay(slider, display, config.isFloat);
                 if (typeof setSimParameter === 'function') { 
                     const value = config.isFloat ? parseFloat(slider.value) : parseInt(slider.value);
                     setSimParameter(config.paramKey, value);
+                } else {
+                    console.error("[UI] setSimParameter function not found in simulation.js");
                 }
             });
         } else {
-            // console.warn(`Slider or display element not found for config:`, config.sliderId, config.displayId);
+            console.warn(`[UI] Slider or display element not found for config:`, config.sliderId, config.displayId);
         }
     });
 
     const ordersPerMinuteInputEl = document.getElementById('ordersPerMinuteInput');
     if (ordersPerMinuteInputEl) {
-        // Set initial simParam from this input's default value
-        if (typeof setSimParameter === 'function') {
-             let initialValue = parseFloat(ordersPerMinuteInputEl.value);
-             if (isNaN(initialValue) || initialValue <= 0) {
-                initialValue = 0.5; // Default if HTML value is bad
-                ordersPerMinuteInputEl.value = initialValue;
-             }
-             setSimParameter('ordersPerMinute', initialValue);
-        }
-        // Add event listener for changes
+        // Initial value for ordersPerMinute is set in simulation.js's simParams and resetSimulationState
+        // This listener just updates it on change.
         ordersPerMinuteInputEl.addEventListener('change', () => {
             let value = parseFloat(ordersPerMinuteInputEl.value);
             if (isNaN(value) || value <= 0) {
-                value = 0.1; 
-                ordersPerMinuteInputEl.value = value;
+                value = 0.5; // Default to a small positive if invalid input
+                ordersPerMinuteInputEl.value = value.toString();
             }
             if (typeof setSimParameter === 'function') {
                 setSimParameter('ordersPerMinute', value);
             }
         });
+    } else {
+        console.warn("[UI] ordersPerMinuteInput element not found.");
     }
 }
 
-// paramKey is no longer needed here as we are not doing specific text mapping for sliders like "Low/Medium/High"
 function updateSliderValueDisplay(slider, displayElement, isFloat = false) {
     let value = isFloat ? parseFloat(slider.value).toFixed(1) : slider.value;
     displayElement.textContent = value;
