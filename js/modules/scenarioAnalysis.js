@@ -22,7 +22,6 @@ export function initializeScenarioAnalysisSection() {
     scenarioComparisonPlaceholderEl = document.getElementById('scenarioComparisonPlaceholder');
     mainSimulationLogEl = document.getElementById('simulationLog');
     
-    // New AI elements
     analyzeScenarioComparisonAIBtnEl = document.getElementById('analyzeScenarioComparisonAI');
     scenarioAiAnalysisContainerEl = document.getElementById('scenarioAiAnalysisContainer');
     scenarioAiAnalysisLoadingEl = document.getElementById('scenarioAiAnalysisLoading');
@@ -62,7 +61,7 @@ export function saveCurrentSimulationScenario() {
             avgDeliveryTime: avgDeliveryTime,
             minDeliveryTime: simStats.allDeliveryTimes.length > 0 ? Math.min(...simStats.allDeliveryTimes) : null,
             maxDeliveryTime: simStats.allDeliveryTimes.length > 0 ? Math.max(...simStats.allDeliveryTimes) : null,
-            stdDevDeliveryTime: simStats.allDeliveryTimes.length > 1 ? calculateStdDev(simStats.allDeliveryTimes, avgDeliveryTime) : null,
+            stdDevDeliveryTime: simStats.allDeliveryTimes.length > 1 && avgDeliveryTime ? calculateStdDev(simStats.allDeliveryTimes, avgDeliveryTime) : null,
             avgOrderWaitTime: simStats.countAssignedOrders > 0 ? (simStats.sumOrderWaitTimes / simStats.countAssignedOrders) : null,
             avgAgentUtilization: parseFloat(document.getElementById('statsAvgAgentUtilization')?.textContent) || null,
             totalSimTime: simStats.currentSimTime,
@@ -139,8 +138,7 @@ function displaySelectedScenarioComparisons() {
     }
 
     const allScenarios = getSavedScenarios();
-    const selectedScenarios = Array.from(selectedCheckboxes).map(cb => allScenarios[parseInt(cb.dataset.scenarioIndex)]);
-    currentlyComparedScenarios = selectedScenarios;
+    currentlyComparedScenarios = Array.from(selectedCheckboxes).map(cb => allScenarios[parseInt(cb.dataset.scenarioIndex)]);
 
     if (!scenarioComparisonResultsContainerEl || !scenarioComparisonTableEl || !scenarioComparisonPlaceholderEl) return;
     scenarioComparisonResultsContainerEl.classList.remove('hidden');
@@ -153,8 +151,85 @@ function displaySelectedScenarioComparisons() {
     if (thead) thead.innerHTML = "";
     if (tbody) tbody.innerHTML = "";
 
-    const metrics = [ /* This array of metrics is unchanged */ ];
-    // ... (The entire logic for building the comparison table is unchanged)
+    const metrics = [
+        { key: 'name', source: 'scenario', displayName: 'Scenario Name', isParam: true },
+        { key: 'numAgents', source: 'parameters', displayName: 'Agents', isParam: true },
+        { key: 'currentOrderGenerationProbability', source: 'parameters', displayName: 'Order Gen. Prob.', isParam: true, format: (val) => val !== undefined ? val.toFixed(2) : 'N/A'},
+        { key: 'agentMinSpeed', source: 'parameters', displayName: 'Min Speed', isParam: true, unit: 'km/h' },
+        { key: 'agentMaxSpeed', source: 'parameters', displayName: 'Max Speed', isParam: true, unit: 'km/h' },
+        { key: 'handlingTime', source: 'parameters', displayName: 'Handling Time', isParam: true, unit: 'min' },
+        { key: 'orderGenerationProfile', source: 'parameters', displayName: 'Order Profile', isParam: true, format: (val) => typeof val === 'string' ? val.replace('custom_', 'C: ').replace('default_', 'D: ') : val },
+        { key: 'baseTrafficFactor', source: 'parameters', displayName: 'Traffic Factor', isParam: true, format: (val) => val !== undefined && val !== null ? val.toFixed(1) + 'x' : 'N/A' },
+        { key: 'enableDynamicTraffic', source: 'parameters', displayName: 'Dyn. Traffic', isParam: true, format: (val) => val ? 'Yes' : 'No' },
+        { key: 'agentCostPerHour', source: 'parameters', displayName: 'Agent Cost/hr', isParam: true, unit: '₹' },
+        { key: 'costPerKmTraveled', source: 'parameters', displayName: 'Cost/km', isParam: true, unit: '₹' },
+        { key: 'fixedCostPerDelivery', source: 'parameters', displayName: 'Fixed Cost/Del.', isParam: true, unit: '₹' },
+        { key: 'totalSimTime', source: 'results', displayName: 'Sim Runtime', unit: 'min' },
+        { key: 'totalOrdersGenerated', source: 'results', displayName: 'Generated Orders' },
+        { key: 'totalOrdersDelivered', source: 'results', displayName: 'Delivered Orders' },
+        { key: 'avgDeliveryTime', source: 'results', displayName: 'Avg. Del. Time', unit: 'min' },
+        { key: 'minDeliveryTime', source: 'results', displayName: 'Min Del. Time', unit: 'min' },
+        { key: 'maxDeliveryTime', source: 'results', displayName: 'Max Del. Time', unit: 'min' },
+        { key: 'stdDevDeliveryTime', source: 'results', displayName: 'StdDev Del. Time', unit: 'min' },
+        { key: 'avgOrderWaitTime', source: 'results', displayName: 'Avg. Wait Time', unit: 'min' },
+        { key: 'avgAgentUtilization', source: 'results', displayName: 'Avg. Utilization', unit: '%' },
+        { key: 'totalAgentLaborCost', source: 'results', displayName: 'Total Labor Cost', unit: '₹' },
+        { key: 'totalTravelCost', source: 'results', displayName: 'Total Travel Cost', unit: '₹' },
+        { key: 'totalFixedDeliveryCosts', source: 'results', displayName: 'Total Fixed Costs', unit: '₹' },
+        { key: 'overallTotalOperationalCost', source: 'results', displayName: 'Total Op. Cost', unit: '₹' },
+        { key: 'averageCostPerOrder', source: 'results', displayName: 'Avg. Cost/Order', unit: '₹' },
+    ];
+
+    const headerRow = thead.insertRow();
+    const thMetric = document.createElement('th');
+    thMetric.textContent = "Metric";
+    headerRow.appendChild(thMetric);
+    currentlyComparedScenarios.forEach((scenario, index) => {
+        const th = document.createElement('th');
+        th.textContent = `Scenario ${index + 1}`;
+        headerRow.appendChild(th);
+    });
+
+    metrics.forEach(metricInfo => {
+        const hasMetric = currentlyComparedScenarios.some(scen => {
+            if (metricInfo.source === 'scenario') return scen[metricInfo.key] !== undefined && scen[metricInfo.key] !== null;
+            return scen[metricInfo.source] && scen[metricInfo.source][metricInfo.key] !== undefined && scen[metricInfo.source][metricInfo.key] !== null;
+        });
+
+        if (hasMetric) {
+            const row = tbody.insertRow();
+            const cellMetricName = row.insertCell();
+            cellMetricName.textContent = metricInfo.displayName;
+            cellMetricName.style.fontWeight = '500';
+            if (metricInfo.isParam) cellMetricName.style.backgroundColor = '#f0f9ff';
+
+            currentlyComparedScenarios.forEach(scenario => {
+                const cell = row.insertCell();
+                let value;
+                if (metricInfo.source === 'scenario') {
+                    value = scenario[metricInfo.key];
+                } else {
+                    value = scenario[metricInfo.source] ? scenario[metricInfo.source][metricInfo.key] : undefined;
+                }
+
+                if (value === undefined || value === null) {
+                    cell.textContent = "N/A";
+                } else {
+                    let displayValue = value;
+                    if (metricInfo.format) {
+                        displayValue = metricInfo.format(value);
+                    } else if (typeof value === 'number' && !Number.isInteger(value)) {
+                        displayValue = value.toFixed(1);
+                    }
+                     if (metricInfo.unit && !String(displayValue).includes(metricInfo.unit)) {
+                        cell.textContent = `${displayValue} ${metricInfo.unit}`;
+                    } else {
+                        cell.textContent = displayValue;
+                    }
+                }
+            });
+        }
+    });
 }
 
 function clearAllSavedScenarios() {
@@ -176,18 +251,12 @@ function clearAllSavedScenarios() {
 
 function prepareComparisonDataForAI(scenarios) {
     if (!scenarios || scenarios.length === 0) return "No scenarios selected for comparison.";
-    
     let dataString = "Comparing the following simulation scenarios:\n\n";
-
     scenarios.forEach((scenario, index) => {
         dataString += `--- Scenario ${index + 1}: "${scenario.name}" ---\n`;
-        // Key Parameters
         dataString += `Agents: ${scenario.parameters.numAgents}\n`;
         dataString += `Order Profile: ${scenario.parameters.orderGenerationProfile.replace('custom_', 'C: ').replace('default_', 'D: ')}\n`;
-        dataString += `Traffic: ${scenario.parameters.enableDynamicTraffic ? 'Dynamic' : `Static (x${scenario.parameters.baseTrafficFactor})`}\n`;
-        // Key Results
         dataString += `Avg. Delivery Time: ${scenario.results.avgDeliveryTime?.toFixed(1) ?? 'N/A'} min\n`;
-        dataString += `Avg. Agent Utilization: ${scenario.results.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%\n`;
         dataString += `Avg. Cost per Order: ₹${scenario.results.averageCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
         dataString += `Total Orders Delivered: ${scenario.results.totalOrdersDelivered}\n\n`;
     });
@@ -196,13 +265,11 @@ function prepareComparisonDataForAI(scenarios) {
 
 async function handleScenarioAiAnalysisRequest() {
     if (!scenarioAiAnalysisContainerEl || !scenarioAiAnalysisLoadingEl || !scenarioAiAnalysisContentEl) return;
-
     if (currentlyComparedScenarios.length === 0) {
         scenarioAiAnalysisContentEl.textContent = "Please select and compare at least one scenario first.";
         scenarioAiAnalysisContainerEl.classList.remove('hidden');
         return;
     }
-
     scenarioAiAnalysisLoadingEl.classList.remove('hidden');
     scenarioAiAnalysisContentEl.textContent = 'Generating AI analysis of scenario comparison...';
     scenarioAiAnalysisContainerEl.classList.remove('hidden');
@@ -210,12 +277,10 @@ async function handleScenarioAiAnalysisRequest() {
     const comparisonDataSummary = prepareComparisonDataForAI(currentlyComparedScenarios);
     const prompt = `
         You are a logistics operations analyst. Based on the following summary of different simulation scenarios, provide a concise comparison.
-
         Your analysis should:
         1.  **Identify the Best Performing Scenario:** Based on a balance of low delivery time and low cost per order, which scenario is the best and why?
         2.  **Analyze Key Trade-offs:** Compare the scenarios. For example, how did adding more agents in Scenario 2 versus Scenario 1 affect costs and delivery times?
         3.  **Provide an Actionable Recommendation:** Conclude with a clear recommendation on which set of parameters (which scenario) the business should adopt and why.
-
         Keep the analysis professional and directly reference the scenarios by their name or number.
 
         Scenario Comparison Data:
@@ -229,7 +294,6 @@ async function handleScenarioAiAnalysisRequest() {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-
         if (!response.ok) {
             throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
