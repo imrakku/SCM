@@ -218,7 +218,7 @@
                         <div class="input-group"><label for="optMinAgents">Min Agents to Test:</label><input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full"></div>
                         <div class="input-group"><label for="optMaxAgents">Max Agents to Test:</label><input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full"></div>
                         <div class="input-group"><label for="optNumRunsPerAgentCount">Runs per Agent Count (for averaging):</label><input type="number" id="optNumRunsPerAgentCount" value="1" min="1" max="20" step="1" class="w-full"></div>
-                        <div class="input-group"><label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label><input type="number" id="optMaxSimTimePerIteration" value="12000" min="1" step="1" class="w-full"></div>
+                        <div class="input-group"><label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label><input type="number" id="optMaxSimTimePerIteration" value="120" min="1" step="1" class="w-full"></div>
                     </div>
                     <div class="mt-6 text-center"><button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button></div>
                 </div>
@@ -255,11 +255,6 @@
                         <p><strong>Total Fixed Delivery Costs:</strong> <span id="optResultTotalFixedDeliveryCosts">₹0.00</span></p>
                         <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
                         <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <div class="mt-4">
-                        <h5 class="text-xl font-semibold text-slate-700 mb-2">Dark Store Analysis (for Optimal Scenario):</h5>
-                        <ul id="optDarkStoreDistances" class="list-disc list-inside space-y-1"></ul>
-                        <p class="mt-2"><strong>Overall Avg. Order-to-Store Distance:</strong> <span id="optOverallAvgDistance">N/A</span></p>
                     </div>
                     <h5 class="text-xl font-semibold text-slate-700 mt-6 mb-2">Optimization Log:</h5>
                     <div id="optimizationLog" class="optimization-log"><p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p></div>
