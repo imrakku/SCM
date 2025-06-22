@@ -279,12 +279,24 @@
                     <div class="md:col-span-1">
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
                         <div id="savedScenariosListContainer"><ul id="savedScenariosList"><li class="italic text-slate-500">No scenarios saved yet.</li></ul></div>
-                        <div class="mt-4 flex flex-col space-y-2"><button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button><button id="exportScenarioComparisonBtn" class="btn btn-secondary">Export Comparison</button><button id="clearAllScenariosBtn" class="btn btn-danger">Clear All Saved Scenarios</button></div>
+                        <div class="mt-4 flex flex-col space-y-2">
+                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
+                            <button id="analyzeScenarioComparisonAI" class="btn btn-secondary">Analyze Comparison</button>
+                            <button id="clearAllScenariosBtn" class="btn btn-danger btn-sm mt-4">Clear All Saved Scenarios</button>
+                        </div>
                     </div>
                     <div class="md:col-span-2">
                         <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
                         <div id="scenarioComparisonResultsContainer" class="hidden"><div class="comparison-table-container"><table id="scenarioComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div></div>
                         <p id="scenarioComparisonPlaceholder" class="italic text-slate-500 mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
+                        <div id="scenarioAiAnalysisContainer" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                            <h4 class="text-xl font-semibold text-blue-700 text-center mb-4">AI Analysis of Scenario Comparison</h4>
+                            <div id="scenarioAiAnalysisLoading" class="text-center text-blue-600 hidden">
+                                <p class="mb-2">Generating AI analysis... This might take a moment.</p>
+                                <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            </div>
+                            <div id="scenarioAiAnalysisContent" class="text-slate-700 leading-relaxed whitespace-pre-wrap">Click "Analyze Comparison" to get insights on the selected scenarios.</div>
+                        </div>
                     </div>
                 </div>
             </div>
