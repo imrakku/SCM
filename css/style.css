@@ -285,27 +285,25 @@ input[type="range"]::-moz-range-thumb {
 .comparison-table tbody tr:nth-child(even) { background-color: #f8fafc; }
 .comparison-table tbody tr:hover { background-color: #eff6ff; }
 
-/* Chart Container Styles - CRITICAL FOR CHART DIMENSIONS */
+/* Chart Container Styles - CORRECTED FOR RESPONSIVENESS */
 .chart-container, .live-chart-container {
     position: relative; /* Important for Chart.js responsiveness */
-    margin: 0.5rem 0; /* Reduced top/bottom margin, auto for left/right if needed */
+    margin: 0.5rem 0;
     padding: 1rem;
     background-color: white;
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     border: 1px solid #e2e8f0; /* slate-200 */
-    /* Define a sensible height for the containers */
-    height: 300px; /* Default height for workforce opt charts */
-    /* The canvas itself will be constrained by this container */
+    /* height property is removed to allow chart's aspect ratio to control the height */
 }
 
+/* This rule is now effectively combined with the one above */
 .live-chart-container {
-    height: 280px; /* Slightly smaller for live view in simulation */
 }
 
 /* Ensure canvas elements inside the containers are responsive */
 .chart-container canvas, .live-chart-container canvas {
-    max-width: 100%; /* Ensure canvas does not overflow its container */
+    max-width: 100%;
     max-height: 100%;
 }
 
