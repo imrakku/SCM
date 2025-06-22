@@ -891,7 +891,7 @@ function simulationStep() {
 function initializeLiveCharts() {
     const chartOptionsBase = {
         responsive: true,
-        maintainAspectRatio: false,
+        // maintainAspectRatio: false, // This is now removed to allow natural aspect ratio
         animation: { duration: 200 },
     };
 
