@@ -357,7 +357,7 @@
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
-                        <div id="simulationAiAnalysisContent" class="text-slate-700 leading-relaxed">
+                        <div id="simulationAiAnalysisContent" class="text-slate-700 leading-relaxed whitespace-pre-wrap">
                             Click "Analyze with AI" to get insights on your simulation results.
                         </div>
                     </div>
@@ -372,7 +372,7 @@
             <div class="card">
                 <h2 class="text-4xl font-bold mb-8 text-slate-800 border-b-4 border-blue-500 pb-4">Workforce Optimization Analysis</h2>
                 <p class="mb-6 leading-relaxed text-slate-600">
-                    This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated within a specified radius around this store. Cost parameters are taken from the Simulation page.
+                    This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated based on the selected profile. Cost parameters are taken from the Simulation page.
                 </p>
 
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
@@ -512,10 +512,7 @@
                         <p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p>
                     </div>
                 </div>
-                 <div class="text-center mt-8 space-x-4">
-                    <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary">Export Optimization Results</button>
-                    <button id="analyzeWorkforceOptAI" class="btn btn-primary">Analyze with AI</button>
-                </div>
+
                 <div id="workforceAiAnalysisContainer" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg hidden">
                     <h4 class="text-xl font-semibold text-blue-700 text-center mb-4">AI Analysis of Optimization Results</h4>
                     <div id="workforceAiAnalysisLoading" class="text-center text-blue-600 hidden">
@@ -525,9 +522,14 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
-                    <div id="workforceAiAnalysisContent" class="text-slate-700 leading-relaxed">
+                    <div id="workforceAiAnalysisContent" class="text-slate-700 leading-relaxed whitespace-pre-wrap">
                         Click "Analyze with AI" to get insights on your optimization results.
                     </div>
+                </div>
+
+                 <div class="text-center mt-8">
+                    <button id="analyzeWorkforceAI" class="btn btn-primary">Analyze with AI</button>
+                    <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary ml-4">Export All Optimization Results</button>
                 </div>
             </div>
         </section>
@@ -574,7 +576,7 @@
     </main>
 
     <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
-        <p class="text-slate-300 text-lg">&copy; <span id="currentYear"></span> Rakshit Monga - IIM Sirmaur.</p>
+        <p class="text-slate-300 text-lg">&copy; <span id="currentYear">2024</span> Rakshit Monga - IIM Sirmaur.</p>
         <p class="text-md mt-2">Chandigarh Last-Mile Logistics Optimization Project</p>
         <div class="mt-8">
             <button id="toggleSectorCoordsBtn" class="btn btn-secondary btn-sm">Show/Hide Sector Coordinates</button>
