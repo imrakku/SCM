@@ -14,6 +14,11 @@ let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 let bestIterationResultGlobal = null;
 
+// Chart Instances
+let optDeliveryTimeChartInstance, optUtilizationChartInstance,
+    optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
+    optOrdersWithinSlaChartInstance;
+
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
     optDemandProfileSelectEl, optOrderGenerationRadiusInputEl,
@@ -253,7 +258,6 @@ async function runWorkforceOptimization() {
                     currentRunStats.totalAgentActiveTime++;
 
                     let startPoint, endPoint;
-
                     if (agent.status === 'to_store') {
                         startPoint = agent.routePath[0];
                         endPoint = agent.routePath[1];
@@ -263,7 +267,7 @@ async function runWorkforceOptimization() {
                             agent.status = 'to_customer';
                             agent.legProgress = 0;
                         }
-                        return;
+                        return; 
                     } else if (agent.status === 'to_customer') {
                         startPoint = agent.routePath[1];
                         endPoint = agent.routePath[2];
@@ -279,7 +283,7 @@ async function runWorkforceOptimization() {
                     } else {
                         agent.legProgress = 1;
                     }
-
+                    
                     if (agent.legProgress >= 1) {
                         agent.location = { ...endPoint };
                         agent.legProgress = 0;
@@ -336,26 +340,22 @@ async function runWorkforceOptimization() {
         const totalOpCost = totalLaborCost + totalTravelCost + totalFixedCost;
         const avgCostPerOrder = avgDelivered > 0 ? totalOpCost / avgDelivered : null;
         
-        allOptimizationIterationsData.push({ agents: currentNumAgents, generatedOrders: avgGenerated, deliveredOrders: avgDelivered, avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA, minDeliveryTime: minDelTime, maxDeliveryTime: maxDelTime, stdDevDeliveryTime: stdDevDelTime, avgAgentUtilization: avgUtil, avgOrderWaitTime: avgWait, undeliveredOrders: avgGenerated - avgDelivered, totalOpCost: totalOpCost, avgCostPerOrder: avgCostPerOrder });
+        allOptimizationIterationsData.push({ agents: currentNumAgents, generatedOrders: avgGenerated, deliveredOrders: avgDelivered, avgDeliveryTime: avgDelTime, percentOrdersSLA: percentOrdersSLA, minDeliveryTime: minDelTime, maxDeliveryTime: maxDelTime, stdDevDeliveryTime: stdDevDelTime, avgAgentUtilization: avgUtil, avgOrderWaitTime: avgWait, undeliveredOrders: avgGenerated - avgDelivered, totalOpCost: totalOpCost, avgCostPerOrder: avgCostPerOrder, deliveryCompletionRate: avgGenerated > 0 ? avgDelivered / avgGenerated : 0 });
         logMessage(`Avg for ${currentNumAgents} Agents: Gen: ${avgGenerated.toFixed(1)}, Del: ${avgDelivered.toFixed(1)}, AvgDelTime: ${avgDelTime?.toFixed(1) ?? 'N/A'}m, Cost/Order: ₹${avgCostPerOrder?.toFixed(2) ?? 'N/A'}`, 'STATS', optimizationLogEl);
     }
     
-    let qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveredOrders / iter.generatedOrders >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE);
-    if (qualifiedIterations.length === 0) {
-        qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveredOrders / iter.generatedOrders >= MIN_DELIVERY_COMPLETION_RATE);
-    }
-    if (qualifiedIterations.length === 0) {
-        qualifiedIterations = allOptimizationIterationsData;
-    }
+    let qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE);
+    if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE); }
+    if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData; }
     bestIterationResultGlobal = qualifiedIterations.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity))[0];
 
     displayOptimizationResults(bestIterationResultGlobal, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
-    renderOptimizationChartsLocal(allOptimizationIterationsData, targetAvgDeliveryTime); // TYPO FIX
+    renderOptimizationChartsLocal(allOptimizationIterationsData, targetAvgDeliveryTime);
     
     if(optimizationResultsContainerEl) optimizationResultsContainerEl.classList.remove('hidden');
-    if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden'); // CLASSLIST FIX
-    if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden'); // CLASSLIST FIX
+    if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden');
+    if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden');
     
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = false;
     if(analyzeWorkforceAIButtonEl) analyzeWorkforceAIButtonEl.disabled = false;
@@ -364,24 +364,59 @@ async function runWorkforceOptimization() {
 }
 
 function displayOptimizationResults(bestResult, targetTime) {
-    if (!bestResult) { /* Handle no result case */ return; }
-    // Unchanged
+    if (!bestResult) {
+        if(optResultAgentsEl) optResultAgentsEl.textContent = "Not Found";
+        if(optResultAvgTimeEl) optResultAvgTimeEl.textContent = "N/A";
+        return;
+    }
+    if(optResultAgentsEl) optResultAgentsEl.textContent = bestResult.agents;
+    if(optResultAvgTimeEl) optResultAvgTimeEl.textContent = bestResult.avgDeliveryTime !== null ? bestResult.avgDeliveryTime.toFixed(1) + " min" : "N/A";
+    if(optResultTargetTimeEl) optResultTargetTimeEl.textContent = targetTime + " min";
+    if(optResultSlaMetEl) optResultSlaMetEl.textContent = bestResult.percentOrdersSLA !== null ? bestResult.percentOrdersSLA.toFixed(1) + "%" : "N/A";
+    if(optResultMinDelTimeEl) optResultMinDelTimeEl.textContent = bestResult.minDeliveryTime !== null ? bestResult.minDeliveryTime.toFixed(1) + " min" : "N/A";
+    if(optResultMaxDelTimeEl) optResultMaxDelTimeEl.textContent = bestResult.maxDeliveryTime !== null ? bestResult.maxDeliveryTime.toFixed(1) + " min" : "N/A";
+    if(optResultStdDevDelTimeEl) optResultStdDevDelTimeEl.textContent = bestResult.stdDevDeliveryTime !== null ? bestResult.stdDevDeliveryTime.toFixed(1) + " min" : "N/A";
+    if(optResultAvgUtilizationEl) optResultAvgUtilizationEl.textContent = bestResult.avgAgentUtilization !== null ? bestResult.avgAgentUtilization.toFixed(1) + "%" : "N/A";
+    if(optResultAvgWaitTimeEl) optResultAvgWaitTimeEl.textContent = bestResult.avgOrderWaitTime !== null ? bestResult.avgOrderWaitTime.toFixed(1) + " min" : "N/A";
+    if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = bestResult.undeliveredOrders?.toFixed(1) ?? "N/A";
+    if(optResultTotalAgentLaborCostEl) optResultTotalAgentLaborCostEl.textContent = `₹${(bestResult.totalOpCost - (bestResult.avgCostPerOrder * bestResult.deliveredOrders) + (bestResult.totalFixedDeliveryCosts ?? 0)).toFixed(2)}`;
+    if(optResultTotalTravelCostEl) optResultTotalTravelCostEl.textContent = `₹${((bestResult.avgCostPerOrder * bestResult.deliveredOrders) - (bestResult.totalFixedDeliveryCosts ?? 0)).toFixed(2)}`;
+    if(optResultTotalFixedDeliveryCostsEl) optResultTotalFixedDeliveryCostsEl.textContent = `₹${(bestResult.totalFixedDeliveryCosts ?? 0).toFixed(2)}`;
+    if(optResultOverallTotalOperationalCostEl) optResultOverallTotalOperationalCostEl.textContent = `₹${(bestResult.totalOpCost || 0).toFixed(2)}`;
+    if(optResultAverageCostPerOrderEl) optResultAverageCostPerOrderEl.textContent = bestResult.avgCostPerOrder === null || isNaN(bestResult.avgCostPerOrder) ? "N/A" : `₹${bestResult.avgCostPerOrder.toFixed(2)}`;
 }
 
 function populateOptimizationComparisonTable(iterationData) {
-    // Unchanged
+    if (!optimizationComparisonTableBodyEl) return;
+    optimizationComparisonTableBodyEl.innerHTML = "";
+    iterationData.forEach(iter => {
+        const row = optimizationComparisonTableBodyEl.insertRow();
+        row.insertCell().textContent = iter.agents;
+        row.insertCell().textContent = iter.generatedOrders?.toFixed(1) ?? 'N/A';
+        row.insertCell().textContent = iter.deliveredOrders?.toFixed(1) ?? 'N/A';
+        row.insertCell().textContent = iter.avgDeliveryTime !== null ? iter.avgDeliveryTime.toFixed(1) : "N/A";
+        row.insertCell().textContent = iter.percentOrdersSLA !== null ? iter.percentOrdersSLA.toFixed(1) + "%" : "N/A";
+        row.insertCell().textContent = iter.minDeliveryTime !== null ? iter.minDeliveryTime.toFixed(1) : "N/A";
+        row.insertCell().textContent = iter.maxDeliveryTime !== null ? iter.maxDeliveryTime.toFixed(1) : "N/A";
+        row.insertCell().textContent = iter.stdDevDeliveryTime !== null ? iter.stdDevDeliveryTime.toFixed(1) : "N/A";
+        row.insertCell().textContent = iter.avgAgentUtilization !== null ? iter.avgAgentUtilization.toFixed(1) + "%" : "N/A";
+        row.insertCell().textContent = iter.avgOrderWaitTime !== null ? iter.avgOrderWaitTime.toFixed(1) : "N/A";
+        row.insertCell().textContent = iter.undeliveredOrders?.toFixed(1) ?? 'N/A';
+        row.insertCell().textContent = iter.totalOpCost !== null ? `₹${iter.totalOpCost.toFixed(2)}` : "N/A";
+        row.insertCell().textContent = iter.avgCostPerOrder !== null ? `₹${iter.avgCostPerOrder.toFixed(2)}` : "N/A";
+    });
 }
 
 function initializeOptimizationChartsLocal() {
-    // Unchanged
+    // ...
 }
 
 function renderOptimizationChartsLocal(iterationData, targetTime) {
-    // Unchanged
+    // ...
 }
 
 function exportWorkforceOptResultsToCSV() {
-    // Unchanged
+    // ...
 }
 
 function prepareWorkforceDataForAI() {
