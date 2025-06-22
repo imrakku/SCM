@@ -645,7 +645,7 @@ function populateOptimizationComparisonTable(iterationData) {
 function initializeOptimizationChartsLocal() {
     const commonChartOptions = {
         responsive: true,
-        maintainAspectRatio: false,
+        // maintainAspectRatio: false, // This is now removed to allow natural aspect ratio
     };
     optDeliveryTimeChartInstance = initializeChart('deliveryTimeChart', 'deliveryTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'}}, x: {title: {display: true, text: 'Number of Agents'}}} } });
     optUtilizationChartInstance = initializeChart('utilizationChart', 'utilizationOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, max:100, title: {display: true, text: 'Utilization (%)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
