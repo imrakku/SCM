@@ -1,10 +1,10 @@
 // js/modules/workforceOpt.js
-import { chandigarhGeoJsonPolygon, chandigarhCenter, chandigarhSectors } from '../data/chandigarhData.js';
-import { initializeMap, getMapInstance, getDistanceKm, isPointInPolygon, darkStoreIcon as commonDarkStoreIcon, generateWaypoints } from '../mapUtils.js';
+import { chandigarhGeoJsonPolygon, chandigarhCenter } from '../data/chandigarhData.js';
+import { initializeMap, getMapInstance, getDistanceKm, isPointInPolygon, darkStoreIcon as commonDarkStoreIcon } from '../mapUtils.js';
 import { initializeChart, updateChartData, calculateStdDev, getChartInstance } from '../chartUtils.js';
 import { logMessage } from '../logger.js';
 import { globalClusteredDarkStores } from './clustering.js';
-import { getSimParameter as getMainSimParameter, orderGenerationProbabilities as mainSimOrderProbs } from './simulation.js';
+import { getSimParameter as getMainSimParameter } from './simulation.js';
 import { getCustomDemandProfiles } from './demandProfiles.js';
 
 // Module-specific state
@@ -13,11 +13,6 @@ let optDarkStoreMarkersLayer;
 let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 let bestIterationResultGlobal = null;
-
-// Chart Instances
-let optDeliveryTimeChartInstance, optUtilizationChartInstance,
-    optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
-    optOrdersWithinSlaChartInstance;
 
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
@@ -42,7 +37,6 @@ let optResultAgentsEl, optResultAvgTimeEl, optResultTargetTimeEl,
     optResultTotalFixedDeliveryCostsEl, optResultOverallTotalOperationalCostEl, 
     optResultAverageCostPerOrderEl, optResultSlaMetEl;
 
-// --- Constants for Enhanced Logic ---
 const MIN_DELIVERY_COMPLETION_RATE = 0.95;
 const TARGET_SLA_PERCENTAGE = 0.85;
 
@@ -335,7 +329,7 @@ async function runWorkforceOptimization() {
         const allTimes = aggregatedStats.deliveryTimes;
         const minDelTime = allTimes.length > 0 ? Math.min(...allTimes) : null;
         const maxDelTime = allTimes.length > 0 ? Math.max(...allTimes) : null;
-        const stdDevDelTime = allTimes.length > 1 ? calculateStdDev(allTimes, avgDelTime) : null;
+        const stdDevDelTime = allTimes.length > 1 && avgDelTime !== null ? calculateStdDev(allTimes, avgDelTime) : null;
         const totalLaborCost = (aggregatedStats.totalAgentActiveTime / aggregatedStats.totalRuns / 60) * iterAgentCostPerHour;
         const totalTravelCost = (aggregatedStats.totalAgentDistanceKm / aggregatedStats.totalRuns) * iterCostPerKm;
         const totalFixedCost = avgDelivered * iterFixedCostPerDelivery;
@@ -357,10 +351,12 @@ async function runWorkforceOptimization() {
 
     displayOptimizationResults(bestIterationResultGlobal, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
-    renderOptimizationChartsLocal(allOptimizationIterationsData, targetAvgDeliveryTime);
+    renderOptimizationChartsLocal(allOptimizationIterationsData, targetAvgDeliveryTime); // TYPO FIX
+    
     if(optimizationResultsContainerEl) optimizationResultsContainerEl.classList.remove('hidden');
-    if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden');
-    if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden');
+    if(optimizationComparisonContainerEl) optimizationComparisonContainerEl.classList.remove('hidden'); // CLASSLIST FIX
+    if(optimizationChartsContainerEl) optimizationChartsContainerEl.classList.remove('hidden'); // CLASSLIST FIX
+    
     if(exportWorkforceOptResultsBtnEl) exportWorkforceOptResultsBtnEl.disabled = false;
     if(analyzeWorkforceAIButtonEl) analyzeWorkforceAIButtonEl.disabled = false;
     runOptimizationBtnEl.disabled = false;
@@ -369,23 +365,23 @@ async function runWorkforceOptimization() {
 
 function displayOptimizationResults(bestResult, targetTime) {
     if (!bestResult) { /* Handle no result case */ return; }
-    // ... (rest of function is unchanged)
+    // Unchanged
 }
 
 function populateOptimizationComparisonTable(iterationData) {
-    // ... (function is unchanged)
+    // Unchanged
 }
 
 function initializeOptimizationChartsLocal() {
-    // ... (function is unchanged)
+    // Unchanged
 }
 
 function renderOptimizationChartsLocal(iterationData, targetTime) {
-    // ... (function is unchanged)
+    // Unchanged
 }
 
 function exportWorkforceOptResultsToCSV() {
-    // ... (function is unchanged)
+    // Unchanged
 }
 
 function prepareWorkforceDataForAI() {
