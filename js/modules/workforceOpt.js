@@ -454,5 +454,93 @@ function renderOptimizationChartsLocal(iterationData, targetTime) {
 }
 
 function exportWorkforceOptResultsToCSV() { /* Unchanged */ }
-function prepareWorkforceDataForAI() { /* Unchanged */ }
-async function handleWorkforceAiAnalysisRequest() { /* Unchanged */ }
+
+function prepareWorkforceDataForAI() {
+    if (!allOptimizationIterationsData || allOptimizationIterationsData.length === 0) {
+        return "No optimization data available to analyze.";
+    }
+
+    let dataString = "Workforce Optimization Results Summary:\n\n";
+    dataString += "The analysis tested different numbers of agents to find the optimal workforce size based on delivery time and cost.\n";
+    dataString += "Key Metrics by Agent Count:\n";
+
+    allOptimizationIterationsData.forEach(iter => {
+        dataString += `--- Agents: ${iter.agents} ---\n`;
+        dataString += `Avg. Delivery Time: ${iter.avgDeliveryTime?.toFixed(1) ?? 'N/A'} min\n`;
+        dataString += `Avg. Cost per Order: ₹${iter.avgCostPerOrder?.toFixed(2) ?? 'N/A'}\n`;
+        dataString += `% Orders Meeting Target Time: ${iter.percentOrdersSLA?.toFixed(1) ?? 'N/A'}%\n`;
+        dataString += `Avg. Agent Utilization: ${iter.avgAgentUtilization?.toFixed(1) ?? 'N/A'}%\n`;
+        dataString += `Avg Undelivered Orders: ${iter.undeliveredOrders?.toFixed(1) ?? 'N/A'}\n\n`;
+    });
+
+    if (bestIterationResultGlobal) {
+        dataString += `--- Recommended Scenario ---\n`;
+        dataString += `The recommended number of agents is ${bestIterationResultGlobal.agents}.\n`;
+        dataString += `This scenario has an average delivery time of ${bestIterationResultGlobal.avgDeliveryTime?.toFixed(1) ?? 'N/A'} min and a cost per order of ₹${bestIterationResultGlobal.avgCostPerOrder?.toFixed(2) ?? 'N/A'}.\n`;
+    } else {
+        dataString += "No single best scenario could be determined based on the criteria.\n";
+    }
+
+    return dataString;
+}
+
+async function handleWorkforceAiAnalysisRequest() {
+    if (!workforceAiAnalysisContainerEl || !workforceAiAnalysisLoadingEl || !workforceAiAnalysisContentEl) return;
+
+    if (!allOptimizationIterationsData || allOptimizationIterationsData.length === 0) {
+        workforceAiAnalysisContentEl.textContent = "Please run the workforce optimization first to generate data for analysis.";
+        workforceAiAnalysisContainerEl.classList.remove('hidden');
+        return;
+    }
+
+    workforceAiAnalysisLoadingEl.classList.remove('hidden');
+    workforceAiAnalysisContentEl.textContent = 'Generating AI analysis of workforce optimization...';
+    workforceAiAnalysisContainerEl.classList.remove('hidden');
+
+    const summaryData = prepareWorkforceDataForAI();
+    const targetTime = optTargetDeliveryTimeInputEl.value;
+
+    const prompt = `
+        You are a logistics operations analyst. Based on the following summary of a workforce optimization simulation, provide a concise analysis and recommendation.
+        The goal was to find the optimal number of agents for a dark store. The target average delivery time is ${targetTime} minutes.
+
+        Your analysis should:
+        1.  **Executive Summary:** Briefly state the recommended number of agents and why it's optimal, considering the balance between service level (delivery time) and operational cost (cost per order).
+        2.  **Analyze the Trade-offs:** Describe how increasing the number of agents impacted key metrics like delivery time, cost per order, and agent utilization. Explain the point of diminishing returns.
+        3.  **Validate the Recommendation:** Justify why the recommended scenario (with ${bestIterationResultGlobal?.agents || 'the recommended number of'} agents) is better than scenarios with fewer or more agents, using data from the summary.
+        4.  **Actionable Advice:** Conclude with a clear, actionable recommendation for the business.
+
+        Keep the analysis professional, data-driven, and easy to understand for a business stakeholder.
+
+        Optimization Data Summary:
+        ${summaryData}
+    `;
+
+    try {
+        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+        const apiKey = "AIzaSyDwjlcdDvgre9mLWR7abRx2qta_NFLISuI"; 
+        const modelName = "gemini-2.0-flash";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API request failed: ${response.status} ${response.statusText}. Details: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+            workforceAiAnalysisContentEl.textContent = result.candidates[0].content.parts[0].text;
+        } else {
+            console.error("Unexpected AI response:", result);
+            workforceAiAnalysisContentEl.textContent = "Could not retrieve analysis due to an unexpected API response format.";
+        }
+    } catch (error) {
+        console.error("Error fetching AI analysis for workforce optimization:", error);
+        workforceAiAnalysisContentEl.textContent = `An error occurred while fetching the AI analysis: ${error.message}. Please check the console for more details.`;
+    } finally {
+        workforceAiAnalysisLoadingEl.classList.add('hidden');
+    }
+}
