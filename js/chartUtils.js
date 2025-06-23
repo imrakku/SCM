@@ -1,84 +1,378 @@
-// js/chartUtils.js
-
-// Store chart instances here
-let chartInstances = {
-    pendingOrders: null,
-    activeAgents: null,
-    deliveryTimeOptimization: null,
-    utilizationOptimization: null,
-    totalDeliveredOrdersOptimization: null,
-    avgOrderWaitTimeOptimization: null,
-};
-
-/**
- * Initializes or re-initializes a Chart.js chart.
- * @param {string} chartId The ID of the canvas element.
- * @param {string} chartKey A key to store the chart instance (e.g., 'pendingOrders').
- * @param {object} chartConfig The Chart.js configuration object.
- * @returns {Chart} The Chart.js instance.
- */
-export function initializeChart(chartId, chartKey, chartConfig) {
-    const ctx = document.getElementById(chartId)?.getContext('2d');
-    if (!ctx) {
-        console.error(`[ChartUtils] Canvas element with ID "${chartId}" not found for chart "${chartKey}".`);
-        return null;
-    }
-
-    if (chartInstances[chartKey]) {
-        console.log(`[ChartUtils] Destroying existing chart: ${chartKey}`);
-        chartInstances[chartKey].destroy();
-    }
-    console.log(`[ChartUtils] Initializing new chart: ${chartKey} with ID: ${chartId}`);
-    chartInstances[chartKey] = new Chart(ctx, chartConfig);
-    return chartInstances[chartKey];
+/* General Body and Font Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    scroll-behavior: smooth;
+    background-color: #f1f5f9; /* slate-100 (Light gray background) */
+    color: #1e293b; /* slate-800 (Dark gray for primary text) */
+    line-height: 1.6;
 }
 
-export function getChartInstance(chartKey) {
-    return chartInstances[chartKey];
+/* Header & Navigation Styles */
+header {
+    background-color: white; /* Clean white header */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Softer shadow */
+}
+h1.text-3xl { /* Main title in header */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+.nav-link {
+    color: #334155; /* slate-700 (Darker gray for readability) */
+    font-weight: 500; /* Medium weight for nav links */
+    padding: 0.5rem 0.75rem; /* Adjust padding for balance */
+    border-radius: 0.375rem; /* rounded-md */
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+.nav-link:hover {
+    color: #1d4ed8; /* Primary Deep Blue on hover */
+    background-color: #eff6ff; /* blue-50 (Very light blue background on hover) */
+}
+.nav-active {
+    color: #1d4ed8; /* Primary Deep Blue for active link */
+    font-weight: 700; /* Bold for active link */
+    border-bottom-width: 2px; /* Thinner, more subtle active indicator */
+    border-color: #1d4ed8;
+    background-color: transparent; /* Ensure no background conflicts with border */
 }
 
-/**
- * Updates the data for a given Chart.js instance.
- * @param {string} chartKey The key of the chart instance to update.
- * @param {Array<string|number>} labels New labels for the x-axis.
- * @param {Array<object>} newDatasetsArray Array of new dataset objects. Each object should conform to Chart.js dataset structure.
- */
-export function updateChartData(chartKey, labels, newDatasetsArray) {
-    const chart = chartInstances[chartKey];
-    if (chart) {
-        // console.log(`[ChartUtils] Attempting to update chart: ${chartKey}`);
-        // console.log(`[ChartUtils] Labels for ${chartKey}:`, JSON.parse(JSON.stringify(labels)));
-        // console.log(`[ChartUtils] Datasets for ${chartKey}:`, JSON.parse(JSON.stringify(newDatasetsArray)));
 
-        chart.data.labels = labels;
-        chart.data.datasets = newDatasetsArray; // Directly replace the datasets array
-
-        try {
-            chart.update();
-            // console.log(`[ChartUtils] Chart ${chartKey} updated successfully.`);
-        } catch (e) {
-            console.error(`[ChartUtils] Error during chart.update() for ${chartKey}:`, e);
-        }
-    } else {
-        console.warn(`[ChartUtils] Chart with key "${chartKey}" not found for updating data. Was it initialized?`);
-    }
+/* Content Section Visibility */
+.content-section {
+    display: none;
+}
+.content-section.active {
+    display: block;
 }
 
-/**
- * Calculates the standard deviation of an array of numbers.
- * @param {number[]} arr The array of numbers.
- * @param {number} [mean] Optional pre-calculated mean.
- * @returns {number} The standard deviation, or NaN if input is invalid.
- */
-export function calculateStdDev(arr, mean) {
-    if (!arr || arr.length < 2) return NaN;
-    const n = arr.length;
-    const currentMean = (mean === undefined || isNaN(mean)) ? arr.reduce((a, b) => a + b, 0) / n : mean;
-    if (isNaN(currentMean)) return NaN;
+/* Card Styles */
+.card {
+    background-color: white;
+    border-radius: 0.75rem; /* rounded-xl */
+    border: 1px solid #e2e8f0; /* slate-200 (Subtle border) */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Softer, more modern shadow */
+    padding: 2rem; /* Adjusted padding */
+    margin-bottom: 2rem; /* Adjusted margin */
+}
+.card h2 { /* Main headings within cards */
+    color: #1e293b; /* slate-800 */
+    border-bottom-color: #60a5fa; /* blue-400 (Lighter blue for accent border) */
+}
+.card h3 { /* Sub-headings within cards */
+    color: #1d4ed8; /* Primary Deep Blue */
+}
+.card p, .card li {
+    color: #334155; /* slate-700 (Slightly lighter text for paragraphs) */
+}
+.stat-card {
+    background-color: #f8fafc; /* slate-50 (Very light gray) */
+    padding: 1.5rem;
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e2e8f0; /* slate-200 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.stat-card h4 {
+    color: #475569; /* slate-600 */
+}
+.stat-card p.text-5xl { /* Large stat numbers */
+    color: #2563eb; /* Primary Blue */
+}
 
-    // Calculate variance using (n-1) for sample standard deviation if appropriate,
-    // or n for population. For visualization, n is often fine.
-    // Using n-1 for sample:
-    const variance = arr.map(x => Math.pow(x - currentMean, 2)).reduce((a, b) => a + b, 0) / (n -1) ;
-    return Math.sqrt(variance);
+
+/* Map Container Styles */
+#simulationMap,
+#clusteringMapViz,
+#optimizationMapViz,
+#profileCreationMap,
+#scenarioComparisonMap {
+    height: 500px; /* Default height */
+    min-height: 400px;
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #e2e8f0; /* slate-200 */
+    border: 1px solid #cbd5e1; /* slate-300 */
+    width: 100%; /* Ensure maps take full width of their container */
+}
+#profileCreationMap { height: 300px; min-height: 250px; }
+
+/* Leaflet Popup Styles */
+.leaflet-popup-content-wrapper {
+    border-radius: 0.375rem; /* rounded-md */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Button Styles - More Professional & Consistent */
+.btn {
+    padding: 0.625rem 1.25rem; /* Adjusted padding (10px 20px) */
+    border-radius: 0.375rem; /* rounded-md */
+    font-weight: 500; /* Medium weight */
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.1s ease-out, box-shadow 0.15s ease-in-out;
+    cursor: pointer;
+    text-transform: none; /* No uppercase for a more modern feel, or keep if preferred */
+    letter-spacing: normal; /* Reset letter spacing */
+    line-height: 1.5;
+    border: 1px solid transparent; /* Base border */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow */
+}
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px); /* Subtle lift */
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.07);
+}
+.btn:active:not(:disabled) {
+    transform: translateY(0px);
+    box-shadow: inset 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary { background-color: #2563eb; border-color: #2563eb; color: white; }
+.btn-primary:hover:not(:disabled) { background-color: #1d4ed8; border-color: #1d4ed8; }
+.btn-secondary { background-color: #475569; border-color: #475569; color: white; }
+.btn-secondary:hover:not(:disabled) { background-color: #334155; border-color: #334155; }
+.btn-danger { background-color: #ef4444; border-color: #ef4444; color: white; }
+.btn-danger:hover:not(:disabled) { background-color: #dc2626; border-color: #dc2626; }
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; }
+
+/* Scrollbar Styles */
+.log-container::-webkit-scrollbar,
+.sector-select-container::-webkit-scrollbar,
+#savedScenariosListContainer::-webkit-scrollbar,
+#savedProfilesListContainer::-webkit-scrollbar { width: 6px; }
+.log-container::-webkit-scrollbar-track,
+.sector-select-container::-webkit-scrollbar-track,
+#savedScenariosListContainer::-webkit-scrollbar-track,
+#savedProfilesListContainer::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+.log-container::-webkit-scrollbar-thumb,
+.sector-select-container::-webkit-scrollbar-thumb,
+#savedScenariosListContainer::-webkit-scrollbar-thumb,
+#savedProfilesListContainer::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+.log-container::-webkit-scrollbar-thumb:hover,
+.sector-select-container::-webkit-scrollbar-thumb:hover,
+#savedScenariosListContainer::-webkit-scrollbar-thumb:hover,
+#savedProfilesListContainer::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Custom Marker Icon Styles */
+.marker-icon-base { /* For Agents */
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; border-radius: 50%;
+    width: 28px; height: 28px; color: white;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 2px solid white;
+}
+.agent-available { background-color: #2563eb; } /* blue-600 */
+.agent-busy { background-color: #f59e0b; } /* amber-500 */
+.order-star-marker svg text { font-family: 'Inter', sans-serif; font-weight: bold; font-size: 10px; }
+
+/* Range Input Styles */
+input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+    background: #cbd5e1; border-radius: 4px; outline: none; cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+input[type="range"]:hover { background: #94a3b8; }
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+    background: #2563eb; border-radius: 50%; cursor: pointer; border: 3px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.15s ease-in-out;
+}
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.1); }
+input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; background: #2563eb;
+    border-radius: 50%; cursor: pointer; border: 3px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Simulation Controls Grid & Input Groups */
+.simulation-controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; align-items: flex-start; }
+.control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.375rem; }
+.control-label label { font-weight: 500; color: #334155; }
+.control-label span { color: #1d4ed8; }
+.input-group { margin-bottom: 1rem; }
+.input-group label { display: block; font-weight: 500; color: #334155; margin-bottom: 0.25rem; }
+.input-group input[type="number"],
+.input-group input[type="text"],
+.input-group select {
+    width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+    border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+    background-color: white; color: #1e293b;
+}
+.input-group input[type="number"]:focus,
+.input-group input[type="text"]:focus,
+.input-group select:focus {
+    border-color: #2563eb; outline: 2px solid transparent; outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+.input-group input[type="checkbox"] {
+    width: 1rem; height: 1rem; margin-right: 0.5rem; accent-color: #2563eb;
+    border-radius: 0.25rem; border: 1px solid #94a3b8;
+}
+.checkbox-group label, .checkbox-label {
+     display: inline-flex; align-items: center; cursor: pointer;
+     font-weight: normal; color: #334155;
+}
+
+/* Voronoi Path Styles */
+.voronoi-cell-path { stroke: #06b6d4; stroke-width: 1px; fill: none; fill-opacity: 0; }
+
+/* Stats and Results Containers */
+.simulation-stats-container,
+.optimization-results-container,
+#optimizationComparisonContainer,
+#scenarioComparisonResultsContainer {
+    background-color: #f0f9ff; border: 1px solid #bae6fd;
+    border-radius: 0.5rem; padding: 1.5rem; margin-top: 2rem;
+}
+.simulation-stats-container h4,
+.optimization-results-container h4,
+#optimizationComparisonContainer h4,
+#scenarioComparisonResultsContainer h4 {
+    color: #075985; margin-bottom: 1rem; border-bottom: 1px solid #7dd3fc;
+    padding-bottom: 0.5rem; font-size: 1.25rem; font-weight: 600; text-align: center;
+}
+.simulation-stats-grid,
+.optimization-results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+.simulation-stats-grid p,
+.optimization-results-grid p,
+.optimization-results-container li {
+    background-color: white; padding: 0.75rem; border-radius: 0.375rem;
+    border: 1px solid #e2e8f0; font-size: 0.875rem; color: #334155;
+}
+.simulation-stats-grid strong,
+.optimization-results-grid strong,
+.optimization-results-container strong { color: #1e3a8a; font-weight: 600; }
+
+/* Log Display Styles */
+.optimization-log,
+.simulation-log {
+    background-color: #0f172a; color: #cbd5e1; padding: 1rem;
+    border-radius: 0.375rem; margin-top: 1rem; max-height: 350px; overflow-y: auto;
+    font-family: 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8125rem; line-height: 1.5;
+}
+.log-message { margin-bottom: 0.25rem; }
+.log-message em { font-style: normal; color: #94a3b8; }
+.log-info { color: #60a5fa; }
+.log-agent { color: #fbbf24; }
+.log-order { color: #34d399; }
+.log-system { color: #a5b4fc; }
+.log-error { color: #f87171; font-weight: bold;}
+.log-system-bold { color: #a5b4fc; font-weight: bold;}
+.log-traffic { color: #e879f9; }
+.log-cost { color: #fb7185; }
+
+/* Demand Profile Specific Styles */
+.profile-zone { border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.375rem; background-color: #f8fafc; }
+.sector-select-container {
+    max-height: 150px; overflow-y: auto; border: 1px solid #cbd5e1;
+    border-radius: 0.375rem; padding: 0.5rem; background-color: white;
+}
+.sector-select-container label { display: block; margin-bottom: 0.25rem; font-weight: normal; color: #475569; }
+.sector-select-container label input[type="checkbox"] { margin-right: 0.5rem; }
+
+/* Comparison Table Styles */
+.comparison-table-container {
+    overflow-x: auto; background-color: white; border-radius: 0.5rem;
+    border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.comparison-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.comparison-table th,
+.comparison-table td {
+    border: 1px solid #e2e8f0; padding: 0.625rem 0.75rem;
+    text-align: left; white-space: nowrap;
+}
+.comparison-table th {
+    background-color: #f1f5f9; color: #1e293b; font-weight: 600;
+    position: sticky; top: 0; z-index: 10;
+}
+.comparison-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+.comparison-table tbody tr:hover { background-color: #eff6ff; }
+
+/* Chart Container Styles - CORRECTED */
+.chart-container, .live-chart-container {
+    position: relative;
+    margin: 0.5rem auto; /* Center the containers */
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 700px; /* Prevent charts from becoming too wide */
+    aspect-ratio: 16 / 10; /* Give charts a default aspect ratio */
+}
+
+.live-chart-container {
+    aspect-ratio: 4 / 3;
+}
+
+.chart-container canvas, .live-chart-container canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.live-chart-container h5, .chart-container h4 {
+    text-align: center; font-size: 0.875rem; color: #475569;
+    margin-bottom: 0.75rem; font-weight: 600;
+}
+.chart-container h4 { font-size: 1rem; color: #1e293b; }
+
+/* Saved Scenarios/Profiles List */
+#savedScenariosListContainer,
+#savedProfilesListContainer {
+    max-height: 400px; overflow-y: auto; background-color: #f8fafc;
+    padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;
+}
+#savedScenariosListContainer li,
+#savedProfilesListContainer ul li {
+    padding: 0.625rem 0.5rem; border-bottom: 1px solid #e2e8f0;
+    cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; transition: background-color 0.15s ease-in-out;
+}
+#savedScenariosListContainer li:last-child,
+#savedProfilesListContainer ul li:last-child { border-bottom: none; }
+#savedScenariosListContainer li:hover,
+#savedProfilesListContainer ul li:hover { background-color: #eff6ff; }
+#savedScenariosListContainer li input[type="checkbox"] {
+    margin-right: 0.75rem; accent-color: #2563eb; height: 1rem; width: 1rem;
+}
+
+/* Cost KPI Grid */
+.cost-kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed #cbd5e1;
+}
+.cost-kpi-grid p {
+    background-color: #eff6ff; border-left: 3px solid #2563eb;
+    padding: 0.75rem; border-radius: 0.25rem;
+    font-size: 0.875rem; color: #1e3a8a;
+}
+.cost-kpi-grid strong { color: #1e40af; font-weight: 600; }
+
+/* Footer Specifics */
+footer { background-color: #0f172a; color: #94a3b8; }
+footer p.text-slate-300 { color: #cbd5e1; }
+#sectorCoordinatesContainer { background-color: #1e293b; }
+#sectorCoordinatesList { color: #94a3b8; }
+
+/* Alert/Info boxes in section descriptions */
+div[role="alert"] { font-size: 0.9rem; }
+div[role="alert"] p.font-bold { font-size: 1rem; }
+div[role="alert"] details summary { font-weight: bold; } /* Make summary bold */
+div[role="alert"] details div { margin-top: 0.5rem; padding-left: 0.5rem; border-left: 2px solid currentColor; opacity: 0.9;}
+
+/* Ensure details summary arrow is consistent */
+details > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
+details > summary::before {
+    content: '► '; 
+    font-size: 0.8em;
+    margin-right: 4px;
+    color: currentColor;
+}
+details[open] > summary::before {
+    content: '▼ ';
 }
