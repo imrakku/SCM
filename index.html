@@ -50,9 +50,6 @@
                      <li class="pl-2"><strong>Workforce Optimization:</strong> An analytical tool to simulate different workforce sizes against varying demand to identify optimal agent counts, including cost considerations.</li>
                      <li class="pl-2"><strong>Scenario Analysis & Comparison:</strong> Save and compare results from different simulation runs to make informed decisions.</li>
                 </ol>
-                <p class="mb-8 text-lg leading-relaxed">
-                    The overarching goal is to furnish data-driven, actionable insights that promote efficient resource allocation, reduce delivery lead times, enhance operational resilience, and ultimately improve customer satisfaction in complex urban delivery networks.
-                </p>
                 <div class="p-8 rounded-xl border">
                     <h3 class="text-2xl font-semibold mb-4">Project Lead</h3>
                     <ul class="list-none space-y-1.5 text-lg">
@@ -63,9 +60,6 @@
                     </ul>
                     <p class="mt-4 text-sm italic">Indian Institute of Management Sirmaur</p>
                 </div>
-                <p class="mt-8 text-lg">
-                    Navigate through the sections using the menu above to explore the detailed clustering analysis methodology, interact with the live delivery simulation, use the workforce optimization tool, or compare different scenarios.
-                </p>
             </div>
         </section>
 
@@ -75,68 +69,37 @@
                 <p class="mb-6 leading-relaxed">
                     Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.
                 </p>
-                
-                <div class="mb-8 p-6 border rounded-xl">
+                <div class="mb-8 p-6 border-2 rounded-xl">
                     <h3 class="text-2xl font-semibold mb-4">Configure Clustering Parameters</h3>
                     <div class="grid md:grid-cols-3 gap-6">
-                        <div class="input-group">
-                            <label for="numBackgroundOrders">Background Orders:</label>
-                            <input type="number" id="numBackgroundOrders" value="700" min="0" step="50">
-                        </div>
-                        <div class="input-group">
-                            <label for="numHotspotOrders">Hotspot Orders:</label>
-                            <input type="number" id="numHotspotOrders" value="300" min="0" step="50">
-                        </div>
-                        <div class="input-group">
-                            <label for="numDarkStoresForClustering">Number of Dark Stores:</label>
-                            <input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1">
-                        </div>
+                        <div class="input-group"><label for="numBackgroundOrders">Background Orders:</label><input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full"></div>
+                        <div class="input-group"><label for="numHotspotOrders">Hotspot Orders:</label><input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full"></div>
+                        <div class="input-group"><label for="numDarkStoresForClustering">Number of Dark Stores:</label><input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full"></div>
                     </div>
                 </div>
-
                 <div class="grid md:grid-cols-2 gap-8 mb-10">
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2">Total Orders Simulated</h4>
-                        <p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold">1000</p>
-                    </div>
-                    <div class="stat-card text-center p-8">
-                        <h4 class="font-semibold text-xl mb-2">Dark Stores Identified</h4>
-                        <p id="numDarkStoresDisplay" class="text-5xl font-extrabold">10</p>
-                    </div>
+                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Total Orders Simulated</h4><p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold">1000</p></div>
+                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Dark Stores Identified</h4><p id="numDarkStoresDisplay" class="text-5xl font-extrabold">10</p></div>
                 </div>
-                <div id="clusteringMapVizContainer" class="mb-6 rounded-lg overflow-hidden border">
-                    <div id="clusteringMapViz"></div>
-                </div>
-                 <div class="text-center">
-                    <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
-                    <button id="exportClusteringResultsBtn" class="btn btn-secondary ml-4">Export Clustering Results</button>
-                 </div>
-                 <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 rounded-lg border">
-                    <p class="italic md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
-                 </div>
-                 <div id="overallClusteringStats" class="mt-4 p-4 rounded-lg text-center border">
-                     <p><strong>Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
-                 </div>
+                <div id="clusteringMapVizContainer" class="mb-6 rounded-xl overflow-hidden border"><div id="clusteringMapViz" class="w-full"></div></div>
+                <div class="text-center"><button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button></div>
             </div>
         </section>
 
         <section id="demandProfiles" class="content-section">
             <div class="card">
-                <h2>Custom Demand Profiles</h2>
-                <p>Define custom order generation profiles by combining uniform demand, specific hotspot zones, sector-based demand, or route-based demand. These profiles can then be selected in the "Simulation" tab. Saved profiles are available for the current browser session.</p>
-                <div class="grid md:grid-cols-2 gap-8 mt-8">
+                <h2 class="text-4xl font-bold mb-8">Custom Demand Profiles</h2>
+                <div class="grid md:grid-cols-2 gap-8">
                     <div>
                         <h3 class="text-2xl font-semibold mb-4">Create/Edit Profile</h3>
-                        <div class="input-group"><label for="profileNameInput">Profile Name:</label><input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17"></div>
+                        <div class="input-group"><label for="profileNameInput">Profile Name:</label><input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full"></div>
                         <div id="profileZonesContainer" class="space-y-4 mb-4"></div>
                         <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
                         <div class="flex space-x-2"><button id="saveProfileBtn" class="btn btn-primary">Save Profile</button><button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button></div>
                     </div>
                     <div>
                         <h3 class="text-2xl font-semibold mb-4">Saved Profiles</h3>
-                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto p-4 rounded-lg border">
-                            <ul id="savedProfilesList" class="list-none space-y-2"><li class="italic">No custom profiles saved yet.</li></ul>
-                        </div>
+                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto p-4 rounded-lg border"><ul id="savedProfilesList" class="list-none space-y-2"></ul></div>
                     </div>
                 </div>
             </div>
@@ -144,15 +107,16 @@
 
         <section id="simulation" class="content-section">
             <div class="card">
-                <h2>Interactive Delivery Simulation</h2>
+                <h2 class="text-4xl font-bold mb-8">Interactive Delivery Simulation</h2>
                 <div class="my-8 p-6 border rounded-lg">
                     <h3 class="text-xl font-semibold mb-6 text-center">Configure Simulation Parameters</h3>
                     <div class="simulation-controls-grid">
-                        <div class="input-group"><label>Number of Agents: <span id="numAgentsValue">5</span></label><input type="range" id="numAgentsSlider" min="1" max="10" value="5"></div>
-                        <div class="input-group"><label>Order Arrival Rate: <span id="orderFrequencyValue">Medium</span></label><input type="range" id="orderFrequencySlider" min="1" max="5" value="3"></div>
-                        <div class="input-group"><label>Min Agent Speed (km/h): <span id="agentMinSpeedValue">20</span></label><input type="range" id="agentMinSpeedSlider" min="10" max="30" value="20"></div>
-                        <div class="input-group"><label>Max Agent Speed (km/h): <span id="agentMaxSpeedValue">30</span></label><input type="range" id="agentMaxSpeedSlider" min="20" max="50" value="30"></div>
-                        <div class="input-group"><label>Store Handling Time (min): <span id="handlingTimeValue">5</span></label><input type="range" id="handlingTimeSlider" min="1" max="15" value="5"></div>
+                        <div class="input-group"><label for="numAgentsSlider">Number of Agents: <span id="numAgentsValue">5</span></label><input type="range" id="numAgentsSlider" min="1" max="20" value="5"></div>
+                        <div class="input-group"><label for="orderFrequencySlider">Order Arrival Rate: <span id="orderFrequencyValue">Medium</span></label><input type="range" id="orderFrequencySlider" min="1" max="5" value="3"></div>
+                        <div class="input-group"><label for="agentMinSpeedSlider">Min Agent Speed (km/h): <span id="agentMinSpeedValue">20</span></label><input type="range" id="agentMinSpeedSlider" min="10" max="30" value="20"></div>
+                        <div class="input-group"><label for="agentMaxSpeedSlider">Max Agent Speed (km/h): <span id="agentMaxSpeedValue">30</span></label><input type="range" id="agentMaxSpeedSlider" min="20" max="50" value="30"></div>
+                        <div class="input-group"><label for="handlingTimeSlider">Store Handling Time (min): <span id="handlingTimeValue">5</span></label><input type="range" id="handlingTimeSlider" min="1" max="15" value="5"></div>
+                        <div class="input-group"><label for="orderGenerationProfileSelect">Order Generation Profile:</label><select id="orderGenerationProfileSelect"></select></div>
                     </div>
                 </div>
                 <div class="text-center mb-4">Simulation Time: <span id="simTimeDisplay" class="font-semibold text-2xl">0</span> minutes</div>
@@ -160,15 +124,11 @@
                     <div class="lg:col-span-2 space-y-6">
                         <div id="simulationMap" class="w-full rounded-lg overflow-hidden border"></div>
                         <div class="flex space-x-4"><button id="startSimBtn" class="btn btn-primary w-full">Start</button><button id="pauseSimBtn" class="btn btn-secondary w-full">Pause</button><button id="resetSimBtn" class="btn btn-danger w-full">Reset</button></div>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div class="live-chart-container"><canvas id="pendingOrdersChart"></canvas></div>
-                            <div class="live-chart-container"><canvas id="activeAgentsChart"></canvas></div>
-                        </div>
                     </div>
                     <div class="lg:col-span-1 space-y-6">
-                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Agent Status</h4><div id="agentStatusList" class="space-y-2 text-sm"></div></div>
-                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Active Orders</h4><div id="pendingOrdersList" class="space-y-2 text-sm"></div></div>
-                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Simulation Log</h4><div id="simulationLog" class="simulation-log text-xs h-72"></div></div>
+                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Agent Status</h4><div id="agentStatusList" class="space-y-1 text-sm max-h-48 overflow-y-auto"></div></div>
+                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Active Orders</h4><div id="pendingOrdersList" class="space-y-1 text-sm max-h-48 overflow-y-auto"></div></div>
+                        <div class="stat-card"><h4 class="font-semibold text-lg mb-3">Simulation Log</h4><div id="simulationLog" class="simulation-log text-xs h-64"></div></div>
                     </div>
                 </div>
                 <div id="simulationOverallStats" class="simulation-stats-container mt-8">
@@ -177,12 +137,11 @@
                         <p><strong>Total Orders Generated:</strong> <span id="statsTotalOrdersGenerated">0</span></p>
                         <p><strong>Total Orders Delivered:</strong> <span id="statsTotalOrdersDelivered">0</span></p>
                         <p><strong>Avg. Delivery Time:</strong> <span id="statsAvgDeliveryTime">N/A</span></p>
+                        <p><strong>Min Delivery Time:</strong> <span id="statsMinDeliveryTime">N/A</span></p>
+                        <p><strong>Max Delivery Time:</strong> <span id="statsMaxDeliveryTime">N/A</span></p>
+                        <p><strong>Avg. Agent Utilization:</strong> <span id="statsAvgAgentUtilization">N/A</span></p>
                     </div>
-                    <div class="text-center mt-6">
-                        <button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Scenario</button>
-                        <button id="exportSimResultsBtn" class="btn btn-secondary ml-4">Export Results</button>
-                        <button id="analyzeSimResultsAI" class="btn btn-primary ml-4">Analyze with AI</button>
-                    </div>
+                    <div class="text-center mt-6"><button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Scenario</button></div>
                 </div>
             </div>
         </section>
@@ -190,13 +149,11 @@
         <section id="workforceOptimization" class="content-section">
             <div class="card">
                 <h2>Workforce Optimization Analysis</h2>
-                <p>This tool helps estimate the optimal number of delivery agents required.</p>
                 <div class="my-8 p-6 border rounded-lg">
                     <h3 class="text-xl font-semibold mb-4">Optimization Parameters</h3>
                     <div class="optimization-params-grid">
                         <div class="input-group"><label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label><input type="number" id="optTargetDeliveryTime" value="15"></div>
                         <div class="input-group"><label for="optSelectDarkStore">Select Dark Store:</label><select id="optSelectDarkStore"><option value="">-- Run Clustering First --</option></select></div>
-                        <div class="input-group"><label for="optDemandProfileSelect">Order Generation Profile:</label><select id="optDemandProfileSelect"><option value="default_opt_uniform" selected>Default: Uniform</option></select></div>
                         <div class="input-group"><label for="optTargetOrdersPerIteration">Target Orders per Run:</label><input type="number" id="optTargetOrdersPerIteration" value="100"></div>
                         <div class="input-group"><label for="optMinAgents">Min Agents to Test:</label><input type="number" id="optMinAgents" value="1"></div>
                         <div class="input-group"><label for="optMaxAgents">Max Agents to Test:</label><input type="number" id="optMaxAgents" value="15"></div>
@@ -205,22 +162,13 @@
                 </div>
                 <div id="optimizationResultsContainer" class="hidden">
                     <div class="text-center"><p id="optimizationRecommendationText" class="text-lg font-semibold"></p></div>
-                    <div class="optimization-results-grid mt-4">
-                        <p><strong>Optimal Agents:</strong> <span id="optResultAgents">N/A</span></p>
-                        <p><strong>Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
-                    </div>
                 </div>
                 <div id="optimizationComparisonContainer" class="hidden mt-8">
                     <h3 class="text-2xl font-semibold text-center">Iteration Comparison</h4>
                     <div class="comparison-table-container"><table id="optimizationComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div>
                 </div>
-                <div id="optimizationChartsContainer" class="hidden mt-8 grid md:grid-cols-2 gap-6">
-                    <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Delivery Time</h4><canvas id="deliveryTimeChart"></canvas></div>
-                    <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Utilization</h4><canvas id="utilizationChart"></canvas></div>
-                </div>
                 <div class="text-center mt-8">
                     <button id="analyzeWorkforceAI" class="btn btn-primary">Analyze with AI</button>
-                    <button id="exportWorkforceOptResultsBtn" class="btn btn-secondary ml-4">Export Results</button>
                 </div>
             </div>
         </section>
@@ -228,14 +176,12 @@
         <section id="scenarioAnalysis" class="content-section">
             <div class="card">
                 <h2>Scenario Analysis & Comparison</h2>
-                <p>Save results from different simulation runs and compare them side-by-side.</p>
-                 <div class="grid md:grid-cols-3 gap-8 mt-8">
+                <div class="grid md:grid-cols-3 gap-8 mt-8">
                     <div class="md:col-span-1">
                         <h3 class="text-2xl font-semibold mb-4">Saved Scenarios</h3>
                         <div id="savedScenariosListContainer"><ul id="savedScenariosList"></ul></div>
                         <div class="mt-4 flex flex-col space-y-2">
                             <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
-                            <button id="analyzeScenarioComparisonAI" class="btn btn-secondary">Analyze Comparison</button>
                             <button id="clearAllScenariosBtn" class="btn btn-danger btn-sm mt-4">Clear All</button>
                         </div>
                     </div>
@@ -243,11 +189,6 @@
                         <h3 class="text-2xl font-semibold mb-4">Comparison Details</h3>
                         <div id="scenarioComparisonResultsContainer" class="hidden"><div class="comparison-table-container"><table id="scenarioComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div></div>
                         <p id="scenarioComparisonPlaceholder" class="italic mt-4">Select scenarios and click "Compare Selected".</p>
-                        <div id="scenarioAiAnalysisContainer" class="mt-8 p-6 hidden">
-                            <h4 class="text-xl font-semibold text-center mb-4">AI Analysis of Scenario Comparison</h4>
-                            <div id="scenarioAiAnalysisLoading" class="text-center hidden"><p>Generating AI analysis...</p></div>
-                            <div id="scenarioAiAnalysisContent" class="leading-relaxed whitespace-pre-wrap"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -256,7 +197,6 @@
 
     <footer class="text-center py-12 mt-12">
         <p>&copy; <span id="currentYear">2024</span> Rakshit Monga - IIM Sirmaur.</p>
-        <p class="text-sm mt-2">Chandigarh Last-Mile Logistics Optimization Project</p>
     </footer>
 
     <script type="module" src="js/main.js"></script>
