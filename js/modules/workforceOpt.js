@@ -14,6 +14,11 @@ let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 let bestIterationResultGlobal = null;
 
+// Chart Instances
+let optDeliveryTimeChartInstance, optUtilizationChartInstance,
+    optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
+    optOrdersWithinSlaChartInstance;
+
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
     optDemandProfileSelectEl, optOrderGenerationRadiusInputEl,
@@ -252,7 +257,6 @@ async function runWorkforceOptimization() {
                     if (agent.status === 'available') return;
                     currentRunStats.totalAgentActiveTime++;
                     let startPoint, endPoint;
-
                     if (agent.status === 'to_store') {
                         startPoint = agent.routePath[0];
                         endPoint = agent.routePath[1];
@@ -341,7 +345,23 @@ async function runWorkforceOptimization() {
     let qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE);
     if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE); }
     if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData; }
-    bestIterationResultGlobal = qualifiedIterations.length > 0 ? qualifiedIterations.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity))[0] : null;
+    
+    if (qualifiedIterations.length > 0) {
+        qualifiedIterations.sort((a, b) => {
+            const costA = a.avgCostPerOrder ?? Infinity;
+            const costB = b.avgCostPerOrder ?? Infinity;
+            if (Math.abs(costA - costB) > 0.50) { return costA - costB; }
+            const timeA = a.avgDeliveryTime ?? Infinity;
+            const timeB = b.avgDeliveryTime ?? Infinity;
+            if (Math.abs(timeA - timeB) > 0.1) { return timeA - timeB; }
+            const deliveredA = a.deliveredOrders ?? 0;
+            const deliveredB = b.deliveredOrders ?? 0;
+            return deliveredB - deliveredA;
+        });
+        bestIterationResultGlobal = qualifiedIterations[0];
+    } else {
+        bestIterationResultGlobal = null;
+    }
 
     displayOptimizationResults(bestIterationResultGlobal, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
@@ -398,8 +418,44 @@ function populateOptimizationComparisonTable(iterationData) {
     });
 }
 
-function initializeOptimizationChartsLocal() { /* Unchanged */ }
-function renderOptimizationChartsLocal(iterationData, targetTime) { /* Unchanged */ }
+function initializeOptimizationChartsLocal() {
+    const commonChartOptions = {
+        responsive: true,
+        animation: false,
+    };
+    optDeliveryTimeChartInstance = initializeChart('deliveryTimeChart', 'deliveryTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title: { display: true, text: 'Time (minutes)'}}, x: {title: {display: true, text: 'Number of Agents'}}} } });
+    optUtilizationChartInstance = initializeChart('utilizationChart', 'utilizationOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, max:100, title: {display: true, text: 'Utilization (%)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optTotalDeliveredOrdersChartInstance = initializeChart('totalDeliveredOrdersChart', 'totalDeliveredOrdersOptimization', { type: 'bar', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Number of Orders'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optAvgOrderWaitTimeChartInstance = initializeChart('avgOrderWaitTimeChart', 'avgOrderWaitTimeOptimization', { type: 'line', data: { labels: [], datasets: [] }, options: { ...commonChartOptions, scales: { y: { beginAtZero: true, title:{display:true, text:'Time (minutes)'}}, x:{title: {display: true, text: 'Number of Agents'}}} } });
+    optOrdersWithinSlaChartInstance = initializeChart('ordersWithinSlaChart', 'ordersWithinSlaOptimization', {type: 'line', data: {labels: [], datasets: []}, options: { ...commonChartOptions, scales: {y: {beginAtZero: true, max: 100, title: {display: true, text: '% Orders in Target Time'}}, x:{title: {display:true, text: 'Number of Agents'}}}}});
+}
+
+function renderOptimizationChartsLocal(iterationData, targetTime) {
+    const labels = iterationData.map(iter => iter.agents);
+    const avgDeliveryTimes = iterationData.map(iter => iter.avgDeliveryTime);
+    const avgUtilizations = iterationData.map(iter => iter.avgAgentUtilization);
+    const totalDelivered = iterationData.map(iter => iter.deliveredOrders);
+    const avgWaitTimes = iterationData.map(iter => iter.avgOrderWaitTime);
+    const percentSlaMet = iterationData.map(iter => iter.percentOrdersSLA);
+
+    if(getChartInstance('deliveryTimeOptimization')) updateChartData('deliveryTimeOptimization', labels, [
+        { label: 'Avg. Delivery Time (min)', data: avgDeliveryTimes, borderColor: 'rgb(75, 192, 192)', tension: 0.1, fill: false },
+        { label: `Target (${targetTime} min)`, data: Array(labels.length).fill(targetTime), borderColor: 'rgb(255, 99, 132)', borderDash: [5, 5], fill: false, pointRadius: 0 }
+    ]);
+    if(getChartInstance('utilizationOptimization')) updateChartData('utilizationOptimization', labels, [
+        { label: 'Avg. Agent Utilization (%)', data: avgUtilizations, backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgb(54, 162, 235)', borderWidth: 1 }
+    ]);
+    if(getChartInstance('totalDeliveredOrdersOptimization')) updateChartData('totalDeliveredOrdersOptimization', labels, [
+        { label: 'Avg. Total Delivered Orders', data: totalDelivered, backgroundColor: 'rgba(75, 192, 192, 0.6)', borderColor: 'rgb(75, 192, 192)', borderWidth: 1 }
+    ]);
+    if(getChartInstance('avgOrderWaitTimeOptimization')) updateChartData('avgOrderWaitTimeOptimization', labels, [
+        { label: 'Avg. Order Wait Time (min)', data: avgWaitTimes, borderColor: 'rgb(255, 159, 64)', tension: 0.1, fill: false }
+    ]);
+    if(getChartInstance('ordersWithinSlaOptimization')) updateChartData('ordersWithinSlaOptimization', labels, [
+        { label: 'Avg. % Orders within Target Time', data: percentSlaMet, borderColor: 'rgb(153, 102, 255)', tension: 0.1, fill: false}
+    ]);
+}
+
 function exportWorkforceOptResultsToCSV() { /* Unchanged */ }
 
 function prepareWorkforceDataForAI() {
