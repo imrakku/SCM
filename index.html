@@ -13,20 +13,110 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Modern & Classy Style Overrides */
+        :root {
+            --font-sans: 'Inter', sans-serif;
+            --shadow-color-light: rgba(0, 0, 0, 0.1);
+            --shadow-color-dark: rgba(0, 0, 0, 0.4);
+            --shadow-card: 0 4px 6px -1px var(--shadow-color-light), 0 2px 4px -2px var(--shadow-color-light);
+            --shadow-card-hover: 0 10px 15px -3px var(--shadow-color-light), 0 4px 6px -2px var(--shadow-color-light);
+            --gradient-start: #3b82f6;
+            --gradient-end: #93c5fd;
+        }
+
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body.light-theme {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --border-primary: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-accent: #2563eb;
+            --border-accent: #2563eb;
+            --shadow-color: var(--shadow-color-light);
+        }
+
+        /* Defaulting to a light theme based on original file appearance */
+        body {
+            background-color: var(--bg-primary, #f8fafc);
+            color: var(--text-primary, #0f172a);
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-primary, #e2e8f0);
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            box-shadow: var(--shadow-card);
+            transition: all 0.3s ease-in-out;
+            border-radius: 0.75rem;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-card-hover);
+        }
+
+        .card h2 {
+            position: relative;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: none;
+            color: var(--text-primary);
+        }
+        .card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+        }
+
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .comparison-table th { font-weight: 600; }
+        .comparison-table td { color: var(--text-secondary); }
+        .comparison-table tbody tr:hover { background-color: var(--bg-tertiary); }
+        
+        .nav-link.nav-active {
+             color: var(--text-accent);
+        }
+    </style>
 </head>
 <body class="light-theme">
 
     <header>
         <nav class="container mx-auto px-6 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-extrabold tracking-tight">Quick Commerce Optimization</h1>
+                <h1 class="text-3xl font-extrabold tracking-tight text-blue-700">Quick Commerce Optimization</h1>
                 <div class="flex flex-wrap justify-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
-                    <a href="#home" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Home</a>
-                    <a href="#clustering" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Clustering</a>
-                    <a href="#demandProfiles" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Demand Profiles</a>
-                    <a href="#simulation" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
-                    <a href="#workforceOptimization" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
-                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
+                    <a href="#home" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Home</a>
+                    <a href="#clustering" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Clustering</a>
+                    <a href="#demandProfiles" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Demand Profiles</a>
+                    <a href="#simulation" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
+                    <a href="#workforceOptimization" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
+                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
                 </div>
             </div>
         </nav>
@@ -36,7 +126,7 @@
         
         <section id="home" class="content-section active">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Optimizing Last-Mile Delivery in Chandigarh</h2>
+                <h2>Optimizing Last-Mile Delivery in Chandigarh</h2>
                 <p class="mb-6 text-lg leading-relaxed">
                     This capstone project, undertaken by Rakshit Monga at the Indian Institute of Management Sirmaur, presents a comprehensive approach to optimizing last-mile delivery logistics within the urban context of Chandigarh. The study meticulously combines critical facets of logistics planning:
                 </p>
@@ -70,7 +160,7 @@
 
         <section id="clustering" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Demand Clustering & Voronoi Analysis</h2>
+                <h2>Demand Clustering & Voronoi Analysis</h2>
                 <p class="mb-6 leading-relaxed">
                     Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.
                 </p>
@@ -86,7 +176,7 @@
                     <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Total Orders Simulated</h4><p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p></div>
                     <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Dark Stores Identified</h4><p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p></div>
                 </div>
-                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"><div id="clusteringMapViz" class="w-full"></div></div>
+                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"><div id="clusteringMapViz" class="w-full h-[500px]"></div></div>
                 <div class="mb-4 text-center"><label class="checkbox-label"><input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections</label></div>
                 <p class="text-md italic text-center">Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).</p>
                 <div class="text-center"><button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button><button id="exportClusteringResultsBtn" class="btn btn-secondary ml-4">Export Clustering Results</button></div>
@@ -102,7 +192,7 @@
 
         <section id="demandProfiles" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Custom Demand Profiles</h2>
+                <h2>Custom Demand Profiles</h2>
                 <p class="mb-6 leading-relaxed">Define custom order generation profiles by combining uniform demand, specific hotspot zones, sector-based demand, or route-based demand. These profiles can then be selected in the "Simulation" tab. Saved profiles are available for the current browser session.</p>
                 <div class="grid md:grid-cols-2 gap-8">
                     <div>
@@ -113,7 +203,7 @@
                         <div class="flex space-x-2"><button id="saveProfileBtn" class="btn btn-primary">Save Profile</button><button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button></div>
                         <div id="profileCreationMapContainer" class="mt-6 hidden">
                             <h4 class="text-lg font-semibold text-center mb-2">Set Hotspot/Route Point</h4>
-                            <div id="profileCreationMap"></div>
+                            <div id="profileCreationMap" class="h-[400px]"></div>
                             <p class="text-sm text-center mt-2">Click on map to set hotspot center or route points.</p>
                             <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
                         </div>
@@ -126,10 +216,10 @@
                 </div>
             </div>
         </section>
-
+        
         <section id="simulation" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Interactive Delivery Simulation</h2>
+                <h2>Interactive Delivery Simulation</h2>
                 <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
                     <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
                     <div class="simulation-controls-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -153,7 +243,7 @@
                 <div class="text-center mb-4">Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl">0</span> minutes (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)</div>
                 <div class="grid lg:grid-cols-3 gap-x-8 gap-y-8">
                     <div class="lg:col-span-2 space-y-6">
-                        <div id="simulationMap" class="w-full shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
+                        <div id="simulationMap" class="w-full h-[500px] shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
                         <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4"><button id="startSimBtn" class="btn btn-primary w-full sm:flex-1">Start Simulation</button><button id="pauseSimBtn" class="btn btn-secondary w-full sm:flex-1">Pause Simulation</button><button id="resetSimBtn" class="btn btn-danger w-full sm:flex-1">Reset Simulation</button></div>
                         <div class="grid md:grid-cols-2 gap-4 mt-4">
                             <div class="live-chart-container"><h5>Pending Orders Over Time</h5><canvas id="pendingOrdersChart"></canvas></div>
@@ -205,7 +295,7 @@
 
         <section id="workforceOptimization" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Workforce Optimization Analysis</h2>
+                <h2>Workforce Optimization Analysis</h2>
                 <p class="mb-6 leading-relaxed">This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated based on the selected profile. Cost parameters are taken from the Simulation page.</p>
                 <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
                     <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
@@ -222,7 +312,7 @@
                     </div>
                     <div class="mt-6 text-center"><button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button></div>
                 </div>
-                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden"><h4 class="text-xl font-semibold text-center p-4 border-b">Scenario Map (Best Agent Count)</h4><div id="optimizationMapViz" class="w-full"></div></div>
+                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden"><h4 class="text-xl font-semibold text-center p-4 border-b">Scenario Map (Best Agent Count)</h4><div id="optimizationMapViz" class="w-full h-[500px]"></div></div>
                 <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
                     <h4 class="text-2xl font-semibold text-center">Iteration Comparison Table</h4>
                     <div class="comparison-table-container"><table id="optimizationComparisonTable" class="comparison-table"><thead><tr><th>Agents</th><th>Avg Generated Orders</th><th>Avg Delivered Orders</th><th>Avg. Delivery Time (min)</th><th>Avg % Orders in Target Time</th><th>Avg Min Delivery Time (min)</th><th>Avg Max Delivery Time (min)</th><th>Avg Std. Dev. Delivery Time (min)</th><th>Avg. Agent Utilization (%)</th><th>Avg. Order Wait Time (min)</th><th>Avg Undelivered Orders</th><th>Avg Total Op. Cost (₹)</th><th>Avg Cost/Order (₹)</th></tr></thead><tbody></tbody></table></div>
@@ -273,7 +363,7 @@
 
         <section id="scenarioAnalysis" class="content-section">
             <div class="card">
-                <h2 class="text-4xl font-bold mb-8 pb-4">Scenario Analysis & Comparison</h2>
+                <h2>Scenario Analysis & Comparison</h2>
                 <p class="mb-6 leading-relaxed">Save results from different simulation runs (from the "Simulation" page) and compare them side-by-side. This helps in understanding the impact of various parameters on performance and cost. Scenarios are saved in your browser's local storage.</p>
                 <div class="grid md:grid-cols-3 gap-8">
                     <div class="md:col-span-1">
@@ -303,14 +393,14 @@
         </section>
     </main>
 
-    <footer class="text-center py-16 mt-12">
-        <p class="text-lg">&copy; <span id="currentYear">2024</span> Rakshit Monga - IIM Sirmaur.</p>
+    <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
+        <p class="text-slate-300 text-lg">&copy; <span id="currentYear">2024</span> Rakshit Monga - IIM Sirmaur.</p>
         <p class="text-md mt-2">Chandigarh Last-Mile Logistics Optimization Project</p>
         <div class="mt-8">
             <button id="toggleSectorCoordsBtn" class="btn btn-secondary btn-sm">Show/Hide Sector Coordinates</button>
-            <div id="sectorCoordinatesContainer" class="hidden mt-4 text-left max-w-2xl mx-auto p-4 rounded-lg text-sm">
-                <h4 class="text-lg font-semibold mb-2 text-center">Chandigarh Sector Coordinates (Approximate Centers)</h4>
-                <pre id="sectorCoordinatesList" class="whitespace-pre-wrap"></pre>
+            <div id="sectorCoordinatesContainer" class="hidden mt-4 text-left max-w-2xl mx-auto bg-slate-800 p-4 rounded-lg text-sm">
+                <h4 class="text-lg font-semibold text-slate-200 mb-2 text-center">Chandigarh Sector Coordinates (Approximate Centers)</h4>
+                <pre id="sectorCoordinatesList" class="text-slate-300 whitespace-pre-wrap"></pre>
             </div>
         </div>
     </footer>
