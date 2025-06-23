@@ -1,155 +1,138 @@
-/* js/css/style.css */
-
 /* 1. FONT AND COLOR DEFINITIONS (CSS Variables) */
 :root {
     --font-sans: 'Inter', sans-serif;
     --font-mono: 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", monospace;
 
     /* Dark Theme (Default) */
-    --bg-primary: #121212;
-    --bg-secondary: #1E1E1E;
-    --bg-tertiary: #2a2a2a;
-    --bg-accent: rgba(79, 70, 229, 0.1);
+    --bg-primary: #111827;      /* A deep, cool gray */
+    --bg-secondary: #1f2937;    /* A slightly lighter gray for cards */
+    --bg-tertiary: #374151;     /* Used for hover, borders, and some backgrounds */
     
-    --text-primary: #e5e7eb;
-    --text-secondary: #9ca3af;
-    --text-accent: #818cf8;
+    --text-primary: #f9fafb;    /* A bright, clean white for main text */
+    --text-secondary: #d1d5db;  /* A softer gray for secondary text and labels */
+    --text-accent: #60a5fa;      /* A pleasant blue for accents and links */
     
     --border-primary: #374151;
-    --border-secondary: #4b5563;
-    --border-accent: #4f46e5;
+    --border-accent: #3b82f6;
     
-    --shadow-color: rgba(0, 0, 0, 0.5);
-    --chart-grid-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --input-placeholder-color: #6b7280;
 }
 
 body.light-theme {
     /* Light Theme Overrides */
-    --bg-primary: #f8fafc;
+    --bg-primary: #f3f4f6;      /* A very light gray */
     --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --bg-accent: #eef2ff;
+    --bg-tertiary: #e5e7eb;
 
-    --text-primary: #1f2937;
+    --text-primary: #111827;    /* The same deep gray for high contrast */
     --text-secondary: #4b5563;
-    --text-accent: #4f46e5;
+    --text-accent: #3b82f6;
 
-    --border-primary: #e5e7eb;
-    --border-secondary: #d1d5db;
-    --border-accent: #4f46e5;
+    --border-primary: #d1d5db;
+    --border-accent: #3b82f6;
 
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --chart-grid-color: rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --input-placeholder-color: #9ca3af;
 }
 
-
-/* 2. GENERAL BODY & LAYOUT STYLES */
+/* 2. GENERAL BODY & TYPOGRAPHY */
 body {
     font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
+h1, h2, h3, h4, h5, h6 { color: var(--text-primary); }
+p, li, span, div { color: var(--text-secondary); }
+a { color: var(--text-accent); text-decoration: none; transition: color 0.2s ease; }
+a:hover { color: var(--text-primary); }
+strong { color: var(--text-primary); font-weight: 600; }
 
 .content-section { display: none; }
 .content-section.active { display: block; }
-
 
 /* 3. HEADER & NAVIGATION */
 header {
     background-color: var(--bg-secondary);
     border-bottom: 1px solid var(--border-primary);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    box-shadow: 0 2px 10px var(--shadow-color);
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 .nav-link {
     color: var(--text-secondary);
     font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
     transition: color 0.2s ease, border-color 0.2s ease;
-}
-.nav-link:hover {
-    color: var(--text-primary);
 }
 .nav-active {
     color: var(--text-accent);
-    font-weight: 700;
+    font-weight: 600;
     border-bottom-color: var(--border-accent);
 }
-
 
 /* 4. CARDS & CONTAINERS */
 .card {
     background-color: var(--bg-secondary);
     border-radius: 0.75rem;
     border: 1px solid var(--border-primary);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    padding: 2rem;
-    margin-bottom: 2rem;
+    box-shadow: 0 8px 24px var(--shadow-color);
+    padding: 2.5rem;
 }
 .card h2 {
-    border-bottom: 2px solid var(--border-primary);
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-    color: var(--text-primary);
-}
-.stat-card {
-    background-color: var(--bg-tertiary);
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border-primary);
-}
-.simulation-stats-container, 
-.optimization-results-container,
-#optimizationComparisonContainer,
-#scenarioComparisonResultsContainer {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.5rem; padding: 1.5rem; margin-top: 2rem;
+    font-size: 2rem; font-weight: 700;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 1rem; margin-bottom: 1.5rem;
 }
 
 /* 5. BUTTONS & INPUTS */
 .btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border: 1px solid transparent;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0.6rem 1.2rem; border-radius: 0.5rem;
+    font-weight: 500; transition: all 0.2s ease;
+    cursor: pointer; border: 1px solid transparent;
+    display: inline-flex; align-items: center; justify-content: center;
 }
 .btn-primary { background-color: var(--border-accent); border-color: var(--border-accent); color: white; }
-.btn-primary:hover:not(:disabled) { background-color: #6366f1; }
-.btn-secondary { background-color: var(--text-secondary); border-color: var(--text-secondary); color: var(--bg-primary); }
-.btn-secondary:hover:not(:disabled) { background-color: #a1a1aa; }
+.btn-primary:hover:not(:disabled) { background-color: #60a5fa; }
+.btn-secondary { background-color: var(--bg-tertiary); border-color: var(--border-primary); color: var(--text-primary); }
+.btn-secondary:hover:not(:disabled) { background-color: var(--border-secondary); }
 .btn-danger { background-color: #ef4444; border-color: #ef4444; color: white; }
-.btn-danger:hover:not(:disabled) { background-color: #f87171; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.input-group { margin-bottom: 1rem; }
-.input-group label { display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.25rem; }
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+.input-group label {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
 .input-group input[type="number"],
 .input-group input[type="text"],
 .input-group select {
-    width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.375rem;
-    border: 1px solid var(--border-primary);
     background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
     color: var(--text-primary);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
 }
+.input-group input::placeholder { color: var(--input-placeholder-color); }
 .input-group input:focus, .input-group select:focus {
     border-color: var(--border-accent);
     outline: 2px solid transparent;
     box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--border-accent);
 }
 
-/* 6. MAP & CHARTS */
-#simulationMap, #clusteringMapViz, #optimizationMapViz, #profileCreationMap, #scenarioComparisonMap {
+/* 6. WORKFORCE OPTIMIZATION ALIGNMENT FIX */
+.optimization-params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    align-items: end; 
+}
+
+/* 7. MAP & CHARTS */
+#simulationMap, #clusteringMapViz, #optimizationMapViz, #profileCreationMap {
     height: 500px;
     border-radius: 0.5rem;
     background-color: #333;
@@ -157,29 +140,26 @@ header {
 }
 .chart-container, .live-chart-container {
     position: relative;
-    margin: 0.5rem auto;
     padding: 1rem;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 0.5rem;
     width: 100%;
-    max-width: 700px;
     aspect-ratio: 16 / 10;
-}
-.live-chart-container {
-    aspect-ratio: 4 / 3;
+    margin: 1rem auto;
 }
 .chart-container canvas, .live-chart-container canvas {
     max-width: 100%;
     max-height: 100%;
 }
 .live-chart-container h5, .chart-container h4 {
-    text-align: center; font-size: 0.875rem; color: var(--text-secondary);
-    margin-bottom: 0.75rem; font-weight: 600;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
 }
-.chart-container h4 { font-size: 1rem; color: var(--text-primary); }
 
-/* 7. LOGS & TABLES */
+/* 8. LOGS & TABLES */
 .simulation-log, .optimization-log {
     background-color: #000;
     color: #d1d5db;
