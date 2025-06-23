@@ -72,7 +72,7 @@
 
         <section id="clustering" class="content-section">
             <div class="card">
-                <h2>Demand Clustering & Voronoi Analysis</h2>
+                <h2 class="text-4xl font-bold mb-8">Demand Clustering & Voronoi Analysis</h2>
                 <p>Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.</p>
                 <div class="my-8 p-6 border rounded-lg">
                     <h3 class="text-2xl font-semibold mb-4">Configure Clustering Parameters</h3>
@@ -82,12 +82,23 @@
                         <div class="input-group"><label for="numDarkStoresForClustering">Number of Dark Stores:</label><input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full"></div>
                     </div>
                 </div>
+                <div class="grid md:grid-cols-2 gap-8 mb-10">
+                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Total Orders Simulated</h4><p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold">1000</p></div>
+                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Dark Stores Identified</h4><p id="numDarkStoresDisplay" class="text-5xl font-extrabold">10</p></div>
+                </div>
                 <div id="clusteringMapVizContainer" class="mb-6 shadow-lg rounded-lg overflow-hidden border">
                     <div id="clusteringMapViz" class="w-full"></div>
                 </div>
                 <div class="text-center">
                     <button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button>
+                    <button id="exportClusteringResultsBtn" class="btn btn-secondary ml-4">Export Clustering Results</button>
                 </div>
+                <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="italic md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p>
+                 </div>
+                 <div id="overallClusteringStats" class="mt-4 p-4 border rounded-lg text-center">
+                     <p><strong>Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
+                 </div>
             </div>
         </section>
 
@@ -140,7 +151,14 @@
                 </div>
                 <div id="simulationOverallStats" class="simulation-stats-container mt-8">
                     <h4 class="text-2xl font-semibold text-center">Simulation Statistics</h4>
+                    <div class="text-center mt-6"><button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Scenario</button><button id="exportSimResultsBtn" class="btn btn-secondary ml-4">Export Results</button></div>
+                    <div id="simulationAiAnalysisContainer" class="mt-8 p-6 hidden">
+                        <h4 class="text-xl font-semibold text-center mb-4">AI Analysis of Simulation Results</h4>
+                        <div id="simulationAiAnalysisLoading" class="text-center hidden"><p>Generating AI analysis...</p></div>
+                        <div id="simulationAiAnalysisContent" class="leading-relaxed whitespace-pre-wrap"></div>
                     </div>
+                    <div class="text-center mt-6"><button id="analyzeSimResultsAI" class="btn btn-primary">Analyze with AI</button></div>
+                </div>
             </div>
         </section>
 
@@ -157,18 +175,28 @@
                         <div class="input-group"><label for="optTargetOrdersPerIteration">Target Orders per Run:</label><input type="number" id="optTargetOrdersPerIteration" value="100"></div>
                         <div class="input-group"><label for="optMinAgents">Min Agents to Test:</label><input type="number" id="optMinAgents" value="1"></div>
                         <div class="input-group"><label for="optMaxAgents">Max Agents to Test:</label><input type="number" id="optMaxAgents" value="15"></div>
-                         <div class="input-group"><label for="optNumRunsPerAgentCount">Runs per Agent Count:</label><input type="number" id="optNumRunsPerAgentCount" value="1"></div>
-                         <div class="input-group"><label for="optMaxSimTimePerIteration">Max Sim Time per Run (min):</label><input type="number" id="optMaxSimTimePerIteration" value="120"></div>
+                        <div class="input-group"><label for="optNumRunsPerAgentCount">Runs per Agent Count:</label><input type="number" id="optNumRunsPerAgentCount" value="1"></div>
+                        <div class="input-group"><label for="optMaxSimTimePerIteration">Max Sim Time per Run (min):</label><input type="number" id="optMaxSimTimePerIteration" value="120"></div>
                     </div>
                     <div class="mt-6 text-center"><button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button></div>
                 </div>
 
                 <div id="optimizationResultsContainer" class="hidden">
-                    <div id="optimizationComparisonContainer" class="mt-8"><div class="comparison-table-container"><table id="optimizationComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div></div>
-                    <div id="optimizationChartsContainer" class="mt-8 grid md:grid-cols-2 gap-6">
-                        <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Delivery Time</h4><canvas id="deliveryTimeChart"></canvas></div>
-                        <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Utilization</h4><canvas id="utilizationChart"></canvas></div>
+                    <div class="text-center"><p id="optimizationRecommendationText" class="text-lg font-semibold"></p></div>
+                    <div class="optimization-results-grid mt-4">
+                        <p><strong>Optimal Agents:</strong> <span id="optResultAgents">N/A</span></p>
+                        <p><strong>Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
                     </div>
+                </div>
+
+                <div id="optimizationComparisonContainer" class="hidden mt-8">
+                    <h3 class="text-2xl font-semibold text-center">Iteration Comparison</h4>
+                    <div class="comparison-table-container"><table id="optimizationComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div>
+                </div>
+
+                <div id="optimizationChartsContainer" class="hidden mt-8 grid md:grid-cols-2 gap-6">
+                    <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Delivery Time</h4><canvas id="deliveryTimeChart"></canvas></div>
+                    <div class="chart-container"><h4 class="text-lg font-semibold text-center">Agents vs. Avg. Utilization</h4><canvas id="utilizationChart"></canvas></div>
                 </div>
 
                 <div id="workforceAiAnalysisContainer" class="mt-8 p-6 hidden">
