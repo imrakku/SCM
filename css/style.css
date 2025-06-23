@@ -285,28 +285,28 @@ input[type="range"]::-moz-range-thumb {
 .comparison-table tbody tr:nth-child(even) { background-color: #f8fafc; }
 .comparison-table tbody tr:hover { background-color: #eff6ff; }
 
-/* Chart Container Styles - CORRECTED FOR RESPONSIVENESS */
+/* Chart Container Styles - CORRECTED */
 .chart-container, .live-chart-container {
-    position: relative; /* Important for Chart.js responsiveness */
-    margin: 0.5rem 0;
+    position: relative;
+    margin: 0.5rem auto; /* Center the containers */
     padding: 1rem;
     background-color: white;
-    border-radius: 0.5rem; /* rounded-lg */
+    border-radius: 0.5rem;
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-    border: 1px solid #e2e8f0; /* slate-200 */
-    /* height property is removed to allow chart's aspect ratio to control the height */
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 700px; /* Prevent charts from becoming too wide */
+    aspect-ratio: 16 / 10; /* Give charts a default aspect ratio */
 }
 
-/* This rule is now effectively combined with the one above */
 .live-chart-container {
+    aspect-ratio: 4 / 3;
 }
 
-/* Ensure canvas elements inside the containers are responsive */
 .chart-container canvas, .live-chart-container canvas {
     max-width: 100%;
     max-height: 100%;
 }
-
 
 .live-chart-container h5, .chart-container h4 {
     text-align: center; font-size: 0.875rem; color: #475569;
@@ -362,17 +362,17 @@ div[role="alert"] details div { margin-top: 0.5rem; padding-left: 0.5rem; border
 details > summary {
     list-style: none;
     cursor: pointer;
-    padding: 0.25rem 0; /* Add some padding to summary for better clickability */
+    padding: 0.25rem 0;
 }
 details > summary::-webkit-details-marker {
     display: none;
 }
 details > summary::before {
-    content: '► '; /* Default closed state arrow */
+    content: '► '; 
     font-size: 0.8em;
     margin-right: 4px;
-    color: currentColor; /* Inherit color from parent for better theme matching */
+    color: currentColor;
 }
 details[open] > summary::before {
-    content: '▼ '; /* Open state arrow */
+    content: '▼ ';
 }
