@@ -14,11 +14,6 @@ let optOrderMarkersLayer;
 let allOptimizationIterationsData = [];
 let bestIterationResultGlobal = null;
 
-// Chart Instances
-let optDeliveryTimeChartInstance, optUtilizationChartInstance,
-    optTotalDeliveredOrdersChartInstance, optAvgOrderWaitTimeChartInstance,
-    optOrdersWithinSlaChartInstance;
-
 // DOM Elements
 let optTargetDeliveryTimeInputEl, optSelectDarkStoreEl, 
     optDemandProfileSelectEl, optOrderGenerationRadiusInputEl,
@@ -256,8 +251,8 @@ async function runWorkforceOptimization() {
                 iterAgents.forEach(agent => {
                     if (agent.status === 'available') return;
                     currentRunStats.totalAgentActiveTime++;
-
                     let startPoint, endPoint;
+
                     if (agent.status === 'to_store') {
                         startPoint = agent.routePath[0];
                         endPoint = agent.routePath[1];
@@ -287,7 +282,6 @@ async function runWorkforceOptimization() {
                     if (agent.legProgress >= 1) {
                         agent.location = { ...endPoint };
                         agent.legProgress = 0;
-
                         if (agent.status === 'to_store') {
                             agent.status = 'at_store';
                             agent.timeSpentAtStore = 0;
@@ -307,8 +301,8 @@ async function runWorkforceOptimization() {
                     }
                 });
 
-                if (currentRunStats.totalGenerated > 0 && currentRunStats.totalGenerated === currentRunStats.totalDelivered) {
-                    break;
+                if (currentRunStats.totalGenerated >= targetOrdersPerIterationDefault && currentRunStats.totalDelivered === currentRunStats.totalGenerated) {
+                    break; 
                 }
             }
             
@@ -347,7 +341,7 @@ async function runWorkforceOptimization() {
     let qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE && iter.percentOrdersSLA >= TARGET_SLA_PERCENTAGE);
     if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData.filter(iter => iter.deliveryCompletionRate >= MIN_DELIVERY_COMPLETION_RATE); }
     if (qualifiedIterations.length === 0) { qualifiedIterations = allOptimizationIterationsData; }
-    bestIterationResultGlobal = qualifiedIterations.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity))[0];
+    bestIterationResultGlobal = qualifiedIterations.length > 0 ? qualifiedIterations.sort((a, b) => (a.avgCostPerOrder ?? Infinity) - (b.avgCostPerOrder ?? Infinity))[0] : null;
 
     displayOptimizationResults(bestIterationResultGlobal, targetAvgDeliveryTime);
     populateOptimizationComparisonTable(allOptimizationIterationsData);
@@ -379,9 +373,6 @@ function displayOptimizationResults(bestResult, targetTime) {
     if(optResultAvgUtilizationEl) optResultAvgUtilizationEl.textContent = bestResult.avgAgentUtilization !== null ? bestResult.avgAgentUtilization.toFixed(1) + "%" : "N/A";
     if(optResultAvgWaitTimeEl) optResultAvgWaitTimeEl.textContent = bestResult.avgOrderWaitTime !== null ? bestResult.avgOrderWaitTime.toFixed(1) + " min" : "N/A";
     if(optResultUndeliveredEl) optResultUndeliveredEl.textContent = bestResult.undeliveredOrders?.toFixed(1) ?? "N/A";
-    if(optResultTotalAgentLaborCostEl) optResultTotalAgentLaborCostEl.textContent = `₹${(bestResult.totalOpCost - (bestResult.avgCostPerOrder * bestResult.deliveredOrders) + (bestResult.totalFixedDeliveryCosts ?? 0)).toFixed(2)}`;
-    if(optResultTotalTravelCostEl) optResultTotalTravelCostEl.textContent = `₹${((bestResult.avgCostPerOrder * bestResult.deliveredOrders) - (bestResult.totalFixedDeliveryCosts ?? 0)).toFixed(2)}`;
-    if(optResultTotalFixedDeliveryCostsEl) optResultTotalFixedDeliveryCostsEl.textContent = `₹${(bestResult.totalFixedDeliveryCosts ?? 0).toFixed(2)}`;
     if(optResultOverallTotalOperationalCostEl) optResultOverallTotalOperationalCostEl.textContent = `₹${(bestResult.totalOpCost || 0).toFixed(2)}`;
     if(optResultAverageCostPerOrderEl) optResultAverageCostPerOrderEl.textContent = bestResult.avgCostPerOrder === null || isNaN(bestResult.avgCostPerOrder) ? "N/A" : `₹${bestResult.avgCostPerOrder.toFixed(2)}`;
 }
@@ -407,17 +398,9 @@ function populateOptimizationComparisonTable(iterationData) {
     });
 }
 
-function initializeOptimizationChartsLocal() {
-    // ...
-}
-
-function renderOptimizationChartsLocal(iterationData, targetTime) {
-    // ...
-}
-
-function exportWorkforceOptResultsToCSV() {
-    // ...
-}
+function initializeOptimizationChartsLocal() { /* Unchanged */ }
+function renderOptimizationChartsLocal(iterationData, targetTime) { /* Unchanged */ }
+function exportWorkforceOptResultsToCSV() { /* Unchanged */ }
 
 function prepareWorkforceDataForAI() {
     if (!bestIterationResultGlobal || allOptimizationIterationsData.length === 0) {
