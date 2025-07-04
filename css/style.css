@@ -3,6 +3,18 @@
     --font-sans: 'Inter', sans-serif;
     --font-mono: 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", monospace;
 
+    /* Base Shadow Colors - used for light and dark themes */
+    --shadow-color-light: rgba(0, 0, 0, 0.1);
+    --shadow-color-dark: rgba(0, 0, 0, 0.4);
+
+    /* Common Card Shadows */
+    --shadow-card: 0 4px 6px -1px var(--shadow-color-light), 0 2px 4px -2px var(--shadow-color-light);
+    --shadow-card-hover: 0 10px 15px -3px var(--shadow-color-light), 0 4px 6px -2px var(--shadow-color-light);
+
+    /* Accent Gradient for Headings/Elements */
+    --gradient-start: #3b82f6; /* Blue-500 */
+    --gradient-end: #93c5fd;   /* Blue-300 */
+
     /* Dark Theme (Default) */
     --bg-primary: #111827;      /* A deep, cool gray */
     --bg-secondary: #1f2937;    /* A slightly lighter gray for cards */
@@ -15,30 +27,32 @@
     --border-primary: #374151;
     --border-accent: #3b82f6;
     
-    --shadow-color: rgba(0, 0, 0, 0.4);
+    --shadow-color: var(--shadow-color-dark); /* Default shadow for header, etc. */
     --input-placeholder-color: #6b7280;
 }
 
 body.light-theme {
     /* Light Theme Overrides */
-    --bg-primary: #f3f4f6;      /* A very light gray */
+    --bg-primary: #f8fafc;      /* A very light gray */
     --bg-secondary: #ffffff;
-    --bg-tertiary: #e5e7eb;
+    --bg-tertiary: #f1f5f9;     /* Lighter gray for hover/borders */
 
-    --text-primary: #111827;    /* The same deep gray for high contrast */
-    --text-secondary: #4b5563;
-    --text-accent: #3b82f6;
+    --text-primary: #0f172a;    /* Darker text for high contrast */
+    --text-secondary: #475569;  /* Softer dark gray */
+    --text-accent: #2563eb;     /* Darker blue accent */
 
-    --border-primary: #d1d5db;
-    --border-accent: #3b82f6;
+    --border-primary: #e2e8f0;
+    --border-accent: #2563eb;
 
-    --shadow-color: rgba(0, 0, 0, 0.08);
+    --shadow-color: var(--shadow-color-light); /* Lighter shadow for light theme */
     --input-placeholder-color: #9ca3af;
 }
 
 /* 2. GENERAL BODY & TYPOGRAPHY */
 body {
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased; /* Smoother fonts */
+    -moz-osx-font-smoothing: grayscale; /* Smoother fonts */
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -56,14 +70,23 @@ strong { color: var(--text-primary); font-weight: 600; }
 header {
     background-color: var(--bg-secondary);
     border-bottom: 1px solid var(--border-primary);
-    position: sticky; top: 0; z-index: 50;
+    position: sticky; 
+    top: 0; 
+    z-index: 50;
     box-shadow: 0 4px 12px var(--shadow-color);
+    /* Added backdrop-filter for a modern frosted glass effect */
+    background-color: rgba(255, 255, 255, 0.8); /* Slightly transparent */
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+    border-bottom: 1px solid var(--border-primary);
 }
 .nav-link {
     color: var(--text-secondary);
     font-weight: 500;
     border-bottom: 2px solid transparent;
     transition: color 0.2s ease, border-color 0.2s ease;
+}
+.nav-link:hover { /* Added hover effect for general nav links */
+    color: var(--text-accent);
 }
 .nav-active {
     color: var(--text-accent);
@@ -76,27 +99,69 @@ header {
     background-color: var(--bg-secondary);
     border-radius: 0.75rem;
     border: 1px solid var(--border-primary);
-    box-shadow: 0 8px 24px var(--shadow-color);
+    box-shadow: var(--shadow-card); /* Using new shadow variable */
     padding: 2.5rem;
+    transition: all 0.3s ease-in-out; /* Added transition for hover */
+}
+.card:hover {
+    transform: translateY(-5px); /* Lift effect on hover */
+    box-shadow: var(--shadow-card-hover); /* Deeper shadow on hover */
 }
 .card h2 {
-    font-size: 2rem; font-weight: 700;
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 1rem; margin-bottom: 1.5rem;
+    font-size: 2rem; 
+    font-weight: 700;
+    position: relative; /* For the ::after pseudo-element */
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: none; /* Remove default border-bottom */
+    color: var(--text-primary);
+}
+.card h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px; /* Short underline */
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
 }
 
 /* 5. BUTTONS & INPUTS */
 .btn {
-    padding: 0.6rem 1.2rem; border-radius: 0.5rem;
-    font-weight: 500; transition: all 0.2s ease;
-    cursor: pointer; border: 1px solid transparent;
-    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.6rem 1.2rem; 
+    border-radius: 0.5rem;
+    font-weight: 500; 
+    transition: all 0.2s ease;
+    cursor: pointer; 
+    border: 1px solid transparent;
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center;
 }
-.btn-primary { background-color: var(--border-accent); border-color: var(--border-accent); color: white; }
-.btn-primary:hover:not(:disabled) { background-color: #60a5fa; }
-.btn-secondary { background-color: var(--bg-tertiary); border-color: var(--border-primary); color: var(--text-primary); }
-.btn-secondary:hover:not(:disabled) { background-color: var(--border-secondary); }
-.btn-danger { background-color: #ef4444; border-color: #ef4444; color: white; }
+.btn-primary { 
+    background-color: var(--border-accent); 
+    border-color: var(--border-accent); 
+    color: white; 
+}
+.btn-primary:hover:not(:disabled) { 
+    transform: translateY(-2px); /* Slight lift on hover */
+    filter: brightness(1.1); /* Slightly brighter on hover */
+}
+.btn-secondary { 
+    background-color: var(--bg-tertiary); 
+    border-color: var(--border-primary); 
+    color: var(--text-primary); 
+}
+.btn-secondary:hover:not(:disabled) { 
+    background-color: var(--border-primary); /* Darker on hover */
+    color: var(--text-primary); /* Ensure text color remains readable */
+}
+.btn-danger { 
+    background-color: #ef4444; 
+    border-color: #ef4444; 
+    color: white; 
+}
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .input-group {
@@ -106,6 +171,7 @@ header {
 .input-group label {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    color: var(--text-secondary); /* Ensure label color is consistent */
 }
 .input-group input[type="number"],
 .input-group input[type="text"],
@@ -123,7 +189,7 @@ header {
     box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--border-accent);
 }
 
-/* 6. WORKFORCE OPTIMIZATION ALIGNMENT FIX */
+/* 6. OPTIMIZATION PARAMETERS GRID ALIGNMENT */
 .optimization-params-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -134,19 +200,21 @@ header {
 /* 7. MAP & CHARTS */
 #simulationMap, #clusteringMapViz, #optimizationMapViz, #profileCreationMap {
     height: 500px;
-    border-radius: 0.5rem;
-    background-color: #333;
+    border-radius: 0.75rem; /* Increased border-radius for softer corners */
+    background-color: #333; /* Dark background for map area */
     border: 1px solid var(--border-primary);
+    box-shadow: 0 8px 24px var(--shadow-color); /* Added consistent shadow */
 }
 .chart-container, .live-chart-container {
     position: relative;
-    padding: 1rem;
+    padding: 1.5rem; /* Increased padding */
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
+    border-radius: 0.75rem; /* Consistent border-radius */
     width: 100%;
     aspect-ratio: 16 / 10;
     margin: 1rem auto;
+    box-shadow: var(--shadow-card); /* Consistent shadow */
 }
 .chart-container canvas, .live-chart-container canvas {
     max-width: 100%;
@@ -154,9 +222,9 @@ header {
 }
 .live-chart-container h5, .chart-container h4 {
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--text-primary); /* Changed to primary text color for headings */
     margin-bottom: 0.75rem;
-    font-weight: 600;
+    font-weight: 700; /* Bolder font for headings */
 }
 
 /* 8. LOGS & TABLES */
@@ -164,7 +232,7 @@ header {
     background-color: #000;
     color: #d1d5db;
     padding: 1rem;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem; /* Consistent border-radius */
     margin-top: 1rem;
     max-height: 350px;
     overflow-y: auto;
@@ -172,21 +240,181 @@ header {
     font-size: 0.8125rem;
     border: 1px solid var(--border-primary);
 }
-.log-system { color: #facc15; }
-.log-info { color: #60a5fa; }
-.log-agent { color: #f97316; }
-.log-order { color: #22c55e; }
-.log-error { color: #ef4444; font-weight: bold; }
+.log-system { color: #facc15; } /* Yellow */
+.log-info { color: #60a5fa; }   /* Blue */
+.log-agent { color: #f97316; }  /* Orange */
+.log-order { color: #22c55e; }  /* Green */
+.log-error { color: #ef4444; font-weight: bold; } /* Red */
 
-.comparison-table { width: 100%; border-collapse: collapse; }
+.comparison-table { 
+    width: 100%; 
+    border-collapse: separate; /* Changed to separate for rounded corners on cells */
+    border-spacing: 0; /* Remove default spacing */
+}
 .comparison-table th, .comparison-table td {
     border: 1px solid var(--border-primary);
-    padding: 0.625rem 0.75rem;
+    padding: 0.75rem 1rem; /* Slightly more padding */
     text-align: left;
+    /* Remove individual cell border-radius, apply to table for overall rounded look */
 }
+.comparison-table thead th:first-child { border-top-left-radius: 0.5rem; }
+.comparison-table thead th:last-child { border-top-right-radius: 0.5rem; }
+.comparison-table tbody tr:last-child td:first-child { border-bottom-left-radius: 0.5rem; }
+.comparison-table tbody tr:last-child td:last-child { border-bottom-right-radius: 0.5rem; }
+
+
 .comparison-table th {
     background-color: var(--bg-tertiary);
+    font-weight: 600; /* Bolder font as per original inline style */
+    color: var(--text-primary); /* Ensure headings are primary text color */
+}
+.comparison-table td { 
+    color: var(--text-secondary); /* Keep secondary text color for data */
 }
 .comparison-table tbody tr:nth-child(even) {
     background-color: var(--bg-tertiary);
+}
+.comparison-table tbody tr:hover { 
+    background-color: var(--bg-primary); /* Lighter hover background for contrast */
+}
+
+/* Stat Cards for better visual impact */
+.stat-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-card);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.stat-card h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+.stat-card p {
+    font-size: 2.5rem; /* Larger numbers */
+    font-weight: 800; /* Extra bold */
+    color: var(--text-accent); /* Accent color for main numbers */
+}
+
+/* Checkbox Styling */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-primary); /* Ensure label is readable */
+}
+
+.checkbox-label input[type="checkbox"] {
+    /* Hide default checkbox */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--border-primary);
+    border-radius: 0.25rem;
+    margin-right: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+    background-color: var(--border-accent);
+    border-color: var(--border-accent);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.8rem;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -60%) rotate(45deg);
+}
+
+.checkbox-label input[type="checkbox"]:focus {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--border-accent);
+}
+
+/* Specific styling for the AI Analysis containers */
+#simulationAiAnalysisContainer,
+#workforceAiAnalysisContainer,
+#scenarioAiAnalysisContainer {
+    border: 2px solid var(--border-accent); /* Stronger border to highlight */
+    background-color: var(--bg-tertiary); /* Soft background */
+    padding: 2rem;
+    border-radius: 1rem; /* More rounded */
+    box-shadow: var(--shadow-card);
+}
+#simulationAiAnalysisContainer h4,
+#workforceAiAnalysisContainer h4,
+#scenarioAiAnalysisContainer h4 {
+    color: var(--text-accent); /* Accent color for AI analysis titles */
+}
+
+/* Spinner styling */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Footer Styling */
+footer {
+    background-color: var(--bg-secondary); /* Consistent with card/header background */
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-primary);
+    padding: 3rem 0; /* More vertical padding */
+}
+footer p {
+    color: var(--text-secondary); /* Ensure footer text is readable */
+}
+footer .text-slate-300 { /* For the copyright line */
+    color: var(--text-primary);
+}
+
+#sectorCoordinatesContainer {
+    background-color: var(--bg-tertiary); /* Use tertiary background */
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary); /* Text color for coordinates */
+}
+#sectorCoordinatesContainer h4 {
+    color: var(--text-primary); /* Heading for coordinates */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card {
+        padding: 1.5rem; /* Reduce card padding on smaller screens */
+    }
+    .card h2 {
+        font-size: 1.75rem; /* Adjust heading size */
+        margin-bottom: 1rem;
+    }
+    .card h2::after {
+        height: 3px; /* Smaller underline */
+    }
+    .optimization-params-grid {
+        grid-template-columns: 1fr; /* Stack controls on small screens */
+    }
+    .btn {
+        width: 100%; /* Full width buttons */
+    }
 }
