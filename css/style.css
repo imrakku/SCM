@@ -58,7 +58,11 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 h1, h2, h3, h4, h5, h6 { color: var(--text-primary); }
-p, li, span, div { color: var(--text-secondary); }
+p, li, span, div { 
+    color: var(--text-secondary); 
+    font-size: 1rem; /* Base font size for general text */
+    line-height: 1.6; /* Improved line spacing for readability */
+}
 a { color: var(--text-accent); text-decoration: none; transition: color 0.2s ease; }
 a:hover { color: var(--text-primary); }
 strong { color: var(--text-primary); font-weight: 600; }
@@ -250,12 +254,14 @@ header {
     width: 100%; 
     border-collapse: separate; /* Changed to separate for rounded corners on cells */
     border-spacing: 0; /* Remove default spacing */
+    font-size: 0.95rem; /* Slightly smaller font for table data */
+    line-height: 1.4; /* Adjusted line height for table text */
 }
 .comparison-table th, .comparison-table td {
     border: 1px solid var(--border-primary);
     padding: 0.75rem 1rem; /* Slightly more padding */
     text-align: left;
-    /* Remove individual cell border-radius, apply to table for overall rounded look */
+    vertical-align: middle; /* Center vertically */
 }
 .comparison-table thead th:first-child { border-top-left-radius: 0.5rem; }
 .comparison-table thead th:last-child { border-top-right-radius: 0.5rem; }
@@ -277,6 +283,77 @@ header {
 .comparison-table tbody tr:hover { 
     background-color: var(--bg-primary); /* Lighter hover background for contrast */
 }
+
+/* Overall Clustering Stats & Inter-Store Distance Matrix (Refinements) */
+#overallClusteringStats p,
+#interStoreDistanceMatrixContainer .comparison-table td {
+    font-size: 1rem; /* Ensure these are readable */
+    line-height: 1.5;
+}
+
+/* Simulation Statistics (Refinements) */
+.simulation-stats-container h4 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.simulation-stats-grid,
+.cost-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem; /* Reduced gap slightly for denser info */
+    padding: 1.5rem;
+    background-color: var(--bg-tertiary); /* Light background for stats sections */
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    margin-top: 1rem;
+    font-size: 1rem; /* Consistent font size */
+    line-height: 1.5;
+}
+.simulation-stats-grid p strong,
+.cost-kpi-grid p strong {
+    color: var(--text-primary); /* Bold labels */
+    font-weight: 600;
+}
+.simulation-stats-grid span,
+.cost-kpi-grid span {
+    font-weight: 700; /* Bolder values */
+    color: var(--text-accent); /* Accent color for values */
+}
+
+
+/* Workforce Optimization Tables (Refinements) */
+#optimizationComparisonContainer h4,
+#optimizationResultsContainer h4 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+#optimizationComparisonTable {
+    margin-top: 1.5rem;
+}
+
+#optimizationResultsContainer .optimization-results-grid,
+#optimizationResultsContainer .cost-kpi-grid {
+    background-color: var(--bg-secondary); /* Cards within workforce opt */
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-card);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjust grid for better fit */
+    gap: 0.75rem; /* Smaller gap */
+}
+#optimizationResultsContainer .optimization-results-grid p,
+#optimizationResultsContainer .cost-kpi-grid p {
+    font-size: 0.95rem; /* Slightly smaller text for dense stats */
+}
+#optimizationResultsContainer .optimization-results-grid span,
+#optimizationResultsContainer .cost-kpi-grid span {
+    font-size: 1.1rem; /* Make values stand out */
+    font-weight: 700;
+}
+
 
 /* Stat Cards for better visual impact */
 .stat-card {
@@ -416,5 +493,13 @@ footer .text-slate-300 { /* For the copyright line */
     }
     .btn {
         width: 100%; /* Full width buttons */
+    }
+    .simulation-stats-grid,
+    .cost-kpi-grid {
+        grid-template-columns: 1fr; /* Stack stats on small screens */
+    }
+    #optimizationResultsContainer .optimization-results-grid,
+    #optimizationResultsContainer .cost-kpi-grid {
+        grid-template-columns: 1fr; /* Stack results on small screens */
     }
 }
