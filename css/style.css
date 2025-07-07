@@ -235,13 +235,15 @@ header {
 .simulation-log, .optimization-log {
     background-color: #000;
     color: #d1d5db;
-    padding: 1rem;
+    padding: 1.25rem; /* Increased padding */
     border-radius: 0.5rem; /* Consistent border-radius */
     margin-top: 1rem;
     max-height: 350px;
     overflow-y: auto;
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: 0.75rem; /* Reduced font size */
+    line-height: 1.5; /* Adjusted line height for readability */
+    white-space: pre-wrap; /* Handles long lines and preserves spaces */
     border: 1px solid var(--border-primary);
 }
 .log-system { color: #facc15; } /* Yellow */
@@ -254,12 +256,14 @@ header {
     width: 100%; 
     border-collapse: separate; /* Changed to separate for rounded corners on cells */
     border-spacing: 0; /* Remove default spacing */
-    font-size: 0.95rem; /* Slightly smaller font for table data */
+    font-size: 0.85rem; /* Slightly smaller font for table data */
     line-height: 1.4; /* Adjusted line height for table text */
+    table-layout: fixed; /* Ensures columns are fixed width, preventing overflow */
+    word-wrap: break-word; /* Allows long words to break and wrap */
 }
 .comparison-table th, .comparison-table td {
     border: 1px solid var(--border-primary);
-    padding: 0.75rem 1rem; /* Slightly more padding */
+    padding: 0.75rem 0.8rem; /* Slightly more padding */
     text-align: left;
     vertical-align: middle; /* Center vertically */
 }
@@ -273,10 +277,24 @@ header {
     background-color: var(--bg-tertiary);
     font-weight: 600; /* Bolder font as per original inline style */
     color: var(--text-primary); /* Ensure headings are primary text color */
+    text-align: center; /* Center align table headers */
 }
+
+/* Specific alignment for the first column header (Metric/Store) */
+.comparison-table th:first-child {
+    text-align: left;
+}
+
 .comparison-table td { 
     color: var(--text-secondary); /* Keep secondary text color for data */
+    text-align: center; /* Center align table data cells by default */
 }
+
+/* Override for first data cell in each row to align left */
+.comparison-table td:first-child {
+    text-align: left;
+}
+
 .comparison-table tbody tr:nth-child(even) {
     background-color: var(--bg-tertiary);
 }
