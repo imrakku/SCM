@@ -3,325 +3,806 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Commerce Optimization</title>
+    <title>Supply Chain Learning Simulation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://d3js.org/d3-delaunay.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --font-sans: 'Inter', sans-serif;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-primary: #e2e8f0;
+            --text-accent: #2563eb;
+            --border-accent: #2563eb;
+        }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-primary);
+            padding: 2.5rem;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem; 
+            border-radius: 0.5rem;
+            font-weight: 500; 
+            transition: all 0.2s ease;
+            cursor: pointer; 
+        }
+        .btn-primary { 
+            background-color: var(--border-accent); 
+            color: white; 
+        }
+        .btn-primary:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.25rem;
+        }
+        details > summary {
+            cursor: pointer;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            border-color: var(--border-accent);
+            color: var(--text-accent);
+            font-weight: 600;
+        }
+        .view-content {
+            display: none;
+        }
+        .view-content.active {
+            display: block;
+        }
+        .param-explanation {
+            font-size: 0.75rem;
+            color: var(--text-accent);
+            font-style: italic;
+            margin-top: 0.25rem;
+            height: 2.5em; /* Reserve space to prevent layout shifts */
+        }
+    </style>
 </head>
 <body class="light-theme">
 
-    <header>
+    <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-extrabold tracking-tight text-blue-700">Quick Commerce Optimization</h1>
-                <div class="flex flex-wrap justify-center space-x-1 sm:space-x-2 mt-3 md:mt-0">
-                    <a href="#home" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Home</a>
-                    <a href="#clustering" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Clustering</a>
-                    <a href="#demandProfiles" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Demand Profiles</a>
-                    <a href="#simulation" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Simulation</a>
-                    <a href="#workforceOptimization" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Workforce Opt.</a>
-                    <a href="#scenarioAnalysis" class="nav-link px-3 py-2 text-slate-700 hover:text-blue-700 transition-colors duration-150 text-sm sm:text-base">Scenario Analysis</a>
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-extrabold text-blue-700">Supply Chain Learning Hub</h1>
+                <div class="flex border-b">
+                    <button class="tab-button active" data-tab="learningHub">Home & Learning</button>
+                    <button class="tab-button" data-tab="simulation">Simulation</button>
                 </div>
             </div>
         </nav>
     </header>
 
     <main class="container mx-auto p-4 md:p-8 mt-8">
-        
-        <section id="home" class="content-section active">
-            <div class="card">
-                <h2>Optimizing Last-Mile Delivery in Chandigarh</h2>
-                <p class="mb-6 text-lg leading-relaxed">
-                    This capstone project, undertaken by Rakshit Monga at the Indian Institute of Management Sirmaur, presents a comprehensive approach to optimizing last-mile delivery logistics within the urban context of Chandigarh. The study meticulously combines critical facets of logistics planning:
-                </p>
-                <ol class="list-decimal list-inside space-y-3 mb-6 text-lg">
-                    <li class="pl-2"><strong>Advanced Demand Clustering:</strong> Strategically identifying optimal locations for dark stores by simulating realistic demand patterns.</li>
-                    <li class="pl-2"><strong>Custom Demand Profiling:</strong> Define and save custom order generation profiles with multiple uniform and hotspot zones to simulate diverse demand scenarios.</li>
-                    <li class="pl-2"><strong>Dynamic Delivery Simulation:</strong> Developing and evaluating a real-time system for agent assignment, order fulfillment, and operational efficiency, now with dynamic traffic, selectable demand profiles, and cost modeling.</li>
-                     <li class="pl-2"><strong>Workforce Optimization:</strong> An analytical tool to simulate different workforce sizes against varying demand to identify optimal agent counts, including cost considerations.</li>
-                     <li class="pl-2"><strong>Scenario Analysis & Comparison:</strong> Save and compare results from different simulation runs to make informed decisions.</li>
-                </ol>
-                <p class="mb-8 text-lg leading-relaxed">
-                    The overarching goal is to furnish data-driven, actionable insights that promote efficient resource allocation, reduce delivery lead times, enhance operational resilience, and ultimately improve customer satisfaction in complex urban delivery networks.
-                </p>
-                <div class="bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 p-8 rounded-xl border border-blue-200 shadow-lg">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-800">Project Lead</h3>
-                    <ul class="list-none space-y-1.5 text-slate-700 text-lg">
-                        <li class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6 mr-3 text-blue-600">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                            </svg>
-                            Rakshit Monga
-                        </li>
-                    </ul>
-                    <p class="mt-4 text-sm text-slate-500 italic">Indian Institute of Management Sirmaur</p>
-                </div>
-                <p class="mt-8 text-lg">
-                    Navigate through the sections using the menu above to explore the detailed clustering analysis methodology, interact with the live delivery simulation, use the workforce optimization tool, or compare different scenarios.
-                </p>
-            </div>
-        </section>
-
-        <section id="clustering" class="content-section">
-            <div class="card">
-                <h2>Demand Clustering & Voronoi Analysis</h2>
-                <p class="mb-6 leading-relaxed">
-                    Configure the number of background and hotspot orders, and the desired number of dark stores. The system will generate demand points and use K-Means clustering to identify optimal dark store locations. Voronoi diagrams visualize their service areas. These dark stores can then be selected for Workforce Optimization scenarios.
-                </p>
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Configure Clustering Parameters</h3>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <div class="input-group"><label for="numBackgroundOrders">Background Orders:</label><input type="number" id="numBackgroundOrders" value="700" min="0" step="50" class="w-full"></div>
-                        <div class="input-group"><label for="numHotspotOrders">Hotspot Orders:</label><input type="number" id="numHotspotOrders" value="300" min="0" step="50" class="w-full"></div>
-                        <div class="input-group"><label for="numDarkStoresForClustering">Number of Dark Stores:</label><input type="number" id="numDarkStoresForClustering" value="10" min="1" max="25" step="1" class="w-full"></div>
-                    </div>
-                </div>
-                <div class="grid md:grid-cols-2 gap-8 mb-10">
-                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Total Orders Simulated</h4><p id="totalOrdersDisplayClustering" class="text-5xl font-extrabold text-blue-600">1000</p></div>
-                    <div class="stat-card text-center p-8"><h4 class="font-semibold text-xl mb-2">Dark Stores Identified</h4><p id="numDarkStoresDisplay" class="text-5xl font-extrabold text-blue-600">10</p></div>
-                </div>
-                <div id="clusteringMapVizContainer" class="mb-6 shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"><div id="clusteringMapViz" class="w-full h-[500px]"></div></div>
-                <div class="mb-4 text-center"><label class="checkbox-label"><input type="checkbox" id="showOrderConnectionsToggle"> Show Order-to-Store Connections</label></div>
-                <p class="text-md italic text-center">Map Key: Chandigarh Boundary (Dark Outline), Voronoi Cell Outlines (Blue Lines), Orders (Blue/Purple Circles), Dark Stores (Red Markers).</p>
-                <div class="text-center"><button id="regenerateClusteringBtn" class="btn btn-primary">Regenerate Clustering Data</button><button id="exportClusteringResultsBtn" class="btn btn-secondary ml-4">Export Clustering Results</button></div>
-                <div id="clusteringStats" class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 rounded-lg border shadow-inner"><p class="italic md:col-span-2 lg:col-span-3 text-center">Cluster statistics will appear here after generation.</p></div>
-                <div id="overallClusteringStats" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                     <p><strong class="text-blue-700">Overall Average Order-to-Store Distance:</strong> <span id="overallAvgClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Min Distance:</strong> <span id="overallMinClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Max Distance:</strong> <span id="overallMaxClusterDistance" class="font-semibold">N/A</span></p>
-                     <p><strong class="text-blue-700">Overall Std. Dev. Distance:</strong> <span id="overallStdDevClusterDistance" class="font-semibold">N/A</span></p>
-                </div>
-                <div id="interStoreDistanceMatrixContainer" class="mt-8">
-                    <h3 class="text-2xl font-semibold mb-4 text-center">Inter-Store Distance Matrix (km)</h3>
-                    <div class="comparison-table-container">
-                        <table id="interStoreDistanceMatrix" class="comparison-table">
-                            </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="demandProfiles" class="content-section">
-            <div class="card">
-                <h2>Custom Demand Profiles</h2>
-                <p class="mb-6 leading-relaxed">Define custom order generation profiles by combining uniform demand, specific hotspot zones, sector-based demand, or route-based demand. These profiles can then be selected in the "Simulation" tab. Saved profiles are available for the current browser session.</p>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Create/Edit Profile</h3>
-                        <div class="input-group"><label for="profileNameInput">Profile Name:</label><input type="text" id="profileNameInput" placeholder="e.g., Evening Rush Sector 17" class="w-full"></div>
-                        <div id="profileZonesContainer" class="space-y-4 mb-4"></div>
-                        <button id="addZoneToProfileBtn" class="btn btn-secondary btn-sm mb-4">Add Zone</button>
-                        <div class="flex space-x-2"><button id="saveProfileBtn" class="btn btn-primary">Save Profile</button><button id="clearProfileFormBtn" class="btn btn-danger btn-sm">Clear Form</button></div>
-                        <div id="profileCreationMapContainer" class="mt-6 hidden">
-                            <h4 class="text-lg font-semibold text-center mb-2">Set Hotspot/Route Point</h4>
-                            <div id="profileCreationMap" class="h-[400px]"></div>
-                            <p class="text-sm text-center mt-2">Click on map to set hotspot center or route points.</p>
-                            <button id="finishCurrentRouteBtn" class="btn btn-secondary btn-sm mt-2 hidden">Finish Current Route Segment</button>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Profiles</h3>
-                        <div id="savedProfilesListContainer" class="max-h-96 overflow-y-auto p-4 rounded-lg border"><ul id="savedProfilesList" class="list-none space-y-2"><li class="italic">No custom profiles saved yet.</li></ul></div>
-                        <p class="text-sm mt-4 italic">Note: Profiles are stored for the current session only using browser's session storage.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <section id="simulation" class="content-section">
-            <div class="card">
-                <h2>Interactive Delivery Simulation</h2>
-                <div class="mb-10 p-8 border-2 border-blue-300 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
-                    <h3 class="text-2xl font-semibold mb-6 text-blue-700 text-center">Configure Simulation Parameters</h3>
-                    <div class="optimization-params-grid">
-                        <div><div class="control-label"><label for="numAgentsSlider" class="block text-md font-medium">Number of Agents:</label><span id="numAgentsValue" class="font-bold text-xl text-blue-700">5</span></div><input type="range" id="numAgentsSlider" min="1" max="10" value="5" class="mt-2"></div>
-                        <div><div class="control-label"><label for="orderFrequencySlider" class="block text-md font-medium">Order Arrival Rate:</label><span id="orderFrequencyValue" class="font-bold text-xl text-blue-700">Medium</span></div><input type="range" id="orderFrequencySlider" min="1" max="5" value="3" class="mt-2"><div class="text-sm flex justify-between mt-1 px-1"><span>Slower</span><span></span><span>Faster</span></div></div>
-                        <div><div class="control-label"><label for="agentMinSpeedSlider" class="block text-md font-medium">Min Agent Speed (km/h):</label><span id="agentMinSpeedValue" class="font-bold text-xl text-blue-700">20</span></div><input type="range" id="agentMinSpeedSlider" min="10" max="30" value="20" step="1" class="mt-2"></div>
-                        <div><div class="control-label"><label for="agentMaxSpeedSlider" class="block text-md font-medium">Max Agent Speed (km/h):</label><span id="agentMaxSpeedValue" class="font-bold text-xl text-blue-700">30</span></div><input type="range" id="agentMaxSpeedSlider" min="20" max="50" value="30" step="1" class="mt-2"></div>
-                        <div><div class="control-label"><label for="handlingTimeSlider" class="block text-md font-medium">Store Handling Time (min):</label><span id="handlingTimeValue" class="font-bold text-xl text-blue-700">5</span></div><input type="range" id="handlingTimeSlider" min="1" max="15" value="5" step="1" class="mt-2"></div>
-                        <div class="input-group"><label for="orderGenerationProfileSelect" class="block text-md font-medium">Order Generation Profile:</label><select id="orderGenerationProfileSelect" class="mt-1"><option value="default_uniform" selected>Default: Uniform City-Wide</option><option value="default_focused">Default: Focused Around Dark Store</option></select></div>
-                        <div id="defaultOrderSpreadContainer"><div class="control-label"><label for="orderSpreadSlider" class="block text-md font-medium">Order Location Spread (Default):</label><span id="orderSpreadValue" class="font-bold text-xl text-blue-700">Medium</span></div><input type="range" id="orderSpreadSlider" min="1" max="5" value="3" class="mt-2"><div class="text-xs flex justify-between mt-1 px-1"><span>Closer</span><span></span><span>Wider</span></div></div>
-                        <div id="defaultOrderFocusRadiusContainer" class="input-group hidden"><div class="control-label"><label for="defaultOrderFocusRadiusSlider" class="block text-md font-medium">Focus Radius (km - Default):</label><span id="defaultOrderFocusRadiusValue" class="font-bold text-xl text-blue-700">3</span></div><input type="range" id="defaultOrderFocusRadiusSlider" min="1" max="5" value="3" step="0.5" class="mt-2"></div>
-                        <div class="input-group"><label for="routeWaypointsSelect" class="block text-md font-medium">Route Complexity (Waypoints):</label><select id="routeWaypointsSelect" class="mt-1"><option value="0">0 (Straight Lines)</option><option value="1" selected>1 Waypoint</option><option value="2">2 Waypoints</option></select></div>
-                        <div class="input-group"><label for="manualTrafficControl" class="block text-md font-medium">Base Traffic Condition:</label><select id="manualTrafficControl" class="mt-1"><option value="1.0" selected>Medium (Normal)</option><option value="1.2">Light</option><option value="0.7">Heavy</option></select></div>
-                        <div class="input-group checkbox-group items-center"><input type="checkbox" id="enableDynamicTraffic" class="mr-2"><label for="enableDynamicTraffic" class="text-md font-medium cursor-pointer">Enable Dynamic Traffic</label></div>
-                        <div class="input-group"><label for="agentCostPerHour" class="block text-md font-medium">Agent Cost/Hour (₹):</label><input type="number" id="agentCostPerHour" value="150" min="0" step="10" class="w-full"></div>
-                        <div class="input-group"><label for="costPerKmTraveled" class="block text-md font-medium">Cost/km Traveled (₹):</label><input type="number" id="costPerKmTraveled" value="5" min="0" step="0.5" class="w-full"></div>
-                        <div class="input-group"><label for="fixedCostPerDelivery" class="block text-md font-medium">Fixed Cost/Delivery (₹):</label><input type="number" id="fixedCostPerDelivery" value="10" min="0" step="1" class="w-full"></div>
-                    </div>
-                </div>
-                <p class="mb-8 leading-relaxed text-lg">Adjust simulation parameters above. Click "Start Simulation" to observe agents and orders on the map. Agent routes are simplified for this web demonstration.</p>
-                <div class="text-center mb-4">Simulation Time: <span id="simTimeDisplay" class="font-semibold text-3xl">0</span> minutes (<span id="currentTrafficStatus" class="text-sm">Traffic: Normal</span>)</div>
-                <div class="grid lg:grid-cols-3 gap-x-8 gap-y-8">
-                    <div class="lg:col-span-2 space-y-6">
-                        <div id="simulationMap" class="w-full h-[500px] shadow-2xl rounded-xl overflow-hidden border-2 border-slate-200"></div>
-                        <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4"><button id="startSimBtn" class="btn btn-primary w-full sm:flex-1">Start Simulation</button><button id="pauseSimBtn" class="btn btn-secondary w-full sm:flex-1">Pause Simulation</button><button id="resetSimBtn" class="btn btn-danger w-full sm:flex-1">Reset Simulation</button></div>
-                        <div class="grid md:grid-cols-2 gap-4 mt-4">
-                            <div class="live-chart-container"><h5>Pending Orders Over Time</h5><canvas id="pendingOrdersChart"></canvas></div>
-                            <div class="live-chart-container"><h5>Active Agents Over Time</h5><canvas id="activeAgentsChart"></canvas></div>
-                            <div class="input-group checkbox-group items-center"><input type="checkbox" id="toggleDeliveryTimeHeatmap" class="mr-2"><label for="toggleDeliveryTimeHeatmap" class="text-md font-medium cursor-pointer">Show Delivery Time Heatmap</label></div>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="stat-card"><h4 class="font-semibold text-xl mb-3">Agent Status</h4><div id="agentStatusList" class="space-y-2 text-sm max-h-60 overflow-y-auto log-container p-4 rounded-lg border"><p class="italic">Agents will appear here...</p></div></div>
-                        <div class="stat-card"><h4 class="font-semibold text-xl mb-3">Active Orders</h4><div id="pendingOrdersList" class="space-y-2 text-sm max-h-60 overflow-y-auto log-container p-4 rounded-lg border"><p class="italic">Active orders will appear here...</p></div></div>
-                        <div class="stat-card"><h4 class="font-semibold text-xl mb-3">Simulation Log</h4><div id="simulationLog" class="simulation-log text-xs space-y-1.5 h-72 overflow-y-auto p-4 rounded-lg font-mono"><p class="log-system"><em>[SYS] Simulation log initialized.</em></p></div></div>
-                    </div>
-                </div>
-                <div id="simulationOverallStats" class="simulation-stats-container">
-                    <h4 class="text-2xl font-semibold text-center">Simulation Statistics</h4>
-                    <div class="simulation-stats-grid">
-                        <p><strong>Total Orders Generated:</strong> <span id="statsTotalOrdersGenerated">0</span></p>
-                        <p><strong>Total Orders Delivered:</strong> <span id="statsTotalOrdersDelivered">0</span></p>
-                        <p><strong>Avg. Delivery Time:</strong> <span id="statsAvgDeliveryTime">N/A</span></p>
-                        <p><strong>Min Delivery Time:</strong> <span id="statsMinDeliveryTime">N/A</span></p>
-                        <p><strong>Max Delivery Time:</strong> <span id="statsMaxDeliveryTime">N/A</span></p>
-                        <p><strong>Std. Dev. Delivery Time:</strong> <span id="statsStdDevDeliveryTime">N/A</span></p>
-                        <p><strong>Avg. Order Wait Time:</strong> <span id="statsAvgOrderWaitTime">N/A</span></p>
-                        <p><strong>Avg. Agent Utilization:</strong> <span id="statsAvgAgentUtilization">N/A</span></p>
-                        <p><strong>Total Agent Travel Time:</strong> <span id="statsTotalAgentTravelTime">0</span> min</p>
-                        <p><strong>Total Agent Handling Time:</strong> <span id="statsTotalAgentHandlingTime">0</span> min</p>
-                        <p><strong>Total Simulation Runtime:</strong> <span id="statsTotalSimTime">0</span> min</p>
-                    </div>
-                    <div class="cost-kpi-grid">
-                        <p><strong>Total Agent Labor Cost:</strong> <span id="statsTotalAgentLaborCost">₹0.00</span></p>
-                        <p><strong>Total Travel Cost:</strong> <span id="statsTotalTravelCost">₹0.00</span></p>
-                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="statsTotalFixedDeliveryCosts">₹0.00</span></p>
-                        <p><strong>Overall Total Operational Cost:</strong> <span id="statsOverallTotalOperationalCost">₹0.00</span></p>
-                        <p><strong>Average Cost per Order:</strong> <span id="statsAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <div class="text-center mt-6"><button id="saveCurrentSimScenarioBtn" class="btn btn-secondary">Save Current Scenario Results</button><button id="exportSimResultsBtn" class="btn btn-secondary ml-4">Export All Simulation Results</button></div>
-                    <div id="simulationAiAnalysisContainer" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg hidden">
-                        <h4 class="text-xl font-semibold text-blue-700 text-center mb-4">AI Analysis of Simulation Results</h4>
-                        <div id="simulationAiAnalysisLoading" class="text-center text-blue-600 hidden">
-                            <p class="mb-2">Generating AI analysis... This might take a moment.</p>
-                            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        </div>
-                        <div id="simulationAiAnalysisContent" class="leading-relaxed whitespace-pre-wrap">Click "Analyze with AI" to get insights on your simulation results.</div>
-                    </div>
-                    <div class="text-center mt-6"><button id="analyzeSimResultsAI" class="btn btn-primary">Analyze with AI</button></div>
-                </div>
-            </div>
-        </section>
-
-        <section id="workforceOptimization" class="content-section">
-            <div class="card">
-                <h2>Workforce Optimization Analysis</h2>
-                <p class="mb-6 leading-relaxed">This tool helps estimate the optimal number of delivery agents required. It runs multiple short simulations with varying numbers of agents for a selected dark store. Orders are generated based on the selected profile. Cost parameters are taken from the Simulation page.</p>
-                <div class="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
-                    <h3 class="text-2xl font-semibold mb-4 text-blue-700">Optimization Parameters</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div class="input-group"><label for="optTargetDeliveryTime">Target Avg. Delivery Time (min):</label><input type="number" id="optTargetDeliveryTime" value="15" min="5" step="1" class="w-full"></div>
-                        <div class="input-group"><label for="optSelectDarkStore">Select Dark Store for Scenario:</label><select id="optSelectDarkStore" class="w-full"><option value="">-- Run Clustering First --</option></select></div>
-                        <div class="input-group"><label for="optDemandProfileSelect">Order Generation Profile (Optimization):</label><select id="optDemandProfileSelect" class="w-full"><option value="default_opt_uniform" selected>Default: Uniform around Store</option></select></div>
-                        <div id="optOrderRadiusContainer" class="input-group"><label for="optOrderGenerationRadius">Default Order Gen. Radius from Store (km):</label><input type="number" id="optOrderGenerationRadius" value="5" min="0.5" step="0.5" class="w-full"></div>
-                        <div id="optTargetOrdersContainer" class="input-group"><label for="optTargetOrdersPerIteration">Default Orders per Iteration (Target):</label><input type="number" id="optTargetOrdersPerIteration" value="100" min="10" step="10" class="w-full"></div>
-                        <div class="input-group"><label for="optMinAgents">Min Agents to Test:</label><input type="number" id="optMinAgents" value="1" min="1" max="50" step="1" class="w-full"></div>
-                        <div class="input-group"><label for="optMaxAgents">Max Agents to Test:</label><input type="number" id="optMaxAgents" value="15" min="1" max="50" step="1" class="w-full"></div>
-                        <div class="input-group"><label for="optNumRunsPerAgentCount">Runs per Agent Count (for averaging):</label><input type="number" id="optNumRunsPerAgentCount" value="1" min="1" max="20" step="1" class="w-full"></div>
-                        <div class="input-group"><label for="optMaxSimTimePerIteration">Max Sim Time per Iteration (min):</label><input type="number" id="optMaxSimTimePerIteration" value="120" min="1" step="1" class="w-full"></div>
-                    </div>
-                    <div class="mt-6 text-center"><button id="runOptimizationBtn" class="btn btn-primary">Run Workforce Optimization</button></div>
-                </div>
-                <div id="optimizationMapContainer" class="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-slate-200 hidden"><h4 class="text-xl font-semibold text-center p-4 border-b">Scenario Map (Best Agent Count)</h4><div id="optimizationMapViz" class="w-full h-[500px]"></div></div>
-                <div id="optimizationComparisonContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Iteration Comparison Table</h4>
-                    <div class="comparison-table-container"><table id="optimizationComparisonTable" class="comparison-table"><thead><tr><th>Agents</th><th>Avg Generated Orders</th><th>Avg Delivered Orders</th><th>Avg. Delivery Time (min)</th><th>Avg % Orders in Target Time</th><th>Avg Min Delivery Time (min)</th><th>Avg Max Delivery Time (min)</th><th>Avg Std. Dev. Delivery Time (min)</th><th>Avg. Agent Utilization (%)</th><th>Avg. Order Wait Time (min)</th><th>Avg Undelivered Orders</th><th>Avg Total Op. Cost (₹)</th><th>Avg Cost/Order (₹)</th></tr></thead><tbody></tbody></table></div>
-                </div>
-                <div id="optimizationChartsContainer" class="hidden mt-8 grid md:grid-cols-2 gap-6">
-                    <div class="chart-container"><h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Delivery Time</h4><canvas id="deliveryTimeChart"></canvas></div>
-                    <div class="chart-container"><h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Utilization</h4><canvas id="utilizationChart"></canvas></div>
-                    <div class="chart-container"><h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Total Delivered Orders</h4><canvas id="totalDeliveredOrdersChart"></canvas></div>
-                    <div class="chart-container"><h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. Order Wait Time</h4><canvas id="avgOrderWaitTimeChart"></canvas></div>
-                    <div class="chart-container md:col-span-2"><h4 class="text-xl font-semibold text-center mb-2">Agents vs. Avg. % Orders within Target Time</h4><canvas id="ordersWithinSlaChart"></canvas></div>
-                </div>
-                <div id="optimizationResultsContainer" class="optimization-results-container hidden">
-                    <h4 class="text-2xl font-semibold text-center">Optimization Results (Best Scenario)</h4>
-                    <p id="optimizationRecommendationText" class="text-lg font-semibold text-blue-700 mb-4 text-center">Crunching numbers... Please wait.</p>
-                    <div class="optimization-results-grid">
-                        <p><strong>Optimal Agents Found:</strong> <span id="optResultAgents">N/A</span></p>
-                        <p><strong>Achieved Avg. Delivery Time:</strong> <span id="optResultAvgTime">N/A</span></p>
-                        <p><strong>Target Avg. Delivery Time:</strong> <span id="optResultTargetTime">N/A</span></p>
-                        <p><strong>% Orders in Target Time:</strong> <span id="optResultSlaMet">N/A</span></p>
-                        <p><strong>Min Delivery Time:</strong> <span id="optResultMinDelTime">N/A</span></p>
-                        <p><strong>Max Delivery Time:</strong> <span id="optResultMaxDelTime">N/A</span></p>
-                        <p><strong>Std. Dev. Delivery Time:</strong> <span id="optResultStdDevDelTime">N/A</span></p>
-                        <p><strong>Avg. Agent Utilization:</strong> <span id="optResultAvgUtilization">N/A</span></p>
-                        <p><strong>Avg. Order Wait Time:</strong> <span id="optResultAvgWaitTime">N/A</span></p>
-                        <p><strong>Avg Undelivered Orders:</strong> <span id="optResultUndelivered">N/A</span></p>
-                    </div>
-                    <div class="cost-kpi-grid">
-                        <p><strong>Total Agent Labor Cost:</strong> <span id="optResultTotalAgentLaborCost">₹0.00</span></p>
-                        <p><strong>Total Travel Cost:</strong> <span id="optResultTotalTravelCost">₹0.00</span></p>
-                        <p><strong>Total Fixed Delivery Costs:</strong> <span id="optResultTotalFixedDeliveryCosts">₹0.00</span></p>
-                        <p><strong>Overall Total Operational Cost:</strong> <span id="optResultOverallTotalOperationalCost">₹0.00</span></p>
-                        <p><strong>Average Cost per Order:</strong> <span id="optResultAverageCostPerOrder">N/A</span></p>
-                    </div>
-                    <h5 class="text-xl font-semibold mt-6 mb-2">Optimization Log:</h5>
-                    <div id="optimizationLog" class="optimization-log"><p class="log-system"><em>[SYS] Optimization process log will appear here...</em></p></div>
-                </div>
-                <div id="workforceAiAnalysisContainer" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg hidden">
-                    <h4 class="text-xl font-semibold text-blue-700 text-center mb-4">AI Analysis of Optimization Results</h4>
-                    <div id="workforceAiAnalysisLoading" class="text-center text-blue-600 hidden">
-                        <p class="mb-2">Generating AI analysis... This might take a moment.</p>
-                        <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </div>
-                    <div id="workforceAiAnalysisContent" class="leading-relaxed whitespace-pre-wrap">Click "Analyze with AI" to get insights on your optimization results.</div>
-                </div>
-                <div class="text-center mt-8"><button id="analyzeWorkforceAI" class="btn btn-primary">Analyze with AI</button><button id="exportWorkforceOptResultsBtn" class="btn btn-secondary ml-4">Export All Optimization Results</button></div>
-            </div>
-        </section>
-
-        <section id="scenarioAnalysis" class="content-section">
-            <div class="card">
-                <h2>Scenario Analysis & Comparison</h2>
-                <p class="mb-6 leading-relaxed">Save results from different simulation runs (from the "Simulation" page) and compare them side-by-side. This helps in understanding the impact of various parameters on performance and cost. Scenarios are saved in your browser's local storage.</p>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="md:col-span-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Saved Scenarios</h3>
-                        <div id="savedScenariosListContainer"><ul id="savedScenariosList"><li class="italic">No scenarios saved yet.</li></ul></div>
-                        <div class="mt-4 flex flex-col space-y-2">
-                            <button id="compareSelectedScenariosBtn" class="btn btn-primary">Compare Selected</button>
-                            <button id="analyzeScenarioComparisonAI" class="btn btn-secondary">Analyze Comparison</button>
-                            <button id="clearAllScenariosBtn" class="btn btn-danger btn-sm mt-4">Clear All Saved Scenarios</button>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <h3 class="text-2xl font-semibold mb-4 text-blue-700">Comparison Details</h3>
-                        <div id="scenarioComparisonResultsContainer" class="hidden"><div class="comparison-table-container"><table id="scenarioComparisonTable" class="comparison-table"><thead></thead><tbody></tbody></table></div></div>
-                        <p id="scenarioComparisonPlaceholder" class="italic mt-4">Select one or more scenarios from the list and click "Compare Selected" to see details.</p>
-                        <div id="scenarioAiAnalysisContainer" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg hidden">
-                            <h4 class="text-xl font-semibold text-blue-700 text-center mb-4">AI Analysis of Scenario Comparison</h4>
-                            <div id="scenarioAiAnalysisLoading" class="text-center text-blue-600 hidden">
-                                <p class="mb-2">Generating AI analysis... This might take a moment.</p>
-                                <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <div id="learningHub" class="view-content active">
+             <div class="card shadow-xl">
+                <h2 class="text-3xl font-bold mb-2">Welcome to the Learning Hub!</h2>
+                <p class="text-gray-600 mb-6">This tool is designed to help you understand the complex trade-offs in last-mile delivery. Use the controls on the **Simulation** tab to set up a scenario, then run it to see the results. The exercises below will guide you through key concepts.</p>
+                
+                <div class="space-y-8">
+                    <details open>
+                        <summary>Parameter Guide</summary>
+                        <div class="p-4 mt-2 bg-gray-50 rounded-lg space-y-6">
+                            <div>
+                                <h3 class="font-bold text-lg text-blue-600">Core Scenario</h3>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Number of Orders:</strong> Represents the <strong>customer demand</strong>. A higher number puts more stress on your system.</p>
+                                <p class="text-sm text-gray-600"><strong>SLA (mins):</strong> The <strong>Service Level Agreement</strong> you promise your customers. This is your target delivery time. A shorter SLA is harder and more expensive to achieve but can lead to higher customer satisfaction.</p>
                             </div>
-                            <div id="scenarioAiAnalysisContent" class="leading-relaxed whitespace-pre-wrap">Click "Analyze Comparison" to get insights on the selected scenarios.</div>
+                            <div>
+                                <h3 class="font-bold text-lg text-blue-600">Workforce Simulation</h3>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Number of Agents:</strong> Your <strong>labor capacity</strong>. Too few agents creates a bottleneck, leading to long waits. Too many increases costs due to idle time.</p>
+                                <p class="text-sm text-gray-600"><strong>% of Veterans:</strong> Models the trade-off between skill and cost. A workforce with more <strong>Veterans</strong> is more expensive but also more efficient.</p>
+                                <p class="text-sm text-gray-600"><strong>Base Speed (km/h):</strong> The average travel speed of your vehicles under ideal conditions. This represents the physical capability of your assets.</p>
+                                <p class="text-sm text-gray-600"><strong>Batch Capacity:</strong> Represents <strong>order consolidation</strong>. It's the maximum number of separate orders an agent can carry at one time. A higher capacity can improve efficiency but may increase the delivery time for the first order in a batch.</p>
+                            </div>
+                             <div>
+                                <h3 class="font-bold text-lg text-blue-600">Cost Model</h3>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Agent Cost/Hour:</strong> The primary driver of your fixed operational costs.</p>
+                                <p class="text-sm text-gray-600"><strong>Cost/Km:</strong> Represents variable costs like fuel and maintenance.</p>
+                                <p class="text-sm text-gray-600"><strong>Failed SLA Penalty:</strong> The "cost of poor quality." This models customer dissatisfaction, refunds, or loss of future business for each late delivery.</p>
+                            </div>
                         </div>
-                    </div>
+                    </details>
+                     <details>
+                        <summary>Student Exercises</summary>
+                        <div class="p-4 mt-2 bg-gray-50 rounded-lg space-y-6">
+                           <div>
+                                <h4 class="font-bold text-lg">Exercise 1: The Value of Experience</h4>
+                                <ol class="list-decimal list-inside text-sm space-y-2 mt-2">
+                                    <li>Go to the **Simulation** tab. Set "Number of Agents" to <strong>4</strong> and "% of Veterans" to <strong>0</strong> (a fully rookie team).</li>
+                                    <li>Run the simulation. Look at the "Live Stats" and note the final "Successful Orders" and "Cost per Order".</li>
+                                    <li>Now, change "% of Veterans" to <strong>100</strong> (a fully veteran team). Run the simulation again.</li>
+                                    <li><strong>Analysis:</strong> Did the number of successful orders increase? Did the cost per order go up or down? This shows the trade-off between investing in skilled labor (higher cost, better performance) and managing operational expenses.</li>
+                                </ol>
+                           </div>
+                           <div>
+                                <h4 class="font-bold text-lg">Exercise 2: Cost vs. Service Level</h4>
+                                <ol class="list-decimal list-inside text-sm space-y-2 mt-2">
+                                    <li>Use the default settings, but set the "SLA" to a generous <strong>20 minutes</strong>. Run the simulation and note the high success rate and the Cost per Order.</li>
+                                    <li>Now, promise customers an ultra-fast delivery. Change the "SLA" to <strong>10 minutes</strong>. Run again. Observe the drop in success rate and the increase in cost (due to penalties).</li>
+                                    <li>Your task: Achieve an <strong>85% or higher</strong> success rate with the 10-minute SLA. You will need to increase agents, use Veterans, etc.</li>
+                                    <li><strong>Analysis:</strong> Compare the resources and final cost per order for the 20-minute vs. the 10-minute SLA. You'll see that a higher service level often requires an exponential increase in resources and cost.</li>
+                                </ol>
+                           </div>
+                        </div>
+                    </details>
                 </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="text-center py-16 mt-12 bg-slate-900 text-slate-400">
-        <p class="text-slate-300 text-lg">&copy; <span id="currentYear">2024</span> Rakshit Monga - IIM Sirmaur.</p>
-        <p class="text-md mt-2">Chandigarh Last-Mile Logistics Optimization Project</p>
-        <div class="mt-8">
-            <button id="toggleSectorCoordsBtn" class="btn btn-secondary btn-sm">Show/Hide Sector Coordinates</button>
-            <div id="sectorCoordinatesContainer" class="hidden mt-4 text-left max-w-2xl mx-auto bg-slate-800 p-4 rounded-lg text-sm">
-                <h4 class="text-lg font-semibold text-slate-200 mb-2 text-center">Chandigarh Sector Coordinates (Approximate Centers)</h4>
-                <pre id="sectorCoordinatesList" class="text-slate-300 whitespace-pre-wrap"></pre>
             </div>
         </div>
-    </footer>
 
-    <script type="module" src="js/main.js"></script>
+        <div id="simulation" class="view-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="card shadow-lg">
+                        <h2 class="text-2xl font-bold mb-4">Simulation Controls</h2>
+                        <details open>
+                            <summary class="mb-4">Core Scenario</summary>
+                            <div class="parameter-grid">
+                                <div>
+                                    <label for="numLastMinuteOrders" class="block text-sm font-medium text-gray-700">Total Orders</label>
+                                    <input type="number" id="numLastMinuteOrders" value="25" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="deliverySLA" class="block text-sm font-medium text-gray-700">SLA (mins)</label>
+                                    <input type="number" id="deliverySLA" value="12" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="orderArrivalRate" class="block text-sm font-medium text-gray-700">Order Arrival Rate</label>
+                                    <input type="number" id="orderArrivalRate" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                            </div>
+                        </details>
+                        <details>
+                            <summary class="mb-4 mt-4">Workforce Simulation</summary>
+                            <div class="parameter-grid">
+                                <div>
+                                    <label for="numAgents" class="block text-sm font-medium text-gray-700">Number of Agents</label>
+                                    <input type="number" id="numAgents" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="percentVeterans" class="block text-sm font-medium text-gray-700">% of Veterans</label>
+                                    <input type="number" id="percentVeterans" value="50" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                 <div>
+                                    <label for="avgAgentSpeed" class="block text-sm font-medium text-gray-700">Base Speed (km/h)</label>
+                                    <input type="number" id="avgAgentSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="agentFatigueRate" class="block text-sm font-medium text-gray-700">Fatigue Rate</label>
+                                    <input type="number" id="agentFatigueRate" value="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="batchingCapacity" class="block text-sm font-medium text-gray-700">Batch Capacity</label>
+                                    <input type="number" id="batchingCapacity" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                            </div>
+                        </details>
+                        <details>
+                            <summary class="mb-4 mt-4">Dynamic World Events</summary>
+                            <div class="parameter-grid">
+                                <div>
+                                    <label for="trafficCondition" class="block text-sm font-medium text-gray-700">Base Traffic</label>
+                                    <select id="trafficCondition" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                        <option value="light">Light</option>
+                                        <option value="moderate" selected>Moderate</option>
+                                        <option value="heavy">Heavy</option>
+                                    </select>
+                                    <p id="trafficExplanation" class="param-explanation">Moderate traffic has no speed modifier.</p>
+                                </div>
+                                <div>
+                                    <label for="weatherCondition" class="block text-sm font-medium text-gray-700">Weather</label>
+                                    <select id="weatherCondition" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                        <option value="clear">Clear</option>
+                                        <option value="rain">Rain</option>
+                                        <option value="storm">Storm</option>
+                                    </select>
+                                    <p id="weatherExplanation" class="param-explanation">Clear weather has no speed modifier.</p>
+                                </div>
+                                <div>
+                                    <label for="eventFrequency" class="block text-sm font-medium text-gray-700">Event Frequency</label>
+                                     <input type="number" id="eventFrequency" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="roadQuality" class="block text-sm font-medium text-gray-700">Road Quality (1-5)</label>
+                                    <input type="number" id="roadQuality" value="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                            </div>
+                        </details>
+                        <details>
+                            <summary class="mb-4 mt-4">Operational Strategy</summary>
+                            <div class="parameter-grid">
+                                <div>
+                                    <label for="storeProcessingCapacity" class="block text-sm font-medium text-gray-700">Store Capacity</label>
+                                    <input type="number" id="storeProcessingCapacity" value="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                 <div>
+                                    <label for="deliveryRadius" class="block text-sm font-medium text-gray-700">Delivery Radius (km)</label>
+                                    <input type="number" id="deliveryRadius" value="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="handlingTime" class="block text-sm font-medium text-gray-700">Handling Time</label>
+                                    <input type="number" id="handlingTime" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                 <div>
+                                    <label for="basePrepTime" class="block text-sm font-medium text-gray-700">Base Prep Time</label>
+                                    <input type="number" id="basePrepTime" value="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                            </div>
+                        </details>
+                        <details>
+                            <summary class="mb-4 mt-4">Cost Model</summary>
+                             <div class="parameter-grid">
+                                <div>
+                                    <label for="agentCostPerHour" class="block text-sm font-medium text-gray-700">Agent Cost/Hour</label>
+                                    <input type="number" id="agentCostPerHour" value="150" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="costPerKm" class="block text-sm font-medium text-gray-700">Cost/Km</label>
+                                    <input type="number" id="costPerKm" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="failedSlaPenalty" class="block text-sm font-medium text-gray-700">SLA Penalty</label>
+                                    <input type="number" id="failedSlaPenalty" value="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                </div>
+                            </div>
+                        </details>
+                        <button id="startLastMinuteSim" class="btn btn-primary w-full mt-6 text-lg font-bold">▶ Run Simulation</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div id="dashboard" class="view-content active">
+                        <div class="flex justify-between items-center mb-4">
+                             <h3 class="text-2xl font-bold text-gray-800">Live Operations Dashboard</h3>
+                             <div class="text-xl font-bold bg-gray-800 text-white px-4 py-2 rounded-lg">
+                                 TIME: <span id="simTime">00:00</span> <span class="text-xs">(1 real sec = 1 sim min)</span>
+                             </div>
+                        </div>
+                        <div id="lastMinuteMap" class="w-full h-96 rounded-lg shadow-lg border"></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 text-center">
+                            <div class="bg-green-100 p-4 rounded-lg">
+                                <p class="text-sm font-medium text-green-800">Successful Orders</p>
+                                <p id="successfulOrders" class="text-2xl font-bold text-green-600">0</p>
+                            </div>
+                            <div class="bg-red-100 p-4 rounded-lg">
+                                <p class="text-sm font-medium text-red-800">Failed Orders</p>
+                                <p id="failedOrders" class="text-2xl font-bold text-red-600">0</p>
+                            </div>
+                            <div class="bg-blue-100 p-4 rounded-lg">
+                                <p class="text-sm font-medium text-blue-800">Avg. Delivery Time</p>
+                                <p id="avgDeliveryTime" class="text-2xl font-bold text-blue-600">0 min</p>
+                            </div>
+                             <div class="bg-yellow-100 p-4 rounded-lg">
+                                <p class="text-sm font-medium text-yellow-800">Cost / Order</p>
+                                <p id="costPerOrder" class="text-2xl font-bold text-yellow-600">₹0</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-4">
+                            <div class="card p-4">
+                                <h4 class="font-semibold text-center mb-2">Agent Status</h4>
+                                <div id="agentStatusDashboard" class="text-xs space-y-1 h-32 overflow-y-auto"></div>
+                            </div>
+                            <div class="card p-4">
+                                <h4 class="font-semibold text-center mb-2">Order Status</h4>
+                                <div id="orderStatusDashboard" class="text-xs space-y-1 h-32 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                             <canvas id="kpiChart"></canvas>
+                        </div>
+                        <div class="mt-4 border-t">
+                            <div class="flex">
+                                <button class="tab-button active" data-tab="log">Live Log</button>
+                                <button class="tab-button" data-tab="results">Results</button>
+                            </div>
+                            <div id="log" class="tab-content active h-64 bg-gray-800 text-white font-mono p-4 rounded-b-lg overflow-y-auto text-xs">
+                                Welcome! Adjust parameters and start the simulation.
+                            </div>
+                             <div id="results" class="tab-content h-64 overflow-y-auto">
+                                <table class="w-full text-sm text-left text-gray-500">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">ID</th>
+                                            <th scope="col" class="px-6 py-3">Status</th>
+                                            <th scope="col" class="px-6 py-3">Placed</th>
+                                            <th scope="col" class="px-6 py-3">Picked Up</th>
+                                            <th scope="col" class="px-6 py-3">Delivered</th>
+                                            <th scope="col" class="px-6 py-3">Total Time</th>
+                                            <th scope="col" class="px-6 py-3">Cost</th>
+                                            <th scope="col" class="px-6 py-3">Agent</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-4 space-y-4">
+                            <button id="analyzeBtn" class="btn btn-primary w-full" disabled>✨ Analyze Results with AI</button>
+                             <button id="exportBtn" class="btn btn-primary w-full">Export to Excel (CSV)</button>
+                            <div id="aiAnalysisContainer" class="hidden p-4 bg-blue-50 rounded-lg">
+                                <h4 class="font-bold text-lg text-blue-700 mb-2">AI Analysis</h4>
+                                <div id="aiAnalysisContent" class="text-sm text-gray-700 whitespace-pre-wrap"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- MAP INITIALIZATION ---
+            const darkStoreLocation = [30.7333, 76.7794];
+            const map = L.map('lastMinuteMap').setView(darkStoreLocation, 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }).addTo(map);
+
+            let markers = {};
+            let radiusCircle;
+            const icons = {
+                store: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+                bike: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+                success: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [15, 25], iconAnchor: [7, 25]}),
+                fail: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [15, 25], iconAnchor: [7, 25]})
+            };
+
+            // --- UI ELEMENTS ---
+            const startBtn = document.getElementById('startLastMinuteSim');
+            const logEl = document.getElementById('log');
+            const timeEl = document.getElementById('simTime');
+            const resultsTableBody = document.getElementById('resultsTableBody');
+            const deliveryRadiusInput = document.getElementById('deliveryRadius');
+            const successfulOrdersEl = document.getElementById('successfulOrders');
+            const failedOrdersEl = document.getElementById('failedOrders');
+            const avgDeliveryTimeEl = document.getElementById('avgDeliveryTime');
+            const costPerOrderEl = document.getElementById('costPerOrder');
+            const agentStatusDashboard = document.getElementById('agentStatusDashboard');
+            const orderStatusDashboard = document.getElementById('orderStatusDashboard');
+            const exportBtn = document.getElementById('exportBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const aiAnalysisContainer = document.getElementById('aiAnalysisContainer');
+            const aiAnalysisContent = document.getElementById('aiAnalysisContent');
+            
+            // --- TABS & VIEWS ---
+             const mainTabs = document.querySelectorAll('header .tab-button');
+            const mainTabContents = document.querySelectorAll('main > .view-content');
+            mainTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    mainTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.getAttribute('data-tab');
+                    mainTabContents.forEach(c => {
+                        c.classList.remove('active');
+                        if (c.id === target) c.classList.add('active');
+                    });
+                });
+            });
+            
+            const dashboardTabs = document.querySelectorAll('#dashboard .tab-button');
+            const dashboardTabContents = document.querySelectorAll('#dashboard .tab-content');
+            dashboardTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    dashboardTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.getAttribute('data-tab');
+                    dashboardTabContents.forEach(c => {
+                        c.classList.remove('active');
+                        if (c.id === target) c.classList.add('active');
+                    });
+                });
+            });
+
+
+            // --- CHART INITIALIZATION ---
+            const ctx = document.getElementById('kpiChart').getContext('2d');
+            const kpiChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [
+                    { label: 'SLA Success Rate (%)', data: [], borderColor: '#22c55e', tension: 0.1, yAxisID: 'y' },
+                    { label: 'Avg Delivery Time (min)', data: [], borderColor: '#3b82f6', tension: 0.1, yAxisID: 'y1' }
+                ]},
+                options: { scales: { y: { type: 'linear', display: true, position: 'left', min: 0, max: 100 }, y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } } } }
+            });
+
+            // --- SIMULATION STATE ---
+            let simInterval;
+            let simTime = 0;
+            let agents = [];
+            let orders = [];
+            let completedOrders = [];
+            let totalCost = 0;
+            let currentParams = {};
+            let orderIdCounter = 0;
+
+            // --- INTERACTIVE EXPLANATIONS ---
+            const explanationMap = {
+                trafficCondition: {
+                    light: "Light traffic provides a +20% speed boost.",
+                    moderate: "Moderate traffic has no speed modifier.",
+                    heavy: "Heavy traffic imposes a -40% speed penalty."
+                },
+                weatherCondition: {
+                    clear: "Clear weather has no speed modifier.",
+                    rain: "Rain imposes a -20% speed penalty.",
+                    storm: "Storms impose a -50% speed penalty."
+                }
+            };
+
+            function updateExplanation(elementId, map) {
+                const select = document.getElementById(elementId);
+                const explanationEl = document.getElementById(elementId + 'Explanation');
+                if (select && explanationEl) {
+                    explanationEl.textContent = map[select.value];
+                }
+            }
+
+            document.getElementById('trafficCondition').addEventListener('change', () => updateExplanation('trafficCondition', explanationMap.trafficCondition));
+            document.getElementById('weatherCondition').addEventListener('change', () => updateExplanation('weatherCondition', explanationMap.weatherCondition));
+
+
+            // --- EVENT LISTENERS ---
+            deliveryRadiusInput.addEventListener('input', updateRadiusCircle);
+
+            startBtn.addEventListener('click', () => {
+                if (simInterval) clearInterval(simInterval);
+                
+                // Switch to dashboard view
+                mainTabs.forEach(t => t.classList.remove('active'));
+                document.querySelector('button[data-tab="simulation"]').classList.add('active');
+                mainTabContents.forEach(c => c.classList.remove('active'));
+                document.getElementById('simulation').classList.add('active');
+
+                
+                Object.values(markers).forEach(m => map.removeLayer(m));
+                markers = {};
+                simTime = 0;
+                agents = [];
+                orders = [];
+                completedOrders = [];
+                totalCost = 0;
+                orderIdCounter = 0;
+                logEl.innerHTML = '';
+                resultsTableBody.innerHTML = '';
+                kpiChart.data.labels = [];
+                kpiChart.data.datasets.forEach(d => d.data = []);
+                kpiChart.update();
+                
+                currentParams = {
+                    numOrders: parseInt(document.getElementById('numLastMinuteOrders').value),
+                    sla: parseInt(document.getElementById('deliverySLA').value),
+                    orderArrivalRate: parseInt(document.getElementById('orderArrivalRate').value),
+                    numAgents: parseInt(document.getElementById('numAgents').value),
+                    percentVeterans: parseInt(document.getElementById('percentVeterans').value),
+                    avgAgentSpeed: parseInt(document.getElementById('avgAgentSpeed').value),
+                    batchingCapacity: parseInt(document.getElementById('batchingCapacity').value),
+                    storeProcessingCapacity: parseInt(document.getElementById('storeProcessingCapacity').value),
+                    deliveryRadius: parseInt(document.getElementById('deliveryRadius').value),
+                    basePrepTime: parseInt(document.getElementById('basePrepTime').value),
+                    handlingTime: parseInt(document.getElementById('handlingTime').value),
+                    trafficCondition: document.getElementById('trafficCondition').value,
+                    weatherCondition: document.getElementById('weatherCondition').value,
+                    agentCostPerHour: parseInt(document.getElementById('agentCostPerHour').value),
+                    costPerKm: parseInt(document.getElementById('costPerKm').value),
+                    failedSlaPenalty: parseInt(document.getElementById('failedSlaPenalty').value),
+                };
+
+                logMessage(0, 'SYSTEM', `Simulation started.`);
+                
+                for (let i = 0; i < currentParams.numAgents; i++) {
+                    const experience = (i < currentParams.numAgents * (currentParams.percentVeterans / 100)) ? 'veteran' : 'rookie';
+                    agents.push({
+                        id: i, vehicle: 'bike', status: 'Idle', location: [...darkStoreLocation], experience,
+                        orders: [], fatigue: 0, totalDistance: 0, activeTime: 0,
+                        marker: L.marker(darkStoreLocation, {icon: icons.bike}).addTo(map).bindPopup(`Agent ${i} (${experience})`)
+                    });
+                    markers[`agent_${i}`] = agents[i].marker;
+                }
+                markers['store'] = L.marker(darkStoreLocation, {icon: icons.store}).addTo(map).bindPopup('<b>Dark Store</b>');
+                updateRadiusCircle();
+
+                simInterval = setInterval(() => runSimStep(currentParams), 100);
+                startBtn.disabled = true;
+                analyzeBtn.disabled = true;
+            });
+
+            function runSimStep(params) {
+                simTime += 6; // 1 real sec = 1 sim min
+                timeEl.textContent = `${String(Math.floor(simTime / 60)).padStart(2, '0')}:${String(simTime % 60).padStart(2, '0')}`;
+
+                // Real-time order generation
+                if (orders.length < params.numOrders && Math.random() < params.orderArrivalRate / 100) {
+                    const angle = Math.random() * 2 * Math.PI;
+                    const distance = (Math.random() * params.deliveryRadius) / 111;
+                    const orderLocation = [darkStoreLocation[0] + distance * Math.cos(angle), darkStoreLocation[1] + distance * Math.sin(angle)];
+                    const newOrder = {
+                        id: orderIdCounter++, status: 'Pending', location: orderLocation, timePlaced: simTime, 
+                        prepTime: params.basePrepTime + (Math.random() * 2 - 1),
+                        timeReady: -1,
+                        marker: L.circleMarker(orderLocation, {radius: 6, color: '#f97316', fillOpacity: 0.7}).addTo(map).bindPopup(`Order ${orderIdCounter-1}`)
+                    };
+                    orders.push(newOrder);
+                    markers[`order_${newOrder.id}`] = newOrder.marker;
+                }
+
+                orders.filter(o => o.status === 'Pending').forEach(order => {
+                    if(order.timeReady === -1) order.timeReady = simTime + order.prepTime * 60;
+                });
+
+                const readyOrders = orders.filter(o => o.status === 'Pending' && o.timeReady <= simTime);
+                const idleAgents = agents.filter(a => a.status === 'Idle' && a.orders.length < params.batchingCapacity);
+                
+                if(readyOrders.length > 0 && idleAgents.length > 0) {
+                    const agent = idleAgents[0];
+                    const order = readyOrders[0];
+                    
+                    agent.status = 'Delivering';
+                    agent.orders.push(order);
+                    order.status = 'Assigned';
+                    order.agentId = agent.id;
+                    order.pickupTime = simTime + params.handlingTime * 60;
+                    
+                    const distance = L.latLng(agent.location).distanceTo(order.location) / 1000;
+                    order.distance = distance;
+
+                    let speedModifier = 1.0;
+                    if(params.trafficCondition === 'heavy') speedModifier *= 0.6;
+                    if(params.weatherCondition === 'rain') speedModifier *= 0.8;
+                    if(agent.experience === 'rookie') speedModifier *= 0.85;
+                    if(agent.experience === 'veteran') speedModifier *= 1.15;
+
+                    const effectiveSpeed = params.avgAgentSpeed * speedModifier;
+                    const travelDuration = (distance / effectiveSpeed) * 3600;
+                    order.estimatedDeliveryTime = order.pickupTime + travelDuration;
+
+                    logMessage(simTime, 'ASSIGN', `Agent ${agent.id} assigned Order ${order.id}.`);
+                    agent.marker.bindPopup(`Agent ${agent.id} delivering Order ${order.id}`);
+                }
+
+                agents.forEach(agent => {
+                    if (agent.status !== 'Idle') agent.activeTime += 6;
+
+                    if (agent.status === 'Delivering') {
+                        agent.orders.forEach((order, index) => {
+                            if (simTime >= order.estimatedDeliveryTime) {
+                                order.status = 'Delivered';
+                                order.deliveryTime = simTime;
+                                completedOrders.push(order);
+                                
+                                const deliveryDuration = (order.deliveryTime - order.timePlaced) / 60;
+                                const success = deliveryDuration <= params.sla;
+
+                                logMessage(simTime, 'DELIVERY', `Order ${order.id} by Agent ${agent.id} in ${deliveryDuration.toFixed(1)}m. ${success ? 'SUCCESS' : 'FAIL'}`);
+                                
+                                map.removeLayer(order.marker);
+                                const resultIcon = success ? icons.success : icons.fail;
+                                markers[`result_${order.id}`] = L.marker(order.location, {icon: resultIcon}).addTo(map).bindPopup(`Order ${order.id} (${deliveryDuration.toFixed(1)}m)`);
+                                
+                                agent.totalDistance += order.distance;
+                                agent.orders.splice(index, 1);
+                            }
+                        });
+
+                        if(agent.orders.length === 0) {
+                            agent.status = 'Returning';
+                            const returnDistance = L.latLng(agent.location).distanceTo(darkStoreLocation) / 1000;
+                            agent.totalDistance += returnDistance;
+                            agent.returnEta = simTime + (returnDistance / params.avgAgentSpeed) * 3600;
+                        }
+                    } else if (agent.status === 'Returning') {
+                        if(simTime >= agent.returnEta) {
+                            agent.status = 'Idle';
+                            agent.location = [...darkStoreLocation];
+                            agent.marker.setLatLng(darkStoreLocation);
+                            logMessage(simTime, 'SYSTEM', `Agent ${agent.id} returned.`);
+                        }
+                    }
+                });
+
+                if (simTime % 10 === 0) {
+                    updateKPIs(params);
+                    updateLiveDashboards();
+                }
+
+                if (completedOrders.length === params.numOrders) {
+                    clearInterval(simInterval);
+                    startBtn.disabled = false;
+                    analyzeBtn.disabled = false;
+                    logMessage(simTime, 'SYSTEM', 'Simulation finished.');
+                    updateKPIs(params);
+                    populateResultsTable(params);
+                }
+            }
+            
+            function updateRadiusCircle() {
+                const radius = parseFloat(deliveryRadiusInput.value) * 1000;
+                if (radiusCircle) map.removeLayer(radiusCircle);
+                radiusCircle = L.circle(darkStoreLocation, { radius, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1 }).addTo(map);
+            }
+
+            function updateKPIs(params) {
+                if (completedOrders.length > 0) {
+                    const successCount = completedOrders.filter(o => (o.deliveryTime - o.timePlaced)/60 <= params.sla).length;
+                    const failCount = completedOrders.length - successCount;
+                    const avgTime = completedOrders.reduce((sum, o) => sum + (o.deliveryTime - o.timePlaced)/60, 0) / completedOrders.length;
+                    
+                    let totalLaborCost = 0;
+                    agents.forEach(agent => {
+                        let costMultiplier = 1.0;
+                        if(agent.experience === 'rookie') costMultiplier = 0.8;
+                        if(agent.experience === 'veteran') costMultiplier = 1.3;
+                        totalLaborCost += (agent.activeTime / 3600) * (params.agentCostPerHour * costMultiplier);
+                    });
+                    const totalVariableCost = agents.reduce((sum, a) => sum + a.totalDistance * params.costPerKm, 0);
+                    const totalPenaltyCost = failCount * params.failedSlaPenalty;
+                    totalCost = totalLaborCost + totalVariableCost + totalPenaltyCost;
+
+                    successfulOrdersEl.textContent = successCount;
+                    failedOrdersEl.textContent = failCount;
+                    avgDeliveryTimeEl.textContent = `${avgTime.toFixed(1)} min`;
+                    costPerOrderEl.textContent = `₹${(totalCost / completedOrders.length).toFixed(2)}`;
+
+                    const successRate = (successCount / completedOrders.length) * 100;
+                    const currentChartLabels = kpiChart.data.labels;
+                    const newLabel = Math.round(simTime/60);
+                    if(currentChartLabels.length === 0 || currentChartLabels[currentChartLabels.length - 1] !== newLabel) {
+                        kpiChart.data.labels.push(newLabel);
+                        kpiChart.data.datasets[0].data.push(successRate);
+                        kpiChart.data.datasets[1].data.push(avgTime);
+                        kpiChart.update();
+                    }
+                }
+            }
+            
+            function updateLiveDashboards() {
+                agentStatusDashboard.innerHTML = agents.map(a => `<div>Agent ${a.id}: ${a.status}</div>`).join('');
+                const pendingCount = orders.filter(o => o.status === 'Pending').length;
+                const assignedCount = orders.filter(o => o.status === 'Assigned').length;
+                orderStatusDashboard.innerHTML = `
+                    <div>Pending: ${pendingCount}</div>
+                    <div>Assigned: ${assignedCount}</div>
+                    <div>Completed: ${completedOrders.length}</div>
+                `;
+            }
+
+            function populateResultsTable(params) {
+                resultsTableBody.innerHTML = '';
+                orders.forEach(order => {
+                    const deliveryDuration = (order.deliveryTime - order.timePlaced) / 60;
+                    const status = order.status === 'Delivered' ? ((deliveryDuration <= params.sla) ? 'Success' : 'Failed (SLA)') : 'Pending';
+                    
+                    let orderCost = 0;
+                    if(order.status === 'Delivered'){
+                        const agent = agents[order.agentId];
+                        let costMultiplier = 1.0;
+                        if(agent.experience === 'rookie') costMultiplier = 0.8;
+                        if(agent.experience === 'veteran') costMultiplier = 1.3;
+                        const laborCost = ((order.deliveryTime - order.pickupTime) / 3600) * (params.agentCostPerHour * costMultiplier);
+                        const distanceCost = order.distance * params.costPerKm;
+                        const penalty = (status === 'Success') ? 0 : params.failedSlaPenalty;
+                        orderCost = laborCost + distanceCost + penalty;
+                    }
+
+                    const row = `<tr>
+                        <td class="px-6 py-4">${order.id}</td>
+                        <td class="px-6 py-4">${status}</td>
+                        <td class="px-6 py-4">${formatTime(order.timePlaced)}</td>
+                        <td class="px-6 py-4">${order.pickupTime > 0 ? formatTime(order.pickupTime) : 'N/A'}</td>
+                        <td class="px-6 py-4">${order.deliveryTime > 0 ? formatTime(order.deliveryTime) : 'N/A'}</td>
+                        <td class="px-6 py-4">${deliveryDuration > 0 ? deliveryDuration.toFixed(1) : 'N/A'}</td>
+                        <td class="px-6 py-4">₹${orderCost > 0 ? orderCost.toFixed(2) : 'N/A'}</td>
+                        <td class="px-6 py-4">${order.agentId !== undefined ? order.agentId : 'N/A'}</td>
+                    </tr>`;
+                    resultsTableBody.innerHTML += row;
+                });
+            }
+
+            function logMessage(time, type, message) {
+                const timeStr = `[${String(Math.floor(time / 60)).padStart(2, '0')}:${String(time % 60).padStart(2, '0')}]`;
+                const typeStr = `[${type.padEnd(8, ' ')}]`;
+                logEl.innerHTML += `${timeStr} ${typeStr} ${message}\n`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            function formatTime(seconds) {
+                return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+            }
+            
+            updateRadiusCircle();
+            updateExplanation('trafficCondition', explanationMap.trafficCondition);
+            updateExplanation('weatherCondition', explanationMap.weatherCondition);
+
+            // --- AI ANALYSIS ---
+            analyzeBtn.addEventListener('click', async () => {
+                aiAnalysisContainer.classList.remove('hidden');
+                aiAnalysisContent.textContent = 'Analyzing results...';
+                
+                const summary = `
+                    Simulation Parameters: ${JSON.stringify(currentParams)}
+                    Simulation Results:
+                    - Successful Orders: ${successfulOrdersEl.textContent}
+                    - Failed Orders: ${failedOrdersEl.textContent}
+                    - Average Delivery Time: ${avgDeliveryTimeEl.textContent}
+                    - Cost per Order: ${costPerOrderEl.textContent}
+                `;
+
+                const prompt = `You are a supply chain analyst. Based on the following simulation data, provide a concise analysis. Identify the key performance drivers, potential bottlenecks, and 2-3 actionable suggestions for improvement. Keep the tone educational for a student. Data: ${summary}`;
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API request failed with status ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        aiAnalysisContent.textContent = text;
+                    } else {
+                        aiAnalysisContent.textContent = "Could not retrieve analysis from the AI model.";
+                    }
+                } catch (error) {
+                    console.error("Error fetching AI analysis:", error);
+                    aiAnalysisContent.textContent = "An error occurred while fetching the AI analysis.";
+                }
+            });
+            
+            // --- EXPORT TO CSV ---
+            exportBtn.addEventListener('click', () => {
+                let csvContent = "data:text/csv;charset=utf-8,Order ID,Status,Time Placed,Time Picked Up,Time Delivered,Total Time (min),Cost,Agent ID\n";
+                const rows = resultsTableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cols = row.querySelectorAll('td');
+                    const rowData = Array.from(cols).map(col => col.textContent);
+                    csvContent += rowData.join(',') + '\n';
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "simulation_results.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+
 </body>
 </html>
