@@ -42,9 +42,10 @@
             background-color: var(--border-accent); 
             color: white; 
         }
-        .btn-primary:disabled {
+        .btn-primary:disabled, .btn:disabled {
             background-color: #9ca3af;
             cursor: not-allowed;
+            opacity: 0.7;
         }
         .parameter-grid {
             display: grid;
@@ -108,23 +109,50 @@
                     <details open>
                         <summary>Parameter Guide</summary>
                         <div class="p-4 mt-2 bg-gray-50 rounded-lg space-y-6">
+                            
                             <div>
                                 <h3 class="font-bold text-lg text-blue-600">Core Scenario</h3>
-                                <p class="text-sm text-gray-600 mt-2"><strong>Number of Orders:</strong> Represents the <strong>customer demand</strong>. A higher number puts more stress on your system.</p>
-                                <p class="text-sm text-gray-600"><strong>SLA (mins):</strong> The <strong>Service Level Agreement</strong> you promise your customers. This is your target delivery time. A shorter SLA is harder and more expensive to achieve but can lead to higher customer satisfaction.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Total Orders:</strong> This simulates the total customer demand for your service during the simulation period. A higher number of orders will test the limits of your workforce and operational capacity, potentially revealing bottlenecks in your system.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>SLA (mins):</strong> The Service Level Agreement is the delivery time you promise your customers, measured in minutes from when they place the order. A shorter, more aggressive SLA (e.g., 10 minutes) is a strong selling point but is much harder and more expensive to achieve consistently. Failing to meet the SLA incurs penalties.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Order Arrival Rate:</strong> This percentage determines the probability of a new order being generated each second. A higher rate means orders come in faster, simulating a "peak hour" rush and testing your system's ability to handle high influx.</p>
                             </div>
+                            
                             <div>
                                 <h3 class="font-bold text-lg text-blue-600">Workforce Simulation</h3>
-                                <p class="text-sm text-gray-600 mt-2"><strong>Number of Agents:</strong> Your <strong>labor capacity</strong>. Too few agents creates a bottleneck, leading to long waits. Too many increases costs due to idle time.</p>
-                                <p class="text-sm text-gray-600"><strong>% of Veterans:</strong> Models the trade-off between skill and cost. A workforce with more <strong>Veterans</strong> is more expensive but also more efficient.</p>
-                                <p class="text-sm text-gray-600"><strong>Base Speed (km/h):</strong> The average travel speed of your vehicles under ideal conditions. This represents the physical capability of your assets.</p>
-                                <p class="text-sm text-gray-600"><strong>Batch Capacity:</strong> Represents <strong>order consolidation</strong>. It's the maximum number of separate orders an agent can carry at one time. A higher capacity can improve efficiency but may increase the delivery time for the first order in a batch.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Number of Agents:</strong> This represents your total available labor for deliveries. It's a direct lever for your delivery capacity. Too few agents will lead to order backlogs and SLA failures. Too many will result in high labor costs from idle agents.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>% of Veterans:</strong> This slider models the experience mix of your workforce. Veterans are more efficient (they travel faster) but also more expensive. Rookies are cheaper but less efficient. This parameter lets you explore the trade-off between labor cost and performance.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Base Speed (km/h):</strong> The average travel speed of your delivery agents' vehicles under ideal conditions (no traffic, good weather). This is the physical speed limit of your assets.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Fatigue Rate:</strong> A factor that can gradually reduce agent efficiency over time on longer or more frequent trips. <em>This is a more advanced parameter for future modeling.</em></p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Batch Capacity:</strong> The maximum number of separate orders an agent can pick up from the store and deliver in a single trip. Higher batching capacity can improve efficiency by reducing trips back to the store, but it might slightly delay the delivery of the first order in a batch.</p>
                             </div>
+
+                             <div>
+                                <h3 class="font-bold text-lg text-blue-600">Dynamic World Events</h3>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Base Traffic:</strong> Simulates real-world road conditions, which directly impact travel speed.<br>
+                                    <em class="ml-4">- Light: Represents off-peak hours, providing a speed boost.</em><br>
+                                    <em class="ml-4">- Moderate: Normal conditions with no speed modifier.</em><br>
+                                    <em class="ml-4">- Heavy: Simulates rush hour or congestion, applying a significant speed penalty.</em></p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Weather:</strong> Models the impact of weather on delivery operations. Poor weather conditions slow down travel speeds, making it harder to meet SLAs.<br>
+                                    <em class="ml-4">- Clear: Ideal conditions.</em><br>
+                                    <em class="ml-4">- Rain: A moderate speed penalty.</em><br>
+                                    <em class="ml-4">- Storm: A severe speed penalty, representing a major operational challenge.</em></p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Event Frequency:</strong> The rate at which random disruptive events (like road closures or vehicle breakdowns) might occur. <em>This is a more advanced parameter for future modeling.</em></p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Road Quality (1-5):</strong> Represents the infrastructure of your delivery zone. Poor road quality (a lower number) can reduce average travel speeds.</p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-bold text-lg text-blue-600">Operational Strategy</h3>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Store Capacity:</strong> The number of orders your dark store can prepare simultaneously. If more orders are ready for pickup than your store capacity allows, a bottleneck forms, delaying how quickly agents can start their deliveries.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Delivery Radius (km):</strong> The maximum distance from your store where you accept orders. A larger radius expands your customer base but also increases average delivery times and costs.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Handling Time:</strong> The fixed time (in minutes) it takes for an agent to park, pick up a prepared order from the store, and get back on the road. This represents the in-store part of the delivery process.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Base Prep Time:</strong> The average time (in minutes) it takes for store staff to receive an order and get it ready for an agent to pick up. This happens in parallel to the agent being dispatched.</p>
+                            </div>
+                            
                              <div>
                                 <h3 class="font-bold text-lg text-blue-600">Cost Model</h3>
-                                <p class="text-sm text-gray-600 mt-2"><strong>Agent Cost/Hour:</strong> The primary driver of your fixed operational costs.</p>
-                                <p class="text-sm text-gray-600"><strong>Cost/Km:</strong> Represents variable costs like fuel and maintenance.</p>
-                                <p class="text-sm text-gray-600"><strong>Failed SLA Penalty:</strong> The "cost of poor quality." This models customer dissatisfaction, refunds, or loss of future business for each late delivery.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Agent Cost/Hour:</strong> The hourly wage you pay your delivery agents. This is a primary driver of your operational (fixed) costs. Note that in this model, veterans have a higher effective cost.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>Cost/Km:</strong> The variable cost associated with each kilometer traveled, covering expenses like fuel, electricity, and vehicle maintenance.</p>
+                                <p class="text-sm text-gray-600 mt-2"><strong>SLA Penalty:</strong> A financial penalty applied for each order that is delivered after the promised SLA time. This models the "cost of poor quality"—customer refunds, loss of goodwill, and potential loss of future business.</p>
                             </div>
                         </div>
                     </details>
@@ -169,7 +197,7 @@
                                 </div>
                                 <div>
                                     <label for="deliverySLA" class="block text-sm font-medium text-gray-700">SLA (mins)</label>
-                                    <input type="number" id="deliverySLA" value="12" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                    <input type="number" id="deliverySLA" value="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
                                 </div>
                                 <div>
                                     <label for="orderArrivalRate" class="block text-sm font-medium text-gray-700">Order Arrival Rate</label>
@@ -190,7 +218,7 @@
                                 </div>
                                  <div>
                                     <label for="avgAgentSpeed" class="block text-sm font-medium text-gray-700">Base Speed (km/h)</label>
-                                    <input type="number" id="avgAgentSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                    <input type="number" id="avgAgentSpeed" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
                                 </div>
                                 <div>
                                     <label for="agentFatigueRate" class="block text-sm font-medium text-gray-700">Fatigue Rate</label>
@@ -271,7 +299,11 @@
                                 </div>
                             </div>
                         </details>
-                        <button id="startLastMinuteSim" class="btn btn-primary w-full mt-6 text-lg font-bold">▶ Run Simulation</button>
+                        <div class="flex space-x-2 mt-6">
+                            <button id="startLastMinuteSim" class="btn btn-primary w-full text-lg font-bold">▶ Run</button>
+                            <button id="pauseSim" class="btn bg-yellow-500 text-white w-full text-lg font-bold" disabled>❚❚ Pause</button>
+                            <button id="resetSim" class="btn bg-red-600 text-white w-full text-lg font-bold" disabled>↻ Reset</button>
+                        </div>
                     </div>
                 </div>
                 <div class="lg:col-span-2">
@@ -360,10 +392,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- MAP INITIALIZATION ---
             const darkStoreLocation = [30.7333, 76.7794];
-            const map = L.map('lastMinuteMap').setView(darkStoreLocation, 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            }).addTo(map);
+            let map; // Declare map, but don't initialize it yet.
+
+            function initializeMap() {
+                if (map) return;
+                map = L.map('lastMinuteMap').setView(darkStoreLocation, 13);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                }).addTo(map);
+                updateRadiusCircle();
+                console.log("Map initialized successfully!");
+            }
 
             let markers = {};
             let radiusCircle;
@@ -376,6 +415,8 @@
 
             // --- UI ELEMENTS ---
             const startBtn = document.getElementById('startLastMinuteSim');
+            const pauseBtn = document.getElementById('pauseSim');
+            const resetBtn = document.getElementById('resetSim');
             const logEl = document.getElementById('log');
             const timeEl = document.getElementById('simTime');
             const resultsTableBody = document.getElementById('resultsTableBody');
@@ -399,6 +440,11 @@
                     mainTabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     const target = tab.getAttribute('data-tab');
+                    
+                    if (target === 'simulation') {
+                        requestAnimationFrame(initializeMap);
+                    }
+                    
                     mainTabContents.forEach(c => {
                         c.classList.remove('active');
                         if (c.id === target) c.classList.add('active');
@@ -420,7 +466,6 @@
                 });
             });
 
-
             // --- CHART INITIALIZATION ---
             const ctx = document.getElementById('kpiChart').getContext('2d');
             const kpiChart = new Chart(ctx, {
@@ -441,6 +486,7 @@
             let totalCost = 0;
             let currentParams = {};
             let orderIdCounter = 0;
+            let isPaused = false;
 
             // --- INTERACTIVE EXPLANATIONS ---
             const explanationMap = {
@@ -467,78 +513,133 @@
             document.getElementById('trafficCondition').addEventListener('change', () => updateExplanation('trafficCondition', explanationMap.trafficCondition));
             document.getElementById('weatherCondition').addEventListener('change', () => updateExplanation('weatherCondition', explanationMap.weatherCondition));
 
-
-            // --- EVENT LISTENERS ---
-            deliveryRadiusInput.addEventListener('input', updateRadiusCircle);
-
-            startBtn.addEventListener('click', () => {
+            // --- SIMULATION FUNCTIONS ---
+            
+            function resetSimulation() {
                 if (simInterval) clearInterval(simInterval);
-                
-                // Switch to dashboard view
-                mainTabs.forEach(t => t.classList.remove('active'));
-                document.querySelector('button[data-tab="simulation"]').classList.add('active');
-                mainTabContents.forEach(c => c.classList.remove('active'));
-                document.getElementById('simulation').classList.add('active');
+                isPaused = false;
 
-                
-                Object.values(markers).forEach(m => map.removeLayer(m));
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                resetBtn.disabled = true;
+                analyzeBtn.disabled = true;
+                pauseBtn.textContent = '❚❚ Pause';
+                pauseBtn.classList.remove('bg-green-500');
+                pauseBtn.classList.add('bg-yellow-500');
+                aiAnalysisContainer.classList.add('hidden');
+                timeEl.textContent = '00:00';
+
+                if (map) {
+                    Object.values(markers).forEach(m => { if(map.hasLayer(m)) map.removeLayer(m); });
+                }
                 markers = {};
+                
+                if(map) {
+                    markers['store'] = L.marker(darkStoreLocation, {icon: icons.store}).addTo(map).bindPopup('<b>Dark Store</b>');
+                    updateRadiusCircle();
+                }
+
                 simTime = 0;
                 agents = [];
                 orders = [];
                 completedOrders = [];
                 totalCost = 0;
                 orderIdCounter = 0;
-                logEl.innerHTML = '';
+
+                logEl.innerHTML = 'Welcome! Adjust parameters and start the simulation.\n';
                 resultsTableBody.innerHTML = '';
+                
+                successfulOrdersEl.textContent = '0';
+                failedOrdersEl.textContent = '0';
+                avgDeliveryTimeEl.textContent = '0 min';
+                costPerOrderEl.textContent = '₹0';
+                agentStatusDashboard.innerHTML = '';
+                orderStatusDashboard.innerHTML = '';
+
                 kpiChart.data.labels = [];
                 kpiChart.data.datasets.forEach(d => d.data = []);
                 kpiChart.update();
-                
-                currentParams = {
-                    numOrders: parseInt(document.getElementById('numLastMinuteOrders').value),
-                    sla: parseInt(document.getElementById('deliverySLA').value),
-                    orderArrivalRate: parseInt(document.getElementById('orderArrivalRate').value),
-                    numAgents: parseInt(document.getElementById('numAgents').value),
-                    percentVeterans: parseInt(document.getElementById('percentVeterans').value),
-                    avgAgentSpeed: parseInt(document.getElementById('avgAgentSpeed').value),
-                    batchingCapacity: parseInt(document.getElementById('batchingCapacity').value),
-                    storeProcessingCapacity: parseInt(document.getElementById('storeProcessingCapacity').value),
-                    deliveryRadius: parseInt(document.getElementById('deliveryRadius').value),
-                    basePrepTime: parseInt(document.getElementById('basePrepTime').value),
-                    handlingTime: parseInt(document.getElementById('handlingTime').value),
-                    trafficCondition: document.getElementById('trafficCondition').value,
-                    weatherCondition: document.getElementById('weatherCondition').value,
-                    agentCostPerHour: parseInt(document.getElementById('agentCostPerHour').value),
-                    costPerKm: parseInt(document.getElementById('costPerKm').value),
-                    failedSlaPenalty: parseInt(document.getElementById('failedSlaPenalty').value),
-                };
+            }
 
-                logMessage(0, 'SYSTEM', `Simulation started.`);
-                
-                for (let i = 0; i < currentParams.numAgents; i++) {
-                    const experience = (i < currentParams.numAgents * (currentParams.percentVeterans / 100)) ? 'veteran' : 'rookie';
-                    agents.push({
-                        id: i, vehicle: 'bike', status: 'Idle', location: [...darkStoreLocation], experience,
-                        orders: [], fatigue: 0, totalDistance: 0, activeTime: 0,
-                        marker: L.marker(darkStoreLocation, {icon: icons.bike}).addTo(map).bindPopup(`Agent ${i} (${experience})`)
-                    });
-                    markers[`agent_${i}`] = agents[i].marker;
+            // --- EVENT LISTENERS ---
+            deliveryRadiusInput.addEventListener('input', updateRadiusCircle);
+            
+            startBtn.addEventListener('click', () => {
+                // Ensure map is ready & perform a full reset
+                requestAnimationFrame(() => {
+                    initializeMap();
+                    resetSimulation(); 
+                    
+                    // After map is ready and state is clean, setup and run
+                    setTimeout(() => {
+                        currentParams = {
+                            numOrders: parseInt(document.getElementById('numLastMinuteOrders').value),
+                            sla: parseInt(document.getElementById('deliverySLA').value),
+                            orderArrivalRate: parseInt(document.getElementById('orderArrivalRate').value),
+                            numAgents: parseInt(document.getElementById('numAgents').value),
+                            percentVeterans: parseInt(document.getElementById('percentVeterans').value),
+                            avgAgentSpeed: parseInt(document.getElementById('avgAgentSpeed').value),
+                            batchingCapacity: parseInt(document.getElementById('batchingCapacity').value),
+                            storeProcessingCapacity: parseInt(document.getElementById('storeProcessingCapacity').value),
+                            deliveryRadius: parseInt(document.getElementById('deliveryRadius').value),
+                            basePrepTime: parseInt(document.getElementById('basePrepTime').value),
+                            handlingTime: parseInt(document.getElementById('handlingTime').value),
+                            trafficCondition: document.getElementById('trafficCondition').value,
+                            weatherCondition: document.getElementById('weatherCondition').value,
+                            agentCostPerHour: parseInt(document.getElementById('agentCostPerHour').value),
+                            costPerKm: parseInt(document.getElementById('costPerKm').value),
+                            failedSlaPenalty: parseInt(document.getElementById('failedSlaPenalty').value),
+                        };
+
+                        logMessage(0, 'SYSTEM', `Simulation started.`);
+                        
+                        for (let i = 0; i < currentParams.numAgents; i++) {
+                            const experience = (i < currentParams.numAgents * (currentParams.percentVeterans / 100)) ? 'veteran' : 'rookie';
+                            agents.push({
+                                id: i, vehicle: 'bike', status: 'Idle', location: [...darkStoreLocation], experience,
+                                orders: [], fatigue: 0, totalDistance: 0, activeTime: 0,
+                                marker: L.marker(darkStoreLocation, {icon: icons.bike}).addTo(map).bindPopup(`Agent ${i} (${experience})`)
+                            });
+                            markers[`agent_${i}`] = agents[i].marker;
+                        }
+
+                        simInterval = setInterval(() => runSimStep(currentParams), 100);
+                        startBtn.disabled = true;
+                        pauseBtn.disabled = false;
+                        resetBtn.disabled = false;
+                        analyzeBtn.disabled = true;
+                    }, 100);
+                });
+            });
+
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    pauseBtn.textContent = '▶ Resume';
+                    pauseBtn.classList.remove('bg-yellow-500');
+                    pauseBtn.classList.add('bg-green-500');
+                    logMessage(simTime, 'SYSTEM', 'Simulation paused.');
+                } else {
+                    pauseBtn.textContent = '❚❚ Pause';
+                    pauseBtn.classList.remove('bg-green-500');
+                    pauseBtn.classList.add('bg-yellow-500');
+                    logMessage(simTime, 'SYSTEM', 'Simulation resumed.');
                 }
-                markers['store'] = L.marker(darkStoreLocation, {icon: icons.store}).addTo(map).bindPopup('<b>Dark Store</b>');
-                updateRadiusCircle();
+            });
 
-                simInterval = setInterval(() => runSimStep(currentParams), 100);
-                startBtn.disabled = true;
-                analyzeBtn.disabled = true;
+            resetBtn.addEventListener('click', () => {
+                logMessage(simTime, 'SYSTEM', 'Simulation reset by user.');
+                resetSimulation();
             });
 
             function runSimStep(params) {
+                if (isPaused) return;
+
                 simTime += 6; // 1 real sec = 1 sim min
                 timeEl.textContent = `${String(Math.floor(simTime / 60)).padStart(2, '0')}:${String(simTime % 60).padStart(2, '0')}`;
 
                 // Real-time order generation
-                if (orders.length < params.numOrders && Math.random() < params.orderArrivalRate / 100) {
+                if (orders.length + completedOrders.length < params.numOrders && Math.random() < params.orderArrivalRate / 100) {
                     const angle = Math.random() * 2 * Math.PI;
                     const distance = (Math.random() * params.deliveryRadius) / 111;
                     const orderLocation = [darkStoreLocation[0] + distance * Math.cos(angle), darkStoreLocation[1] + distance * Math.sin(angle)];
@@ -574,7 +675,9 @@
 
                     let speedModifier = 1.0;
                     if(params.trafficCondition === 'heavy') speedModifier *= 0.6;
+                    if(params.trafficCondition === 'light') speedModifier *= 1.2;
                     if(params.weatherCondition === 'rain') speedModifier *= 0.8;
+                    if(params.weatherCondition === 'storm') speedModifier *= 0.5;
                     if(agent.experience === 'rookie') speedModifier *= 0.85;
                     if(agent.experience === 'veteran') speedModifier *= 1.15;
 
@@ -607,6 +710,7 @@
                                 
                                 agent.totalDistance += order.distance;
                                 agent.orders.splice(index, 1);
+                                orders = orders.filter(o => o.id !== order.id);
                             }
                         });
 
@@ -634,6 +738,7 @@
                 if (completedOrders.length === params.numOrders) {
                     clearInterval(simInterval);
                     startBtn.disabled = false;
+                    pauseBtn.disabled = true;
                     analyzeBtn.disabled = false;
                     logMessage(simTime, 'SYSTEM', 'Simulation finished.');
                     updateKPIs(params);
@@ -642,6 +747,7 @@
             }
             
             function updateRadiusCircle() {
+                if (!map) return;
                 const radius = parseFloat(deliveryRadiusInput.value) * 1000;
                 if (radiusCircle) map.removeLayer(radiusCircle);
                 radiusCircle = L.circle(darkStoreLocation, { radius, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1 }).addTo(map);
@@ -683,7 +789,7 @@
             
             function updateLiveDashboards() {
                 agentStatusDashboard.innerHTML = agents.map(a => `<div>Agent ${a.id}: ${a.status}</div>`).join('');
-                const pendingCount = orders.filter(o => o.status === 'Pending').length;
+                const pendingCount = orders.filter(o => o.status !== 'Delivered').length;
                 const assignedCount = orders.filter(o => o.status === 'Assigned').length;
                 orderStatusDashboard.innerHTML = `
                     <div>Pending: ${pendingCount}</div>
@@ -694,20 +800,23 @@
 
             function populateResultsTable(params) {
                 resultsTableBody.innerHTML = '';
-                orders.forEach(order => {
+                const allOrders = [...completedOrders, ...orders];
+                allOrders.sort((a,b) => a.id - b.id).forEach(order => {
                     const deliveryDuration = (order.deliveryTime - order.timePlaced) / 60;
                     const status = order.status === 'Delivered' ? ((deliveryDuration <= params.sla) ? 'Success' : 'Failed (SLA)') : 'Pending';
                     
                     let orderCost = 0;
                     if(order.status === 'Delivered'){
-                        const agent = agents[order.agentId];
-                        let costMultiplier = 1.0;
-                        if(agent.experience === 'rookie') costMultiplier = 0.8;
-                        if(agent.experience === 'veteran') costMultiplier = 1.3;
-                        const laborCost = ((order.deliveryTime - order.pickupTime) / 3600) * (params.agentCostPerHour * costMultiplier);
-                        const distanceCost = order.distance * params.costPerKm;
-                        const penalty = (status === 'Success') ? 0 : params.failedSlaPenalty;
-                        orderCost = laborCost + distanceCost + penalty;
+                        const agent = agents.find(a => a.id === order.agentId);
+                        if (agent) {
+                            let costMultiplier = 1.0;
+                            if(agent.experience === 'rookie') costMultiplier = 0.8;
+                            if(agent.experience === 'veteran') costMultiplier = 1.3;
+                            const laborCost = ((order.deliveryTime - order.pickupTime) / 3600) * (params.agentCostPerHour * costMultiplier);
+                            const distanceCost = order.distance * params.costPerKm;
+                            const penalty = (status === 'Success') ? 0 : params.failedSlaPenalty;
+                            orderCost = laborCost + distanceCost + penalty;
+                        }
                     }
 
                     const row = `<tr>
@@ -725,24 +834,24 @@
             }
 
             function logMessage(time, type, message) {
-                const timeStr = `[${String(Math.floor(time / 60)).padStart(2, '0')}:${String(time % 60).padStart(2, '0')}]`;
+                const timeStr = `[${String(Math.floor(time / 60)).padStart(2, '0')}:${String(Math.floor(time % 60)).padStart(2, '0')}]`;
                 const typeStr = `[${type.padEnd(8, ' ')}]`;
                 logEl.innerHTML += `${timeStr} ${typeStr} ${message}\n`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
 
             function formatTime(seconds) {
-                return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+                if (seconds === undefined || seconds < 0) return 'N/A';
+                return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
             }
             
-            updateRadiusCircle();
             updateExplanation('trafficCondition', explanationMap.trafficCondition);
             updateExplanation('weatherCondition', explanationMap.weatherCondition);
 
             // --- AI ANALYSIS ---
             analyzeBtn.addEventListener('click', async () => {
                 aiAnalysisContainer.classList.remove('hidden');
-                aiAnalysisContent.textContent = 'Analyzing results...';
+                aiAnalysisContent.textContent = 'Analyzing results... Please wait.';
                 
                 const summary = `
                     Simulation Parameters: ${JSON.stringify(currentParams)}
@@ -758,7 +867,8 @@
                 try {
                     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                     const payload = { contents: chatHistory };
-                    const apiKey = "";
+                    // IMPORTANT: Replace "YOUR_API_KEY_HERE" with your actual Gemini API key
+                    const apiKey = "YOUR_API_KEY_HERE"; 
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                     
                     const response = await fetch(apiUrl, {
@@ -768,7 +878,8 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`API request failed with status ${response.status}`);
+                         const errorBody = await response.text();
+                         throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
                     }
 
                     const result = await response.json();
@@ -776,11 +887,11 @@
                         const text = result.candidates[0].content.parts[0].text;
                         aiAnalysisContent.textContent = text;
                     } else {
-                        aiAnalysisContent.textContent = "Could not retrieve analysis from the AI model.";
+                        aiAnalysisContent.textContent = "Could not retrieve analysis from the AI model. Check if the API key is correct and has been enabled.";
                     }
                 } catch (error) {
                     console.error("Error fetching AI analysis:", error);
-                    aiAnalysisContent.textContent = "An error occurred while fetching the AI analysis.";
+                    aiAnalysisContent.textContent = `An error occurred while fetching the AI analysis. Please ensure you have replaced "YOUR_API_KEY_HERE" with a valid Gemini API key. Details: ${error.message}`;
                 }
             });
             
@@ -790,7 +901,7 @@
                 const rows = resultsTableBody.querySelectorAll('tr');
                 rows.forEach(row => {
                     const cols = row.querySelectorAll('td');
-                    const rowData = Array.from(cols).map(col => col.textContent);
+                    const rowData = Array.from(cols).map(col => `"${col.textContent.trim()}"`);
                     csvContent += rowData.join(',') + '\n';
                 });
                 const encodedUri = encodeURI(csvContent);
@@ -806,3 +917,4 @@
 
 </body>
 </html>
+
