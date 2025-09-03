@@ -408,7 +408,9 @@
             let radiusCircle;
             const icons = {
                 store: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
-                bike: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+                bikeDelivering: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+                bikeReturning: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+                bikeIdle: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
                 success: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [15, 25], iconAnchor: [7, 25]}),
                 fail: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [15, 25], iconAnchor: [7, 25]})
             };
@@ -598,7 +600,8 @@
                             agents.push({
                                 id: i, vehicle: 'bike', status: 'Idle', location: [...darkStoreLocation], experience,
                                 orders: [], fatigue: 0, totalDistance: 0, activeTime: 0,
-                                marker: L.marker(darkStoreLocation, {icon: icons.bike}).addTo(map).bindPopup(`Agent ${i} (${experience})`)
+                                path: null, progress: 0, currentTripDistance: 0,
+                                marker: L.marker(darkStoreLocation, {icon: icons.bikeIdle}).addTo(map).bindPopup(`Agent ${i} (${experience})`)
                             });
                             markers[`agent_${i}`] = agents[i].marker;
                         }
@@ -641,7 +644,8 @@
                 // Real-time order generation
                 if (orders.length + completedOrders.length < params.numOrders && Math.random() < params.orderArrivalRate / 100) {
                     const angle = Math.random() * 2 * Math.PI;
-                    const distance = (Math.random() * params.deliveryRadius) / 111;
+                    // Use sqrt for uniform spatial distribution
+                    const distance = (Math.sqrt(Math.random()) * params.deliveryRadius) / 111;
                     const orderLocation = [darkStoreLocation[0] + distance * Math.cos(angle), darkStoreLocation[1] + distance * Math.sin(angle)];
                     const newOrder = {
                         id: orderIdCounter++, status: 'Pending', location: orderLocation, timePlaced: simTime, 
@@ -657,6 +661,7 @@
                     if(order.timeReady === -1) order.timeReady = simTime + order.prepTime * 60;
                 });
 
+                // Assign orders to idle agents
                 const readyOrders = orders.filter(o => o.status === 'Pending' && o.timeReady <= simTime);
                 const idleAgents = agents.filter(a => a.status === 'Idle' && a.orders.length < params.batchingCapacity);
                 
@@ -665,67 +670,88 @@
                     const order = readyOrders[0];
                     
                     agent.status = 'Delivering';
+                    agent.marker.setIcon(icons.bikeDelivering);
                     agent.orders.push(order);
+                    
                     order.status = 'Assigned';
                     order.agentId = agent.id;
                     order.pickupTime = simTime + params.handlingTime * 60;
                     
-                    const distance = L.latLng(agent.location).distanceTo(order.location) / 1000;
-                    order.distance = distance;
-
-                    let speedModifier = 1.0;
-                    if(params.trafficCondition === 'heavy') speedModifier *= 0.6;
-                    if(params.trafficCondition === 'light') speedModifier *= 1.2;
-                    if(params.weatherCondition === 'rain') speedModifier *= 0.8;
-                    if(params.weatherCondition === 'storm') speedModifier *= 0.5;
-                    if(agent.experience === 'rookie') speedModifier *= 0.85;
-                    if(agent.experience === 'veteran') speedModifier *= 1.15;
-
-                    const effectiveSpeed = params.avgAgentSpeed * speedModifier;
-                    const travelDuration = (distance / effectiveSpeed) * 3600;
-                    order.estimatedDeliveryTime = order.pickupTime + travelDuration;
+                    const startPos = L.latLng(agent.location);
+                    const endPos = L.latLng(order.location);
+                    agent.path = [startPos, endPos];
+                    agent.progress = 0;
+                    agent.currentTripDistance = startPos.distanceTo(endPos) / 1000; // in km
+                    order.distance = agent.currentTripDistance;
+                    agent.totalDistance += order.distance;
 
                     logMessage(simTime, 'ASSIGN', `Agent ${agent.id} assigned Order ${order.id}.`);
                     agent.marker.bindPopup(`Agent ${agent.id} delivering Order ${order.id}`);
                 }
 
+                // Animate agents and handle deliveries/returns
                 agents.forEach(agent => {
                     if (agent.status !== 'Idle') agent.activeTime += 6;
 
-                    if (agent.status === 'Delivering') {
-                        agent.orders.forEach((order, index) => {
-                            if (simTime >= order.estimatedDeliveryTime) {
+                    if (agent.path) {
+                        let speedModifier = 1.0;
+                        if(params.trafficCondition === 'heavy') speedModifier *= 0.6;
+                        if(params.trafficCondition === 'light') speedModifier *= 1.2;
+                        if(params.weatherCondition === 'rain') speedModifier *= 0.8;
+                        if(params.weatherCondition === 'storm') speedModifier *= 0.5;
+                        if(agent.experience === 'rookie') speedModifier *= 0.85;
+                        if(agent.experience === 'veteran') speedModifier *= 1.15;
+                        const effectiveSpeed = params.avgAgentSpeed * speedModifier;
+                        
+                        const distanceThisStep = effectiveSpeed * (6 / 3600); // dist in km for 6 sim sec
+                        const progressThisStep = agent.currentTripDistance > 0 ? (distanceThisStep / agent.currentTripDistance) : 1;
+                        agent.progress = Math.min(1, agent.progress + progressThisStep);
+                        
+                        const newPos = L.latLng(
+                            agent.path[0].lat + (agent.path[1].lat - agent.path[0].lat) * agent.progress,
+                            agent.path[0].lng + (agent.path[1].lng - agent.path[0].lng) * agent.progress
+                        );
+                        agent.marker.setLatLng(newPos);
+                        agent.location = [newPos.lat, newPos.lng];
+
+                        if (agent.progress >= 1) {
+                            if (agent.status === 'Delivering') {
+                                const order = agent.orders[0];
                                 order.status = 'Delivered';
                                 order.deliveryTime = simTime;
                                 completedOrders.push(order);
+                                orders = orders.filter(o => o.id !== order.id);
                                 
                                 const deliveryDuration = (order.deliveryTime - order.timePlaced) / 60;
                                 const success = deliveryDuration <= params.sla;
-
                                 logMessage(simTime, 'DELIVERY', `Order ${order.id} by Agent ${agent.id} in ${deliveryDuration.toFixed(1)}m. ${success ? 'SUCCESS' : 'FAIL'}`);
                                 
                                 map.removeLayer(order.marker);
                                 const resultIcon = success ? icons.success : icons.fail;
                                 markers[`result_${order.id}`] = L.marker(order.location, {icon: resultIcon}).addTo(map).bindPopup(`Order ${order.id} (${deliveryDuration.toFixed(1)}m)`);
                                 
-                                agent.totalDistance += order.distance;
-                                agent.orders.splice(index, 1);
-                                orders = orders.filter(o => o.id !== order.id);
-                            }
-                        });
+                                agent.orders.shift();
 
-                        if(agent.orders.length === 0) {
-                            agent.status = 'Returning';
-                            const returnDistance = L.latLng(agent.location).distanceTo(darkStoreLocation) / 1000;
-                            agent.totalDistance += returnDistance;
-                            agent.returnEta = simTime + (returnDistance / params.avgAgentSpeed) * 3600;
-                        }
-                    } else if (agent.status === 'Returning') {
-                        if(simTime >= agent.returnEta) {
-                            agent.status = 'Idle';
-                            agent.location = [...darkStoreLocation];
-                            agent.marker.setLatLng(darkStoreLocation);
-                            logMessage(simTime, 'SYSTEM', `Agent ${agent.id} returned.`);
+                                if (agent.orders.length === 0) {
+                                    agent.status = 'Returning';
+                                    agent.marker.setIcon(icons.bikeReturning);
+                                    const startPos = L.latLng(agent.location);
+                                    const endPos = L.latLng(darkStoreLocation);
+                                    agent.path = [startPos, endPos];
+                                    agent.progress = 0;
+                                    agent.currentTripDistance = startPos.distanceTo(endPos) / 1000;
+                                    agent.totalDistance += agent.currentTripDistance;
+                                    logMessage(simTime, 'SYSTEM', `Agent ${agent.id} returning to store.`);
+                                }
+                            } else if (agent.status === 'Returning') {
+                                agent.status = 'Idle';
+                                agent.marker.setIcon(icons.bikeIdle);
+                                agent.location = [...darkStoreLocation];
+                                agent.marker.setLatLng(darkStoreLocation);
+                                agent.path = null;
+                                agent.progress = 0;
+                                logMessage(simTime, 'SYSTEM', `Agent ${agent.id} returned.`);
+                            }
                         }
                     }
                 });
@@ -788,7 +814,7 @@
             }
             
             function updateLiveDashboards() {
-                agentStatusDashboard.innerHTML = agents.map(a => `<div>Agent ${a.id}: ${a.status}</div>`).join('');
+                agentStatusDashboard.innerHTML = agents.map(a => `<div>Agent ${a.id} (${a.experience.substring(0,1).toUpperCase()}): ${a.status}</div>`).join('');
                 const pendingCount = orders.filter(o => o.status !== 'Delivered').length;
                 const assignedCount = orders.filter(o => o.status === 'Assigned').length;
                 orderStatusDashboard.innerHTML = `
