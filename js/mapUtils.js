@@ -49,7 +49,7 @@ export function getMapInstance(mapKey) {
 export function getDistanceKm(coords1, coords2) {
     if (!coords1 || !coords2 || typeof coords1.lat !== 'number' || typeof coords1.lng !== 'number' || typeof coords2.lat !== 'number' || typeof coords2.lng !== 'number') return Infinity;
     const latLng1 = L.latLng(coords1.lat, coords1.lng);
-    const latLng2 = L.latLng(coords2.lng, coords2.lng); // Typo corrected from coords2.lng twice to coords2.lat, coords2.lng
+    const latLng2 = L.latLng(coords2.lat, coords2.lng); 
     return latLng1.distanceTo(latLng2) / 1000;
 }
 
